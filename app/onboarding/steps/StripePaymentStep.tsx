@@ -1,0 +1,92 @@
+import React, { useState } from 'react';
+import { Player } from '@lottiefiles/react-lottie-player';
+
+interface StripePaymentStepProps {
+  onSuccess: () => void;
+  onFailure: () => void;
+  onBack: () => void;
+}
+
+const plans = [
+  {
+    key: 'monthly',
+    label: 'Monthly',
+    price: '£10 GBP / $13 USD',
+  },
+  {
+    key: 'yearly',
+    label: 'Yearly',
+    price: '£100 GBP / $130 USD',
+  },
+];
+
+const StripePaymentStep: React.FC<StripePaymentStepProps> = ({ onSuccess, onFailure, onBack }) => {
+  const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Calls backend API to create Stripe Checkout session
+  const handleCheckout = async (planKey: string) => {
+    setLoading(planKey);
+    setError(null);
+    try {
+      const res = await fetch('/api/create-stripe-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: planKey }),
+      });
+      if (!res.ok) throw new Error('Failed to create Stripe session');
+      const { url } = await res.json();
+      if (url) {
+        window.location.href = url; // Redirect to Stripe Checkout
+      } else {
+        throw new Error('No Stripe URL returned');
+      }
+    } catch (e: any) {
+      setError(e.message || 'Payment failed. Please try again.');
+      onFailure();
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center text-center gap-6">
+      <Player
+        autoplay
+        loop
+        src="https://assets2.lottiefiles.com/packages/lf20_4kx2q32n.json" // Placeholder for payment animation
+        style={{ height: '180px', width: '180px' }}
+      />
+      <h2 className="text-xl font-bold text-green-800">Start Your 7-Day Free Trial</h2>
+      <p className="text-blue-900/80 max-w-md">
+        Enjoy full access to Pathfinder features. Card required for trial. No charge today. Cancel anytime.
+      </p>
+      {error && <div className="text-red-500 text-sm">{error}</div>}
+      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-center">
+        {plans.map((plan) => (
+          <button
+            key={plan.key}
+            className={`flex-1 px-6 py-4 rounded-2xl bg-white/80 backdrop-blur-md shadow-md border-2 font-semibold text-blue-900 transition-all duration-200
+              ${loading === plan.key ? 'opacity-60 cursor-wait' : 'hover:border-green-300'}
+            `}
+            onClick={() => handleCheckout(plan.key)}
+            disabled={!!loading}
+          >
+            <div className="text-lg font-bold mb-1">{plan.label}</div>
+            <div className="text-blue-700 mb-1">{plan.price}</div>
+            <div className="text-xs text-blue-500">7-Day Free Trial</div>
+          </button>
+        ))}
+      </div>
+      <button
+        className="mt-2 text-sm text-blue-700 underline hover:text-blue-900"
+        onClick={onBack}
+        disabled={!!loading}
+      >
+        Back
+      </button>
+    </div>
+  );
+};
+
+export default StripePaymentStep;
