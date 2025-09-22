@@ -6,6 +6,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { getServerSession, checkAdminAccess } from './supabase';
 
 export type UserRole = 'user' | 'admin' | 'super_admin';
 
@@ -22,7 +23,7 @@ export interface AdminContext {
 }
 
 /**
- * Create Supabase client with service role for admin operations
+ * Create Supabase client with service role for admin operations (Updated JWT)
  */
 export function createAdminSupabaseClient() {
   return createServerClient(
@@ -34,12 +35,23 @@ export function createAdminSupabaseClient() {
           return cookies().get(name)?.value;
         },
       },
+      auth: {
+        // Service role doesn't need refresh
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'tranquilae-admin-middleware@2024'
+        }
+      }
     }
   );
 }
 
 /**
- * Create Supabase client for authenticated admin user
+ * Create Supabase client for authenticated admin user (Updated JWT)
  */
 export function createAuthenticatedSupabaseClient() {
   return createServerClient(
@@ -51,18 +63,60 @@ export function createAuthenticatedSupabaseClient() {
           return cookies().get(name)?.value;
         },
       },
+      auth: {
+        // Enable modern auth features
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce'
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'tranquilae-admin-auth@2024'
+        }
+      }
     }
   );
 }
 
 /**
- * Get current authenticated user with role information
+ * Get current authenticated user with role information (Enhanced JWT)
  */
-export async function getCurrentUser(supabase: ReturnType<typeof createServerClient>): Promise<AuthenticatedUser | null> {
+export async function getCurrentUser(supabase: ReturnType<typeof createServerClient>, request?: NextRequest): Promise<AuthenticatedUser | null> {
   try {
+    // First try to get user via server session if request provided
+    if (request) {
+      const serverSession = await getServerSession(request);
+      if (serverSession.user) {
+        const profile = await getUserProfile(supabase, serverSession.user.id);
+        if (profile) {
+          return profile;
+        }
+      }
+    }
+
+    // Fallback to standard auth.getUser
     const { data: { user }, error } = await supabase.auth.getUser();
     
     if (error || !user) {
+      return null;
+    }
+
+    return await getUserProfile(supabase, user.id);
+  } catch (error) {
+    console.error('Error getting current user:', error);
+    return null;
+  }
+}
+
+/**
+ * Helper function to get user profile with JWT verification
+ */
+async function getUserProfile(supabase: ReturnType<typeof createServerClient>, userId: string): Promise<AuthenticatedUser | null> {
+  try {
+    // Use enhanced admin access check with JWT verification
+    const hasAccess = await checkAdminAccess(userId);
+    if (!hasAccess) {
       return null;
     }
 
@@ -70,7 +124,7 @@ export async function getCurrentUser(supabase: ReturnType<typeof createServerCli
     const { data: profile, error: profileError } = await supabase
       .from('users')
       .select('id, email, role, status')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single();
 
     if (profileError || !profile) {
@@ -84,7 +138,7 @@ export async function getCurrentUser(supabase: ReturnType<typeof createServerCli
       status: profile.status as 'active' | 'suspended',
     };
   } catch (error) {
-    console.error('Error getting current user:', error);
+    console.error('Error getting user profile:', error);
     return null;
   }
 }

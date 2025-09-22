@@ -162,11 +162,18 @@ npm run db:migrate
 
 #### **Environment Variables**
 ```bash
-# Supabase for authentication only:
+# Supabase for authentication only (UPDATED 2024 JWT System):
+# Get these from: Supabase Dashboard → Settings → API
 NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGci..."
-SUPABASE_SERVICE_ROLE_KEY="eyJhbGci..."
-SUPABASE_JWT_SECRET="your-jwt-secret"
+
+# NEW: Use "anon" key (public) from Project API keys section
+NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByb2plY3QtaWQiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTYzOTU0NDAwMCwiZXhwIjoyMDAwMDAwMDAwfQ..."
+
+# NEW: Use "service_role" key (secret) from Project API keys section
+SUPABASE_SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByb2plY3QtaWQiLCJyb2xlIjoic2VydmljZV9yb2xlIiwiaWF0IjoxNjM5NTQ0MDAwLCJleHAiOjIwMDAwMDAwMDB9..."
+
+# NEW: JWT Secret from JWT Settings (for token verification)
+SUPABASE_JWT_SECRET="your-super-secret-jwt-key-minimum-32-characters-long"
 ```
 
 ### **4. Stripe (FREE - Pay per transaction)**
