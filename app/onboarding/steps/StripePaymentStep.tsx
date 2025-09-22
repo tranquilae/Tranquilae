@@ -37,7 +37,9 @@ const StripePaymentStep: React.FC<StripePaymentStepProps> = ({ onSuccess, onFail
       if (!res.ok) throw new Error('Failed to create Stripe session');
       const { url } = await res.json();
       if (url) {
-        window.location.href = url; // Redirect to Stripe Checkout
+        if (typeof window !== 'undefined') {
+          window.location.href = url; // Redirect to Stripe Checkout
+        }
       } else {
         throw new Error('No Stripe URL returned');
       }

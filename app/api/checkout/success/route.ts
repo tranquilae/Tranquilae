@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { db } from '@/lib/database';
@@ -106,8 +107,7 @@ export async function GET(request: NextRequest) {
       console.error('Stripe error:', error.type, error.message);
     }
 
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/onboarding?error=checkout_error`
-    );
+const base = process.env.NEXT_PUBLIC_APP_URL || "";
+return NextResponse.redirect(`${base}/onboarding?error=checkout_error`);
   }
 }
