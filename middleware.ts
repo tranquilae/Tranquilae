@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { checkAdminAccess } from './lib/supabase';
 
 // Rate limiting storage (in-memory, consider Redis for production)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -174,19 +175,24 @@ export async function middleware(request: NextRequest) {
     response.headers.set('x-real-ip', ip);
   }
 
-  // Admin routes (if implemented in future)
-  if (pathname.startsWith('/admin/')) {
+  // Admin routes with proper authentication and role checking
+  if (pathname.startsWith('/admin')) {
     const userId = await verifyAuth(request);
     
     if (!userId) {
-      return NextResponse.redirect(new URL('/auth/login', request.url));
+      const loginUrl = new URL('/auth/login', request.url);
+      loginUrl.searchParams.set('redirectTo', pathname);
+      return NextResponse.redirect(loginUrl);
     }
 
-    // TODO: Add admin role check here
-    // const isAdmin = await checkAdminRole(userId);
-    // if (!isAdmin) {
-    //   return new NextResponse('Forbidden', { status: 403 });
-    // }
+    // Check if user has admin access
+    const isAdmin = await checkAdminAccess(userId);
+    if (!isAdmin) {
+      return new NextResponse('Access Denied - Admin privileges required', { status: 403 });
+    }
+
+    // Add admin user ID to headers for API routes
+    response.headers.set('x-admin-id', userId);
   }
 
   // Block certain file extensions for security
