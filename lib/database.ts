@@ -275,7 +275,7 @@ export const db = {
   }): Promise<User> {
     const result = await sql`
       INSERT INTO profiles (
-        id, email, name, plan, onboarding_complete
+        user_id, email, name, plan, onboarding_complete
       )
       VALUES (
         ${data.id}, 
@@ -291,7 +291,7 @@ export const db = {
 
   async getUserById(userId: string): Promise<User | null> {
     const result = await sql`
-      SELECT * FROM profiles WHERE id = ${userId}
+      SELECT * FROM profiles WHERE user_id = ${userId}
     `;
     return result[0] as User || null;
   },
@@ -319,7 +319,7 @@ export const db = {
     const query = `
       UPDATE profiles
       SET ${fields.join(', ')}
-      WHERE id = $${values.length + 1}
+      WHERE user_id = $${values.length + 1}
       RETURNING *
     `;
     const result = await sql.unsafe(query, [...values, userId]);
