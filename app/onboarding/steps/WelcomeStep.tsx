@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Heart, Brain } from 'lucide-react';
 
 // Lazy load Lottie player for performance
-const LottiePlayer = React.lazy(() => 
-  import('@lottiefiles/react-lottie-player').then(module => ({ default: module.Player }))
+const LottiePlayer = dynamic(
+  () => import('@lottiefiles/react-lottie-player').then(module => module.Player),
+  { ssr: false, loading: () => <WelcomeSVG /> }
 );
 
 // SVG Fallback for low-bandwidth
@@ -34,19 +36,17 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext, isLoading }) => {
         transition={{ duration: 0.6, type: "spring" }}
         className="relative"
       >
-        <Suspense fallback={<WelcomeSVG />}>
-          {!lottieError ? (
-            <LottiePlayer
-              autoplay
-              loop
-              src="https://lottie.host/4d5a5c8e-8c2a-4f5e-b8a3-9e1f2d3c4b5a/bK9qJ8uXrR.json" // Optimized welcome animation
-              style={{ height: '200px', width: '200px' }}
-              onError={() => setLottieError(true)}
-            />
-          ) : (
-            <WelcomeSVG />
-          )}
-        </Suspense>
+        {!lottieError ? (
+          <LottiePlayer
+            autoplay
+            loop
+            src="https://lottie.host/4d5a5c8e-8c2a-4f5e-b8a3-9e1f2d3c4b5a/bK9qJ8uXrR.json" // Optimized welcome animation
+            style={{ height: '200px', width: '200px' }}
+            onError={() => setLottieError(true)}
+          />
+        ) : (
+          <WelcomeSVG />
+        )}
         
         {/* Floating elements */}
         <motion.div
