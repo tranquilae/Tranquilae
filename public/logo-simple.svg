@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 785 145" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .logo-text { fill: #111111; font-family: Arial, sans-serif; font-size: 72px; }
+  </style>
+  <text x="10" y="90" class="logo-text">Tranquilae</text>
+  <text x="695" y="60" style="fill: #000000; font-family: Arial, sans-serif; font-size: 72px;">®</text>
+</svg>

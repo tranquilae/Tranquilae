@@ -279,7 +279,7 @@ dist
 
 # Gatsby files
 .cache/
-public
+# public folder removed - Next.js needs static assets committed
 
 # Storybook build outputs
 .out
