@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Smartphone, Watch, Activity, Heart, Calendar, CheckCircle } from 'lucide-react';
 
 interface ConnectDevicesStepProps {
-  onNext: (connected: boolean) => void;
+  onNext: (data: boolean | { connected: boolean; selectedServices?: string[] }) => void;
   onBack: () => void;
 }
 
@@ -56,34 +56,28 @@ const ConnectDevicesStep: React.FC<ConnectDevicesStepProps> = ({ onNext, onBack 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const handleServiceConnect = async (serviceId: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Here you would implement real integrations for each service
-      // For now, simulate a connection attempt
-      console.log(`Connecting to ${serviceId}...`);
-      await new Promise((res) => setTimeout(res, 1000));
-      
-      // Add to selected services
-      setSelectedServices(prev => [...prev, serviceId]);
-      
-      // In a real implementation, you would:
-      // - Redirect to OAuth flow for the service
-      // - Handle the callback and store tokens
-      // - Sync initial data
-      
-      console.log(`Successfully connected to ${serviceId}`);
-    } catch (e) {
-      setError(`Failed to connect to ${serviceId}. Please try again.`);
-    } finally {
-      setLoading(false);
-    }
+  const handleServiceSelect = (serviceId: string) => {
+    // Toggle service selection (don't actually connect during onboarding)
+    setSelectedServices(prev => 
+      prev.includes(serviceId) 
+        ? prev.filter(id => id !== serviceId)
+        : [...prev, serviceId]
+    );
+    console.log(`Service ${serviceId} ${selectedServices.includes(serviceId) ? 'deselected' : 'selected'} for later connection`);
   };
 
   const handleContinue = () => {
-    onNext(selectedServices.length > 0);
+    // Close the dialog first
+    setIsDialogOpen(false);
+    
+    // Pass both connection status and selected services
+    console.log('Selected services for connection:', selectedServices);
+    onNext({
+      connected: selectedServices.length > 0,
+      selectedServices: selectedServices
+    });
   };
 
   return (
@@ -94,22 +88,25 @@ const ConnectDevicesStep: React.FC<ConnectDevicesStepProps> = ({ onNext, onBack 
         src="https://lottie.host/embed/d4e4063e-ddd8-4c3a-8e2f-8f0e8a5e4c3b/1h2k3j4l5m.lottie" // Health devices animation
         style={{ height: '180px', width: '180px' }}
       />
-      <h2 className="text-2xl font-bold text-[#6ba368]">Connect Your Health Apps</h2>
+      <h2 className="text-2xl font-bold text-[#6ba368]">Choose Health Apps to Connect</h2>
       <p className="text-gray-600 max-w-lg leading-relaxed">
-        Sync your health data from your favorite apps and devices for personalized insights and seamless tracking.
+        Select the health apps and devices you'd like to connect. We'll help you set them up after you complete onboarding.
       </p>
       
       {selectedServices.length > 0 && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 w-full max-w-md">
-          <div className="flex items-center gap-2 text-green-700 font-medium mb-2">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 w-full max-w-md">
+          <div className="flex items-center gap-2 text-blue-700 font-medium mb-2">
             <CheckCircle className="w-5 h-5" />
-            Connected Services
+            Selected for Setup
           </div>
-          <div className="text-sm text-green-600">
+          <div className="text-sm text-blue-600 mb-2">
             {selectedServices.map(id => {
               const service = healthServices.find(s => s.id === id);
               return service ? service.name : id;
             }).join(', ')}
+          </div>
+          <div className="text-xs text-blue-500">
+            💡 You'll connect these apps after completing onboarding
           </div>
         </div>
       )}
@@ -117,7 +114,7 @@ const ConnectDevicesStep: React.FC<ConnectDevicesStepProps> = ({ onNext, onBack 
       {error && <div className="text-red-500 text-sm bg-red-50 p-3 rounded-lg border border-red-200">{error}</div>}
       
       <div className="flex gap-4 mt-4">
-        <Dialog>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button 
               className="px-8 py-3 bg-[#6ba368] hover:bg-[#5a8c57] text-white font-semibold rounded-full shadow-lg transition-all duration-200"
@@ -128,7 +125,10 @@ const ConnectDevicesStep: React.FC<ConnectDevicesStepProps> = ({ onNext, onBack 
           </DialogTrigger>
           <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold text-[#6ba368] mb-4">Choose Health Apps to Connect</DialogTitle>
+              <DialogTitle className="text-xl font-bold text-[#6ba368] mb-2">Choose Health Apps to Connect</DialogTitle>
+              <p className="text-sm text-gray-600 mb-4">
+                Select the apps you use. We'll help you connect them securely in your dashboard after onboarding.
+              </p>
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
               {healthServices.map((service) => (
@@ -139,7 +139,7 @@ const ConnectDevicesStep: React.FC<ConnectDevicesStepProps> = ({ onNext, onBack 
                       ? 'border-[#6ba368] bg-green-50' 
                       : `border-gray-200 ${service.color}`
                   }`}
-                  onClick={() => handleServiceConnect(service.id)}
+                  onClick={() => handleServiceSelect(service.id)}
                 >
                   <div className="flex items-start gap-3">
                     {service.icon}
@@ -156,7 +156,7 @@ const ConnectDevicesStep: React.FC<ConnectDevicesStepProps> = ({ onNext, onBack 
                       {selectedServices.includes(service.id) && (
                         <div className="flex items-center gap-1 text-green-600 text-sm font-medium mt-2">
                           <CheckCircle className="w-4 h-4" />
-                          Connected
+                          Selected for connection
                         </div>
                       )}
                     </div>
@@ -164,13 +164,20 @@ const ConnectDevicesStep: React.FC<ConnectDevicesStepProps> = ({ onNext, onBack 
                 </div>
               ))}
             </div>
-            <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
+            <div className="flex justify-between gap-2 mt-6 pt-4 border-t">
               <Button 
-                variant="outline" 
-                onClick={handleContinue}
+                variant="ghost" 
+                onClick={() => setIsDialogOpen(false)}
                 className="px-6"
               >
-                Continue with Selected
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleContinue}
+                className="px-6 bg-[#6ba368] hover:bg-[#5a8c57] text-white"
+                disabled={selectedServices.length === 0}
+              >
+                Continue with Selected ({selectedServices.length})
               </Button>
             </div>
           </DialogContent>

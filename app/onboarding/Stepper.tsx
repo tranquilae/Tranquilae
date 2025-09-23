@@ -17,6 +17,7 @@ import { Progress } from '@/components/ui/progress';
 interface OnboardingData {
   goals: string[];
   devicesConnected: boolean | null;
+  selectedHealthServices?: string[]; // Store selected services for later connection
   personalData: {
     name?: string;
     dateOfBirth?: string;
@@ -49,6 +50,7 @@ export default function OnboardingStepper() {
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     goals: [],
     devicesConnected: null,
+    selectedHealthServices: [],
     personalData: null,
     selectedPlan: null,
     paymentStatus: null,
@@ -92,10 +94,19 @@ export default function OnboardingStepper() {
     setIsLoading(true);
     
     const newStep = Math.min(step + 1, steps.length - 1);
-    let updateData: Partial<OnboardingData> = {};
+    const updateData: Partial<OnboardingData> = {};
     
     if (step === 1 && data) updateData.goals = data;
-    if (step === 2 && typeof data === 'boolean') updateData.devicesConnected = data;
+    if (step === 2) {
+      if (typeof data === 'boolean') {
+        updateData.devicesConnected = data;
+      } else if (data && typeof data === 'object' && 'connected' in data) {
+        updateData.devicesConnected = data.connected;
+        if (data.selectedServices) {
+          updateData.selectedHealthServices = data.selectedServices;
+        }
+      }
+    }
     if (step === 3 && data) updateData.personalData = data;
     
     await saveProgress(newStep, updateData);

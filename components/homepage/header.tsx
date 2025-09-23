@@ -3,10 +3,13 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
+import { usePathname, useRouter } from "next/navigation"
 import { Logo } from "@/components/logo"
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
+  const pathname = usePathname()
+  const router = useRouter()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -16,6 +19,18 @@ export function Header() {
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
+
+  const handleNavigation = (anchor: string, e: React.MouseEvent) => {
+    if (pathname === '/') {
+      e.preventDefault()
+      const element = document.getElementById(anchor)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' })
+      }
+    } else {
+      router.push(`/#${anchor}`)
+    }
+  }
 
   return (
     <header
@@ -31,13 +46,15 @@ export function Header() {
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center space-x-8">
             <Link
-              href="/features"
+              href="/#features"
+              onClick={(e) => handleNavigation('features', e)}
               className="text-foreground/90 hover:text-foreground transition-colors duration-200 drop-shadow-sm"
             >
               Features
             </Link>
             <Link
-              href="/pricing"
+              href="/#pricing"
+              onClick={(e) => handleNavigation('pricing', e)}
               className="text-foreground/90 hover:text-foreground transition-colors duration-200 drop-shadow-sm"
             >
               Pricing
