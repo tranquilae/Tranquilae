@@ -83,7 +83,11 @@ export function AuthForm({ className, type, title, subtitle, ...props }: AuthFor
             if (loginResult.session) {
               await supabase.auth.setSession(loginResult.session)
             }
-            router.push("/")
+            
+            // Use the redirectTo from the API response, default to dashboard
+            const redirectPath = loginResult.redirectTo || '/dashboard'
+            console.log('🎯 Frontend: Redirecting to:', redirectPath)
+            router.push(redirectPath)
           }
           break
           

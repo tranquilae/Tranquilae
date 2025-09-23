@@ -54,40 +54,79 @@ export async function POST(request: NextRequest) {
 
     // If user signed in successfully
     if (authData.user && authData.session) {
-      // Update last sign in timestamp in users table
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          last_sign_in_at: new Date().toISOString()
-        })
-        .eq('id', authData.user.id)
+      // Update last sign in timestamp in users table (Supabase)
+      try {
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({
+            last_sign_in_at: new Date().toISOString()
+          })
+          .eq('id', authData.user.id)
 
-      if (updateError) {
-        console.error('Error updating last sign in:', updateError)
-        // Don't fail the login if the update fails
+        if (updateError) {
+          console.error('Error updating last sign in:', updateError)
+          // Don't fail the login if the update fails
+        }
+      } catch (updateErr) {
+        console.warn('Failed to update last sign in (non-critical):', updateErr)
+      }
+
+      // Check onboarding status from Neon database
+      let redirectTo = '/dashboard'; // Default
+      let onboardingComplete = false;
+      
+      try {
+        const { db } = await import('@/lib/database')
+        const userData = await db.getUserById(authData.user.id)
+        
+        console.log('🔍 Login: Checking onboarding status for user:', authData.user.id)
+        console.log('📊 Login: User data from Neon:', userData ? 'Found' : 'Not found')
+        
+        if (userData && userData.onboarding_complete) {
+          console.log('✅ Login: User has completed onboarding - redirect to dashboard')
+          redirectTo = '/dashboard'
+          onboardingComplete = true
+        } else {
+          console.log('🎯 Login: User needs onboarding - redirect to onboarding')
+          redirectTo = '/onboarding'
+          onboardingComplete = false
+        }
+      } catch (dbError) {
+        console.warn('Could not check onboarding status during login:', dbError)
+        console.log('🎯 Login: Defaulting to onboarding due to DB error')
+        redirectTo = '/onboarding'
+        onboardingComplete = false
       }
 
       // Log successful login
-      await supabaseLogger.logSecurityEvent({
-        event_type: 'LOGIN',
-        user_id: authData.user.id,
-        success: true,
-        ip_address: request.ip,
-        user_agent: request.headers.get('user-agent') || undefined,
-        metadata: {
-          email: authData.user.email,
-          email_confirmed: authData.user.email_confirmed_at !== null
-        }
-      })
+      try {
+        await supabaseLogger.logSecurityEvent({
+          event_type: 'LOGIN',
+          user_id: authData.user.id,
+          success: true,
+          ip_address: request.ip,
+          user_agent: request.headers.get('user-agent') || undefined,
+          metadata: {
+            email: authData.user.email,
+            email_confirmed: authData.user.email_confirmed_at !== null,
+            onboarding_complete: onboardingComplete,
+            redirect_to: redirectTo
+          }
+        })
+      } catch (logError) {
+        console.warn('Failed to log login event:', logError)
+      }
 
       return NextResponse.json({
         success: true,
         user: {
           id: authData.user.id,
           email: authData.user.email,
-          emailConfirmed: authData.user.email_confirmed_at !== null
+          emailConfirmed: authData.user.email_confirmed_at !== null,
+          onboardingComplete
         },
-        session: authData.session
+        session: authData.session,
+        redirectTo
       })
     }
 
