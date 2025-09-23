@@ -241,10 +241,22 @@ export async function POST(request: NextRequest) {
           onboarding_complete: false
         })
 
-      } catch (profileError) {
-        console.error('Error creating user profile in Neon DB:', profileError)
+      } catch (profileError: any) {
+        console.error('❌ Error creating user profile in Neon DB:', {
+          error: profileError.message,
+          stack: profileError.stack,
+          userId: authData.user.id,
+          email: authData.user.email,
+          name: `${firstName} ${lastName}`,
+          timestamp: new Date().toISOString()
+        })
+        
+        // Log the specific database error for debugging
+        console.error('📊 Database Error Details:', profileError)
+        
         // Don't fail the signup if profile creation fails
         // The auth user still exists and can be handled later
+        // But we should track this as a critical issue
       }
 
       // Log successful signup (graceful failure if audit table missing)
