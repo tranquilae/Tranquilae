@@ -90,7 +90,7 @@ const nextConfig = {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
   
-  // Webpack configuration for better security
+  // Webpack configuration for better security and static files
   webpack: (config, { dev, isServer }) => {
     // Add security-related webpack configurations
     if (!dev && !isServer) {
@@ -99,6 +99,12 @@ const nextConfig = {
         // Remove any unsafe modules in production
       };
     }
+    
+    // Add SVG handling
+    config.module.rules.push({
+      test: /\.svg$/,
+      type: 'asset/resource',
+    });
     
     return config;
   },
