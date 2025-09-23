@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
 
 // Rate limiting storage (in-memory, consider Redis for production)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -48,24 +48,44 @@ async function checkAdminAccessInline(userId: string): Promise<boolean> {
   }
 }
 
-async function verifyAuth(request: NextRequest): Promise<string | null> {
+async function verifyAuth(request: NextRequest, response: NextResponse): Promise<string | null> {
   try {
-    // Get the session token from cookies
-    const token = request.cookies.get('sb-access-token')?.value;
+    // Create SSR client for middleware
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              request.cookies.set(name, value);
+              response.cookies.set({ name, value, ...options });
+            });
+          },
+        },
+      }
+    );
+
+    // Get the current session
+    const { data: { session }, error } = await supabase.auth.getSession();
     
-    if (!token) {
+    if (error) {
+      console.error('Session retrieval error:', error);
       return null;
     }
 
-    // Verify with Supabase
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    if (!session || !session.user) {
+      return null;
+    }
 
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    // Verify the session is still valid
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
-    if (error || !user) {
+    if (userError || !user) {
+      console.error('User verification error:', userError);
       return null;
     }
 
@@ -149,7 +169,7 @@ export async function middleware(request: NextRequest) {
   const isProtectedApiRoute = protectedApiRoutes.some(route => pathname.startsWith(route));
 
   if (isProtectedRoute || isProtectedApiRoute) {
-    const userId = await verifyAuth(request);
+    const userId = await verifyAuth(request, response);
 
     if (!userId) {
       if (isProtectedApiRoute) {
@@ -190,7 +210,7 @@ export async function middleware(request: NextRequest) {
 
   // Admin routes with proper authentication and role checking
   if (pathname.startsWith('/admin')) {
-    const userId = await verifyAuth(request);
+    const userId = await verifyAuth(request, response);
     
     if (!userId) {
       const loginUrl = new URL('/auth/login', request.url);

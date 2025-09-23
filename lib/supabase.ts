@@ -1,66 +1,107 @@
 import { createClient } from '@supabase/supabase-js'
 
-// JWT verification (will need to install jose package)
-// npm install jose
-let jwtVerify: any, SignJWT: any
-try {
-  const jose = require('jose')
-  jwtVerify = jose.jwtVerify
-  SignJWT = jose.SignJWT
-} catch (error) {
-  // Fallback if jose is not installed
-  console.warn('jose package not found. Install with: npm install jose')
+// Environment variable configuration with better error handling
+interface SupabaseConfig {
+  url: string
+  anonKey: string
+  serviceRoleKey?: string
+  isValid: boolean
+  errors: string[]
 }
 
-// Get environment variables with fallbacks
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fspoavmvfymlunmfubqp.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_i490cr3a929wFuz286rVKA_3EbsFJ7N'
-
-// Runtime validation
-function validateSupabaseConfig() {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('Supabase configuration missing:', {
-      url: !!supabaseUrl,
-      key: !!supabaseAnonKey,
-      env: process.env.NODE_ENV
+// Get and validate Supabase configuration
+function getSupabaseConfig(): SupabaseConfig {
+  const errors: string[] = []
+  
+  // Get URL
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!url) {
+    errors.push('NEXT_PUBLIC_SUPABASE_URL is required')
+  } else if (!url.includes('.supabase.co')) {
+    errors.push('NEXT_PUBLIC_SUPABASE_URL should be a valid Supabase URL')
+  }
+  
+  // Get anon key (try different environment variable names)
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
+                   process.env.NEXT_PUBLIC_SUPABASE_KEY ||
+                   process.env.SUPABASE_ANON_KEY
+  
+  if (!anonKey) {
+    errors.push('NEXT_PUBLIC_SUPABASE_ANON_KEY is required')
+  } else if (!anonKey.startsWith('eyJ') && !anonKey.startsWith('sb_')) {
+    errors.push('NEXT_PUBLIC_SUPABASE_ANON_KEY should be a valid JWT token or publishable key')
+  }
+  
+  // Get service role key (optional for client, required for admin)
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
+                        process.env.SUPABASE_SECRET_KEY
+  
+  // Log configuration status in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔧 Supabase Configuration:', {
+      url: url ? '✅ Set' : '❌ Missing',
+      anonKey: anonKey ? `✅ Set (${anonKey.substring(0, 10)}...)` : '❌ Missing',
+      serviceRoleKey: serviceRoleKey ? `✅ Set (${serviceRoleKey.substring(0, 10)}...)` : '⚠️ Not set (optional)',
+      errors: errors.length > 0 ? errors : ['None']
     })
-    return false
   }
-  return true
+  
+  return {
+    url: url || '',
+    anonKey: anonKey || '',
+    serviceRoleKey,
+    isValid: errors.length === 0,
+    errors
+  }
 }
 
-// Validate on module load
-validateSupabaseConfig()
+// Get configuration
+const config = getSupabaseConfig()
 
-// Create Supabase client factory function
+// Throw error if configuration is invalid
+if (!config.isValid && process.env.NODE_ENV !== 'test') {
+  const errorMsg = `❌ Invalid Supabase configuration: ${config.errors.join(', ')}`
+  console.error(errorMsg)
+  // In development, provide helpful guidance
+  if (process.env.NODE_ENV === 'development') {
+    console.error('\n🔧 Quick Fix:')
+    console.error('1. Copy .env.example to .env.local')
+    console.error('2. Add your Supabase project URL and keys')
+    console.error('3. Restart your development server')
+    console.error('\n📚 Need help? Visit: http://localhost:3000/api/debug/supabase\n')
+  }
+}
+
+// Create Supabase client factory function with error handling
 function createSupabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fspoavmvfymlunmfubqp.supabase.co'
-  // Use new Supabase publishable key format (Next.js framework standard)
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_i490cr3a929wFuz286rVKA_3EbsFJ7N'
-  
-  if (!key || key === '') {
-    throw new Error('Supabase publishable key is required but not provided')
+  if (!config.isValid) {
+    throw new Error(`Supabase client creation failed: ${config.errors.join(', ')}`)
   }
   
-  return createClient(url, key, {
-    auth: {
-      // Enable automatic session refresh
-      autoRefreshToken: true,
-      persistSession: true,
-      // Detect session in URL (for email confirmations, password resets)
-      detectSessionInUrl: true,
-      // Flow type for PKCE (more secure)
-      flowType: 'pkce',
-      // Default redirect URL for auth flows
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '')}/auth/callback`
-    },
-    // Global options for better performance
-    global: {
-      headers: {
-        'X-Client-Info': 'tranquilae@2024'
+  try {
+    return createClient(config.url, config.anonKey, {
+      auth: {
+        // Enable automatic session refresh
+        autoRefreshToken: true,
+        persistSession: true,
+        // Detect session in URL (for email confirmations, password resets)
+        detectSessionInUrl: true,
+        // Flow type for PKCE (more secure)
+        flowType: 'pkce',
+        // Default redirect URL for auth flows
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')}/auth/callback`
+      },
+      // Global options for better performance
+      global: {
+        headers: {
+          'X-Client-Info': 'tranquilae@2024'
+        }
       }
-    }
-  })
+    })
+  } catch (error: any) {
+    console.error('❌ Failed to create Supabase client:', error.message)
+    throw new Error(`Supabase client initialization failed: ${error.message}`)
+  }
 }
 
 // Export the client instance
@@ -68,27 +109,43 @@ export const supabase = createSupabaseClient()
 
 // Admin client for server-side operations with service role key
 // This should only be used in API routes and server components
-const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-
-export const supabaseAdmin = createClient(
-  supabaseUrl,
-  supabaseServiceKey,
-  {
-    auth: {
-      // Disable auto refresh for service role (it doesn't expire)
-      autoRefreshToken: false,
-      persistSession: false,
-      // Disable URL detection for server-side client
-      detectSessionInUrl: false
-    },
-    // Global options
-    global: {
-      headers: {
-        'X-Client-Info': 'tranquilae-admin@2024'
-      }
-    }
+function createSupabaseAdminClient() {
+  if (!config.serviceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for admin operations')
   }
-)
+  
+  if (!config.serviceRoleKey.startsWith('eyJ')) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY should be a valid JWT token starting with "eyJ"')
+  }
+  
+  try {
+    return createClient(
+      config.url,
+      config.serviceRoleKey,
+      {
+        auth: {
+          // Disable auto refresh for service role (it doesn't expire)
+          autoRefreshToken: false,
+          persistSession: false,
+          // Disable URL detection for server-side client
+          detectSessionInUrl: false
+        },
+        // Global options
+        global: {
+          headers: {
+            'X-Client-Info': 'tranquilae-admin@2024'
+          }
+        }
+      }
+    )
+  } catch (error: any) {
+    console.error('❌ Failed to create Supabase admin client:', error.message)
+    throw new Error(`Supabase admin client initialization failed: ${error.message}`)
+  }
+}
+
+// Create admin client (will throw if service role key is not configured)
+export const supabaseAdmin = config.serviceRoleKey ? createSupabaseAdminClient() : null
 
 // Types for admin operations
 export interface AdminUser {
