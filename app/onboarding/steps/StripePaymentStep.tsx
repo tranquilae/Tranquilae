@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Player } from '@lottiefiles/react-lottie-player';
+import { paymentAPI, handleAPIError } from '@/lib/api';
 
 interface StripePaymentStepProps {
   onSuccess: () => void;
@@ -25,26 +26,21 @@ const StripePaymentStep: React.FC<StripePaymentStepProps> = ({ onSuccess, onFail
   const [error, setError] = useState<string | null>(null);
 
   // Calls backend API to create Stripe Checkout session
-  const handleCheckout = async (planKey: string) => {
+  const handleCheckout = async (planKey: 'monthly' | 'yearly') => {
     setLoading(planKey);
     setError(null);
     try {
-      const res = await fetch('/api/create-stripe-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: planKey }),
-      });
-      if (!res.ok) throw new Error('Failed to create Stripe session');
-      const { url } = await res.json();
-      if (url) {
-        if (typeof window !== 'undefined') {
-          window.location.href = url; // Redirect to Stripe Checkout
-        }
+      const { url } = await paymentAPI.createCheckoutSession(planKey);
+      
+      if (url && typeof window !== 'undefined') {
+        window.location.href = url; // Redirect to Stripe Checkout
       } else {
-        throw new Error('No Stripe URL returned');
+        throw new Error('No checkout URL returned');
       }
-    } catch (e: any) {
-      setError(e.message || 'Payment failed. Please try again.');
+    } catch (error) {
+      console.error('Checkout error:', error);
+      const errorMessage = handleAPIError(error);
+      setError(errorMessage);
       onFailure();
     } finally {
       setLoading(null);
@@ -56,7 +52,7 @@ const StripePaymentStep: React.FC<StripePaymentStepProps> = ({ onSuccess, onFail
       <Player
         autoplay
         loop
-        src="https://assets2.lottiefiles.com/packages/lf20_4kx2q32n.json" // Placeholder for payment animation
+        src="https://lottie.host/embed/4a834ebb-31fc-42df-9ae4-8c29d6f6b7a4/h8PtaGHyJm.lottie" // Payment/credit card animation
         style={{ height: '180px', width: '180px' }}
       />
       <h2 className="text-xl font-bold text-green-800">Start Your 7-Day Free Trial</h2>

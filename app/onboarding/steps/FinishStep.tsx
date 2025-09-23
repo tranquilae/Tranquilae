@@ -45,10 +45,10 @@ const FinishStep: React.FC<FinishStepProps> = ({
 
     if (plan === 'pathfinder') {
       return {
-        lottie: "https://assets2.lottiefiles.com/packages/lf20_touohxv0.json", // Success/celebration animation
+        lottie: "https://lottie.host/embed/e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0/celebration.lottie", // Wellness success animation
         title: "Welcome to Pathfinder!",
         subtitle: "Your 7-day free trial has started",
-        message: "You now have full access to personalized AI coaching, advanced analytics, and all integrations. Enjoy exploring!",
+        message: "You now have full access to personalized AI coaching, advanced analytics, and all integrations. Your wellness journey starts now!",
         buttonText: "Enter Your Dashboard",
         bgColor: "from-blue-50 to-purple-50",
         borderColor: "border-blue-200"
@@ -56,7 +56,7 @@ const FinishStep: React.FC<FinishStepProps> = ({
     }
 
     return {
-      lottie: "https://assets2.lottiefiles.com/packages/lf20_s2lryxtd.json", // Welcome animation
+      lottie: "https://lottie.host/embed/a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6/wellness-start.lottie", // Wellness journey start animation
       title: "Welcome to Explorer!",
       subtitle: "You're all set to begin your wellness journey",
       message: "Start tracking your wellness with our essential features. Upgrade to Pathfinder anytime for advanced coaching and analytics.",

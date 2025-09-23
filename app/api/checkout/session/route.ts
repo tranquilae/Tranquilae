@@ -4,6 +4,7 @@ import { db } from '@/lib/database';
 import { rateLimit } from '@/lib/rate-limit';
 import { checkVelocityLimits, analyzeSubscriptionPatterns } from '@/lib/stripe-radar';
 import { logPaymentEvent, logSecurityEvent } from '@/lib/supabase-logger';
+import { createClient } from '@/utils/supabase/server';
 import * as Sentry from '@sentry/nextjs';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -23,18 +24,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user ID from auth and IP address for fraud checks
-    const userId = request.headers.get('x-user-id');
+    // Get user ID from middleware header or verify auth directly
+    let userId = request.headers.get('x-user-id');
     const ipAddress = request.headers.get('x-forwarded-for')?.split(',')[0] || 
                      request.headers.get('x-real-ip') || 
                      'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
     
+    // If no user ID from middleware, try to get it directly from Supabase
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
+      try {
+        const supabase = await createClient();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError || !user) {
+          console.log('API - Authentication failed for checkout:', authError?.message || 'No user found');
+          return NextResponse.json(
+            { error: 'Authentication required', code: 'AUTH_REQUIRED' },
+            { status: 401 }
+          );
+        }
+        
+        userId = user.id;
+        console.log('API - Direct auth successful for checkout user:', userId);
+      } catch (error) {
+        console.error('API - Auth verification error for checkout:', error);
+        return NextResponse.json(
+          { error: 'Authentication failed', code: 'AUTH_ERROR' },
+          { status: 401 }
+        );
+      }
+    } else {
+      console.log('API - Using middleware auth for checkout user:', userId);
     }
 
     // Perform velocity and fraud checks

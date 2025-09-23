@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/database';
 import { rateLimit } from '@/lib/rate-limit';
 import { sendEmail } from '@/lib/email';
+import { createClient } from '@/utils/supabase/server';
 
 /**
  * Complete onboarding and activate plan
@@ -18,13 +19,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user ID from session/auth
-    const userId = request.headers.get('x-user-id');
+    // Get user ID from middleware header or verify auth directly
+    let userId = request.headers.get('x-user-id');
+    
+    // If no user ID from middleware, try to get it directly from Supabase
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
+      try {
+        const supabase = await createClient();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError || !user) {
+          console.log('API - Authentication failed for /complete:', authError?.message || 'No user found');
+          return NextResponse.json(
+            { error: 'Authentication required', code: 'AUTH_REQUIRED' },
+            { status: 401 }
+          );
+        }
+        
+        userId = user.id;
+        console.log('API - Direct auth successful for /complete user:', userId);
+      } catch (error) {
+        console.error('API - Auth verification error for /complete:', error);
+        return NextResponse.json(
+          { error: 'Authentication failed', code: 'AUTH_ERROR' },
+          { status: 401 }
+        );
+      }
+    } else {
+      console.log('API - Using middleware auth for /complete user:', userId);
     }
 
     const body = await request.json();
@@ -145,12 +167,34 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.headers.get('x-user-id');
+    // Get user ID from middleware header or verify auth directly
+    let userId = request.headers.get('x-user-id');
+    
+    // If no user ID from middleware, try to get it directly from Supabase
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
+      try {
+        const supabase = await createClient();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError || !user) {
+          console.log('API - Authentication failed for GET /complete:', authError?.message || 'No user found');
+          return NextResponse.json(
+            { error: 'Authentication required', code: 'AUTH_REQUIRED' },
+            { status: 401 }
+          );
+        }
+        
+        userId = user.id;
+        console.log('API - Direct auth successful for GET /complete user:', userId);
+      } catch (error) {
+        console.error('API - Auth verification error for GET /complete:', error);
+        return NextResponse.json(
+          { error: 'Authentication failed', code: 'AUTH_ERROR' },
+          { status: 401 }
+        );
+      }
+    } else {
+      console.log('API - Using middleware auth for GET /complete user:', userId);
     }
 
     const user = await db.getUserById(userId);
