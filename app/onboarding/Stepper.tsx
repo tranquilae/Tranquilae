@@ -3,12 +3,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import dynamic from 'next/dynamic';
 import WelcomeStep from './steps/WelcomeStep';
 import GoalsStep from './steps/GoalsStep';
 import ConnectDevicesStep from './steps/ConnectDevicesStep';
 import PersonalisationStep from './steps/PersonalisationStep';
 import PlanSelectionStep from './steps/PlanSelectionStep';
-import StripePaymentStep from './steps/StripePaymentStep';
+const StripePaymentStep = dynamic(() => import('./steps/StripePaymentStep'), { ssr: false });
 import FinishStep from './steps/FinishStep';
 import { Progress } from '@/components/ui/progress';
 
