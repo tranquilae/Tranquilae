@@ -21,15 +21,16 @@ function getSupabaseConfig(): SupabaseConfig {
     errors.push('NEXT_PUBLIC_SUPABASE_URL should be a valid Supabase URL')
   }
   
-  // Get anon key (try different environment variable names)
+  // Get anon key (try different environment variable names for compatibility)
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
+                   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
                    process.env.NEXT_PUBLIC_SUPABASE_KEY ||
                    process.env.SUPABASE_ANON_KEY
   
   if (!anonKey) {
-    errors.push('NEXT_PUBLIC_SUPABASE_ANON_KEY is required')
+    errors.push('NEXT_PUBLIC_SUPABASE_ANON_KEY or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY is required')
   } else if (!anonKey.startsWith('eyJ') && !anonKey.startsWith('sb_')) {
-    errors.push('NEXT_PUBLIC_SUPABASE_ANON_KEY should be a valid JWT token or publishable key')
+    errors.push('Publishable key should be a valid JWT token or new publishable key format (starts with sb_publishable_)')
   }
   
   // Get service role key (optional for client, required for admin)
@@ -114,8 +115,11 @@ function createSupabaseAdminClient() {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for admin operations')
   }
   
-  if (!config.serviceRoleKey.startsWith('eyJ')) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY should be a valid JWT token starting with "eyJ"')
+  // Allow dummy keys in development environment
+  if (process.env.NODE_ENV !== 'development' && 
+      !config.serviceRoleKey.startsWith('eyJ') && 
+      !config.serviceRoleKey.startsWith('sb_secret_')) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY should be a valid JWT token (eyJ...) or new secret key format (sb_secret_...)')
   }
   
   try {
@@ -144,8 +148,22 @@ function createSupabaseAdminClient() {
   }
 }
 
-// Create admin client (will throw if service role key is not configured)
-export const supabaseAdmin = config.serviceRoleKey ? createSupabaseAdminClient() : null
+// Create admin client factory function (deferred creation to avoid build-time errors)
+function getSupabaseAdmin() {
+  if (!config.serviceRoleKey) {
+    return null
+  }
+  
+  // Allow dummy keys in development - return null instead of throwing
+  if (config.serviceRoleKey.includes('dummy') || config.serviceRoleKey.includes('local-dev')) {
+    return null
+  }
+  
+  return createSupabaseAdminClient()
+}
+
+// Export admin client getter
+export const supabaseAdmin = getSupabaseAdmin()
 
 // Types for admin operations
 export interface AdminUser {
@@ -216,6 +234,11 @@ export async function checkAdminAccess(userId: string, token?: string): Promise<
     }
 
     // Fallback: Check user role in database
+    if (!supabaseAdmin) {
+      console.warn('⚠️ Admin client not available - skipping database role check')
+      return false
+    }
+    
     const { data: user, error } = await supabaseAdmin
       .from('users')
       .select('role')
@@ -279,6 +302,10 @@ export async function getServerSession(request: Request) {
     const token = authHeader.replace('Bearer ', '')
     
     // Verify with Supabase
+    if (!supabaseAdmin) {
+      return { user: null, error: 'Admin client not available' }
+    }
+    
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
     
     if (error || !user) {
