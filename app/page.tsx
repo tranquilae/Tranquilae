@@ -7,6 +7,7 @@ import { TestimonialHeroSection } from "@/components/homepage/testimonial-hero-s
 import { FAQSection } from "@/components/homepage/faq-section"
 import { TestimonialsSection } from "@/components/homepage/testimonials-section"
 import { Footer } from "@/components/homepage/footer"
+import { Diagnostics } from "@/components/diagnostics"
 
 export default function HomePage() {
   return (
@@ -22,6 +23,7 @@ export default function HomePage() {
         <TestimonialsSection />
         <Footer />
       </div>
+      <Diagnostics />
     </div>
   )
 }

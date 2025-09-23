@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { checkAdminAccess } from './lib/supabase';
 
 // Rate limiting storage (in-memory, consider Redis for production)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -33,6 +32,47 @@ function isRateLimited(key: string, limit: { requests: number; window: number })
   // Increment count
   stored.count++;
   return false;
+}
+
+// Inline admin check function to avoid import issues
+async function checkAdminAccessInline(userId: string): Promise<boolean> {
+  try {
+    // Check if user ID is in the allowed admin list from environment
+    const allowedAdmins = process.env.ADMIN_USER_IDS?.split(',').map(id => id.trim()) || [];
+    const superAdmins = process.env.SUPER_ADMIN_USER_IDS?.split(',').map(id => id.trim()) || [];
+    
+    if (allowedAdmins.includes(userId) || superAdmins.includes(userId)) {
+      return true;
+    }
+
+    // Fallback: Check user role in database
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+
+    const { data: user, error } = await supabaseAdmin
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error('Error checking admin access:', error);
+      return false;
+    }
+
+    return user?.role === 'admin' || user?.role === 'super_admin';
+  } catch (error) {
+    console.error('Error in checkAdminAccess:', error);
+    return false;
+  }
 }
 
 async function verifyAuth(request: NextRequest): Promise<string | null> {
@@ -186,7 +226,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Check if user has admin access
-    const isAdmin = await checkAdminAccess(userId);
+    const isAdmin = await checkAdminAccessInline(userId);
     if (!isAdmin) {
       return new NextResponse('Access Denied - Admin privileges required', { status: 403 });
     }
