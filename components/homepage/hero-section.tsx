@@ -44,9 +44,9 @@ export function HeroSection() {
         </p>
 
         <Link href="/auth/signup">
-          <Button size="lg" className="text-lg px-8 py-6 rounded-2xl">
+          <Button size="lg" className="text-lg px-8 py-6 rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-xl transform group">
             Start Your Journey
-            <ArrowRight className="ml-2 h-5 w-5" />
+            <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
           </Button>
         </Link>
       </div>

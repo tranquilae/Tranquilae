@@ -18,7 +18,7 @@ export function PricingSection() {
         "Goal mapping",
         "Mindfulness calendar",
       ],
-      cta: "Try 14 days for free",
+      cta: "Let's get started!",
       href: "/auth/signup?plan=explorer",
     },
     {
@@ -82,7 +82,7 @@ export function PricingSection() {
                 </div>
 
                 <Link href={plan.href} className="block mb-8">
-                  <Button className="w-full text-lg py-6 rounded-2xl bg-primary hover:bg-primary/90">{plan.cta}</Button>
+                  <Button className="w-full text-lg py-6 rounded-2xl bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 hover:shadow-xl transform">{plan.cta}</Button>
                 </Link>
 
                 <ul className="space-y-3">
