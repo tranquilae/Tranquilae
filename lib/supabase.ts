@@ -35,8 +35,8 @@ validateSupabaseConfig()
 // Create Supabase client factory function
 function createSupabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fspoavmvfymlunmfubqp.supabase.co'
-  // Use new Supabase publishable key format
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_i490cr3a929wFuz286rVKA_3EbsFJ7N'
+  // Use new Supabase publishable key format (Next.js framework standard)
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_i490cr3a929wFuz286rVKA_3EbsFJ7N'
   
   if (!key || key === '') {
     throw new Error('Supabase publishable key is required but not provided')
