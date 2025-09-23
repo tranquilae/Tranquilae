@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import Link from "next/link"
 import { CheckCircle, Mail, ArrowLeft } from "lucide-react"
+import { Logo } from "@/components/logo"
 
 export default function VerifyOTPPage() {
   const [otp, setOtp] = useState("")
@@ -37,11 +38,7 @@ export default function VerifyOTPPage() {
                 <div className="flex flex-col items-center text-center space-y-6">
                   {/* Logo */}
                   <div className="mb-4">
-                    <img 
-                      src="/logo.svg" 
-                      alt="Tranquilae" 
-                      className="h-8 w-auto mx-auto" 
-                    />
+                    <Logo className="h-8 w-auto" />
                   </div>
 
                   {/* Success State */}
@@ -96,11 +93,7 @@ export default function VerifyOTPPage() {
                 {/* Header */}
                 <div className="flex flex-col items-center text-center">
                   <div className="mb-4">
-                    <img 
-                      src="/logo.svg" 
-                      alt="Tranquilae" 
-                      className="h-8 w-auto mx-auto" 
-                    />
+                    <Logo className="h-8 w-auto" />
                   </div>
                   
                   <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">

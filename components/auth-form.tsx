@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { Logo } from "@/components/logo"
 
 interface AuthFormProps extends React.ComponentProps<"div"> {
   type: "login" | "signup" | "forgot-password" | "reset-password" | "verify-email"
@@ -55,11 +56,7 @@ export function AuthForm({ className, type, title, subtitle, ...props }: AuthFor
               {/* Header */}
               <div className="flex flex-col items-center text-center">
                 <div className="mb-4">
-                  <img 
-                    src="/logo.svg" 
-                    alt="Tranquilae" 
-                    className="h-8 w-auto mx-auto" 
-                  />
+                  <Logo className="h-8 w-auto" />
                 </div>
                 <h1 className="text-2xl font-bold">{title}</h1>
                 <p className="text-balance text-muted-foreground">{subtitle}</p>

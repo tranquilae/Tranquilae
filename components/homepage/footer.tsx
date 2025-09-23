@@ -1,5 +1,6 @@
 import { Heart, Twitter, Instagram, Linkedin, Mail } from "lucide-react"
 import Link from "next/link"
+import { Logo } from "@/components/logo"
 
 export function Footer() {
   return (
@@ -8,11 +9,7 @@ export function Footer() {
         <div className="grid md:grid-cols-4 gap-8 mb-12">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <img 
-                src="/logo.svg" 
-                alt="Tranquilae" 
-                className="h-6 w-auto" 
-              />
+              <Logo className="h-6 w-auto" />
             </div>
             <p className="text-muted-foreground text-pretty max-w-md">
               Your AI-powered wellness companion for balanced living. Track nutrition, fitness, and mindfulness with personalized insights.

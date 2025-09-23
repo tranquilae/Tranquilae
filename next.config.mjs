@@ -82,6 +82,9 @@ const nextConfig = {
     unoptimized: true,
   },
   
+  // Output file tracing root to silence warning
+  outputFileTracingRoot: process.cwd(),
+  
   // Environment variable validation
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,

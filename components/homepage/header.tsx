@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
+import { Logo } from "@/components/logo"
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -25,13 +26,7 @@ export function Header() {
       <div className="mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link href="/homepage" className="flex items-center space-x-2">
-            <img 
-              src="/logo.svg" 
-              alt="Tranquilae" 
-              className="h-8 w-auto drop-shadow-sm" 
-            />
-          </Link>
+          <Logo href="/" className="h-8 w-auto drop-shadow-sm" />
 
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center space-x-8">

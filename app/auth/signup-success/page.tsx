@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
 import { CheckCircle, ArrowRight } from "lucide-react"
+import { Logo } from "@/components/logo"
 
 export default function SignupSuccessPage() {
   return (
@@ -15,11 +16,7 @@ export default function SignupSuccessPage() {
               <div className="flex flex-col items-center text-center space-y-6">
                 {/* Logo */}
                 <div className="mb-4">
-                  <img 
-                    src="/logo.svg" 
-                    alt="Tranquilae" 
-                    className="h-8 w-auto mx-auto" 
-                  />
+                  <Logo className="h-8 w-auto" />
                 </div>
 
                 {/* Success Icon */}

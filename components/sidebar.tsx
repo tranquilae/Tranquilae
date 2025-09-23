@@ -4,6 +4,7 @@ import { Home, Utensils, Dumbbell, Brain, BookOpen, MessageCircle, Settings } fr
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { Logo } from "@/components/logo"
 
 const navigation = [
   { name: "Home", icon: Home, href: "/" },
@@ -23,13 +24,7 @@ export function Sidebar() {
       <div className="flex flex-col h-full">
         {/* Logo */}
         <div className="flex items-center px-6 py-8">
-          <div className="flex items-center space-x-3">
-            <img 
-              src="/logo.svg" 
-              alt="Tranquilae" 
-              className="h-8 w-auto" 
-            />
-          </div>
+          <Logo href="/dashboard" className="h-8 w-auto" />
         </div>
 
         {/* Navigation */}
