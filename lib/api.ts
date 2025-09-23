@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/client';
+import { supabase } from '@/lib/supabase';
 
 /**
  * Centralized API helper with authentication
@@ -21,17 +21,33 @@ export async function fetchWithAuth(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const supabase = createClient();
-  
   try {
-    // Get the current session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    // Get the current session with retry logic
+    let session = null;
+    let sessionError = null;
+    
+    // First attempt to get session
+    const sessionResult = await supabase.auth.getSession();
+    session = sessionResult.data.session;
+    sessionError = sessionResult.error;
+    
+    // If no session, try to refresh once
+    if (!session && !sessionError) {
+      console.log('API - No session found, attempting refresh...');
+      const refreshResult = await supabase.auth.refreshSession();
+      if (refreshResult.data.session) {
+        session = refreshResult.data.session;
+      }
+      sessionError = refreshResult.error;
+    }
     
     if (sessionError) {
+      console.error('API - Session error:', sessionError.message);
       throw new APIError('Failed to get session', 401, 'SESSION_ERROR');
     }
     
     if (!session) {
+      console.error('API - No session available');
       throw new APIError('Authentication required', 401, 'NO_SESSION');
     }
 
@@ -169,10 +185,16 @@ export function handleAPIError(error: unknown, router?: any) {
       case 'NO_SESSION':
       case 'SESSION_EXPIRED':
       case 'AUTH_REQUIRED':
-        if (router) {
-          router.push('/auth/login?reason=session_expired');
-        } else if (typeof window !== 'undefined') {
-          window.location.href = '/auth/login?reason=session_expired';
+        // Only redirect if not already in auth flow
+        const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+        if (!currentPath.startsWith('/auth/') && !currentPath.startsWith('/onboarding')) {
+          if (router) {
+            router.push('/auth/login?reason=session_expired');
+          } else if (typeof window !== 'undefined') {
+            window.location.href = '/auth/login?reason=session_expired';
+          }
+        } else {
+          console.log('API - Auth error during auth flow, not redirecting:', error.code);
         }
         return 'Please sign in to continue';
         

@@ -1,11 +1,14 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Heart, Users, Target, Shield } from "lucide-react"
+import { Header } from "@/components/homepage/header"
+import { Footer } from "@/components/homepage/footer"
 import Link from "next/link"
 
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/10">
+      <Header />
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
@@ -134,6 +137,7 @@ export default function AboutPage() {
           </Card>
         </div>
       </section>
+      <Footer />
     </div>
   )
 }

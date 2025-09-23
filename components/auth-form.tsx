@@ -84,33 +84,54 @@ export function AuthForm({ className, type, title, subtitle, ...props }: AuthFor
             // Set the session in Supabase client
             if (loginResult.session) {
               console.log('🔒 Setting session in Supabase client')
-              await supabase.auth.setSession(loginResult.session)
               
-              // Verify session was set
-              const { data: { session }, error } = await supabase.auth.getSession()
-              console.log('🔍 Session verification:', session ? 'Session set successfully' : 'Session not found', error)
+              // Use setSession to properly initialize the client-side session
+              const { error: setSessionError } = await supabase.auth.setSession({
+                access_token: loginResult.session.access_token,
+                refresh_token: loginResult.session.refresh_token
+              })
+              
+              if (setSessionError) {
+                console.error('❌ Error setting session:', setSessionError)
+                setError('Failed to establish session. Please try again.')
+                return
+              }
+              
+              // Verify session was set and wait for it to be fully initialized
+              await new Promise(resolve => setTimeout(resolve, 100)) // Small delay
+              const { data: { session }, error: verifyError } = await supabase.auth.getSession()
+              console.log('🔍 Session verification:', session ? 'Session set successfully' : 'Session not found', verifyError)
+              
+              if (!session) {
+                console.error('❌ Session verification failed')
+                setError('Authentication successful but session not established. Please try again.')
+                return
+              }
             }
             
-            // Use the redirectTo from the API response, default to dashboard
-            const redirectPath = loginResult.redirectTo || '/dashboard'
-            console.log('🎯 Frontend: Attempting redirect to:', redirectPath)
+            // Check URL params for redirect destination first
+            const urlParams = new URLSearchParams(window.location.search)
+            const urlRedirectTo = urlParams.get('redirectTo')
             
-            try {
-              await router.push(redirectPath)
-              console.log('✅ router.push succeeded')
-            } catch (routerError) {
-              console.error('❌ router.push failed:', routerError)
-              console.log('🔄 Falling back to window.location.href')
-              window.location.href = redirectPath
-            }
+            // Use redirectTo from URL, then API response, then default
+            const redirectPath = urlRedirectTo || loginResult.redirectTo || '/dashboard'
+            console.log('🎯 Frontend: Redirecting to:', redirectPath, {
+              fromUrl: urlRedirectTo,
+              fromAPI: loginResult.redirectTo,
+              userOnboarded: loginResult.user?.onboardingComplete
+            })
             
-            // Additional fallback after a delay
+            // Allow a moment for the session to fully initialize
             setTimeout(() => {
-              if (window.location.pathname === '/auth/login') {
-                console.warn('🚨 Still on login page after 1s, forcing redirect')
+              try {
+                router.push(redirectPath)
+                console.log('✅ Navigation initiated to:', redirectPath)
+              } catch (routerError) {
+                console.error('❌ router.push failed:', routerError)
+                console.log('🔄 Falling back to window.location.href')
                 window.location.href = redirectPath
               }
-            }, 1000)
+            }, 250) // Small delay to ensure session is fully set
           }
           break
           

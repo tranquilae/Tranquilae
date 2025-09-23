@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Activity, Clock, Trophy, Users, CheckCircle, Play } from "lucide-react"
+import { Header } from "@/components/homepage/header"
+import { Footer } from "@/components/homepage/footer"
 import Link from "next/link"
 
 export default function WorkoutsPage() {
@@ -65,6 +67,7 @@ export default function WorkoutsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/10">
+      <Header />
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4">
         <div className="max-w-6xl mx-auto">
@@ -299,6 +302,7 @@ export default function WorkoutsPage() {
           </Card>
         </div>
       </section>
+      <Footer />
     </div>
   )
 }

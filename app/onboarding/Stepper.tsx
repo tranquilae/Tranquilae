@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/auth-provider';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { onboardingAPI, handleAPIError } from '@/lib/api';
@@ -43,9 +44,35 @@ const STORAGE_KEY = 'tranquilae_onboarding_progress';
 
 export default function OnboardingStepper() {
   const router = useRouter();
+  const { user, session, loading: authLoading } = useAuth();
   const [step, setStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      console.log('Onboarding - No user, redirecting to login');
+      router.push('/auth/login?redirectTo=/onboarding');
+    }
+  }, [user, authLoading, router]);
+
+  // Show loading while auth is being checked
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f5f5f0] via-green-50 to-blue-50">
+        <div className="animate-pulse">
+          <div className="h-8 w-64 bg-gray-200 rounded mb-4"></div>
+          <div className="h-4 w-48 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if no user (will redirect)
+  if (!user) {
+    return null;
+  }
   
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     goals: [],
@@ -158,18 +185,34 @@ export default function OnboardingStepper() {
   };
 
   const handleFinish = async () => {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
-      // Clear localStorage
-      localStorage.removeItem(STORAGE_KEY);
+      // Mark onboarding as complete via API
+      try {
+        await onboardingAPI.complete(onboardingData.selectedPlan || 'explorer')
+        console.log('✅ Onboarding marked complete on server')
+      } catch (apiError) {
+        console.warn('⚠️ Failed to mark onboarding complete on server:', apiError)
+        // Continue anyway - we'll handle this gracefully
+      }
       
-      // Redirect to dashboard
-      router.push('/dashboard?onboarding=complete');
+      // Clear localStorage
+      localStorage.removeItem(STORAGE_KEY)
+      
+      // Redirect to dashboard with onboarding complete flag
+      console.log('🎉 Onboarding completed, redirecting to dashboard')
+      
+      // Use a small delay to ensure any API calls are processed
+      setTimeout(() => {
+        router.push('/dashboard?onboarding=complete')
+      }, 100)
+      
     } catch (error) {
-      setError('Error completing onboarding. Please try again.');
-      setIsLoading(false);
+      console.error('❌ Error completing onboarding:', error)
+      setError('Error completing onboarding. Please try again.')
+      setIsLoading(false)
     }
-  };
+  }
 
   const currentStep = steps[step];
   const StepComponent = currentStep.component;

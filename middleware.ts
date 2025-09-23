@@ -209,14 +209,32 @@ export async function middleware(request: NextRequest) {
           }
         );
       } else {
-        // Prevent redirect loops - if already coming from auth, allow through temporarily
+        // More comprehensive check for auth flow
         const referer = request.headers.get('referer');
-        const isFromAuth = referer && (referer.includes('/auth/login') || referer.includes('/auth/callback'));
+        const userAgent = request.headers.get('user-agent') || '';
         
-        if (isFromAuth) {
-          console.log('Middleware - Allowing temporary access from auth flow for:', pathname);
-          // Allow through but log it for debugging
+        // Allow temporary access if coming from auth flow or during navigation
+        const isFromAuthFlow = referer && (
+          referer.includes('/auth/login') || 
+          referer.includes('/auth/callback') ||
+          referer.includes('/onboarding') ||
+          referer.includes('/dashboard')
+        );
+        
+        // Check if this is a client-side navigation (Next.js router)
+        const isClientNavigation = userAgent.includes('Next.js') || 
+                                  request.headers.get('next-router-prefetch') === '1' ||
+                                  request.headers.get('purpose') === 'prefetch';
+        
+        if (isFromAuthFlow || isClientNavigation) {
+          console.log('Middleware - Allowing access during auth flow for:', pathname, {
+            fromAuthFlow: isFromAuthFlow,
+            clientNav: isClientNavigation,
+            referer: referer?.substring(0, 100) // Truncate for logs
+          });
+          // Allow through but add header for debugging
           response.headers.set('x-temp-access', 'true');
+          response.headers.set('x-access-reason', isFromAuthFlow ? 'auth-flow' : 'client-nav');
         } else {
           // Web routes redirect to login
           console.log('Middleware - Redirecting to login, no session for:', pathname);
