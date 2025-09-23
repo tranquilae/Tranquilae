@@ -84,11 +84,11 @@ export async function POST(request: NextRequest) {
           // Update subscription in database
           const updateData = {
             status: dbStatus,
-            current_period_start: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
-            cancel_at_period_end: stripeSubscription.cancel_at_period_end,
-            trial_end: stripeSubscription.trial_end 
-              ? new Date(stripeSubscription.trial_end * 1000).toISOString()
+            current_period_start: new Date((stripeSubscription as any).current_period_start * 1000).toISOString(),
+            current_period_end: new Date((stripeSubscription as any).current_period_end * 1000).toISOString(),
+            cancel_at_period_end: (stripeSubscription as any).cancel_at_period_end,
+            trial_end: (stripeSubscription as any).trial_end 
+              ? new Date((stripeSubscription as any).trial_end * 1000).toISOString()
               : null,
             updated_at: new Date().toISOString()
           }
