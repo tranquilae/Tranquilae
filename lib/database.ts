@@ -273,20 +273,29 @@ export const db = {
     plan?: 'explorer' | 'pathfinder';
     onboarding_complete?: boolean;
   }): Promise<User> {
-    const result = await sql`
-      INSERT INTO profiles (
-        user_id, email, name, plan, onboarding_complete
-      )
-      VALUES (
-        ${data.id}, 
-        ${data.email}, 
-        ${data.name || null}, 
-        ${data.plan || 'explorer'}, 
-        ${data.onboarding_complete || false}
-      )
-      RETURNING *
-    `;
-    return result[0] as User;
+    try {
+      const result = await sql`
+        INSERT INTO profiles (
+          user_id, email, name, plan, onboarding_complete
+        )
+        VALUES (
+          ${data.id}, 
+          ${data.email}, 
+          ${data.name || null}, 
+          ${data.plan || 'explorer'}, 
+          ${data.onboarding_complete || false}
+        )
+        ON CONFLICT (user_id) DO UPDATE SET
+          email = EXCLUDED.email,
+          name = EXCLUDED.name,
+          updated_at = NOW()
+        RETURNING *
+      `;
+      return result[0] as User;
+    } catch (error) {
+      console.error('Database - Error creating user:', error);
+      throw error;
+    }
   },
 
   async getUserById(userId: string): Promise<User | null> {
@@ -389,17 +398,22 @@ export const db = {
     step: number, 
     data: OnboardingProgress['data']
   ): Promise<OnboardingProgress> {
-    const result = await sql`
-      INSERT INTO onboarding_progress (user_id, step, data)
-      VALUES (${userId}, ${step}, ${JSON.stringify(data)})
-      ON CONFLICT (user_id) 
-      DO UPDATE SET 
-        step = ${step},
-        data = ${JSON.stringify(data)},
-        updated_at = NOW()
-      RETURNING *
-    `;
-    return result[0] as OnboardingProgress;
+    try {
+      const result = await sql`
+        INSERT INTO onboarding_progress (user_id, step, data)
+        VALUES (${userId}, ${step}, ${JSON.stringify(data)})
+        ON CONFLICT (user_id) 
+        DO UPDATE SET 
+          step = ${step},
+          data = ${JSON.stringify(data)},
+          updated_at = NOW()
+        RETURNING *
+      `;
+      return result[0] as OnboardingProgress;
+    } catch (error) {
+      console.error('Database - Error saving onboarding progress:', error, 'userId:', userId, 'step:', step);
+      throw error;
+    }
   },
 
   async clearOnboardingProgress(userId: string): Promise<void> {

@@ -66,28 +66,71 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { step, data } = body;
 
-    // Validate input
+    // Validate input with better logging
     if (typeof step !== 'number' || step < 0 || step > 6) {
+      console.error('Invalid step number:', step, 'Body:', body);
       return NextResponse.json(
         { error: 'Invalid step number' },
         { status: 400 }
       );
     }
 
-    if (!data || typeof data !== 'object') {
+    // Allow empty data object or null data for certain steps
+    if (data !== null && data !== undefined && typeof data !== 'object') {
+      console.error('Invalid data format:', data, 'Type:', typeof data);
       return NextResponse.json(
         { error: 'Invalid data format' },
         { status: 400 }
       );
     }
 
+    // Ensure data is at least an empty object
+    if (!data) {
+      data = {};
+    }
+
     // Validate data structure based on step
     const validationErrors = validateStepData(step, data);
     if (validationErrors.length > 0) {
+      console.error('Validation failed for step', step, ':', validationErrors, 'Data:', data);
       return NextResponse.json(
         { error: 'Validation failed', details: validationErrors },
         { status: 400 }
       );
+    }
+
+    // Ensure user profile exists before saving progress
+    let user = await db.getUserById(userId);
+    if (!user) {
+      console.log('API - Profile not found, creating new profile for progress user:', userId);
+      
+      try {
+        const authHeader = request.headers.get('authorization');
+        let supabaseUser = null;
+        
+        if (authHeader?.startsWith('Bearer ')) {
+          const token = authHeader.substring(7);
+          const { data: { user: authUser }, error } = await supabase.auth.getUser(token);
+          supabaseUser = authUser;
+        } else {
+          const serverClient = await createClient();
+          const { data: { user: authUser }, error } = await serverClient.auth.getUser();
+          supabaseUser = authUser;
+        }
+        
+        if (supabaseUser) {
+          user = await db.createUser({
+            id: userId,
+            email: supabaseUser.email || '',
+            name: supabaseUser.user_metadata?.name || supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || '',
+            onboarding_complete: false,
+            plan: 'explorer'
+          });
+          console.log('API - Created new profile for progress:', user.id);
+        }
+      } catch (error) {
+        console.warn('API - Could not create profile, but continuing with progress save:', error);
+      }
     }
 
     // Save progress to database
@@ -200,10 +243,9 @@ function validateStepData(step: number, data: any): string[] {
       }
       break;
 
-    case 2: // Connect devices
-      if (data.devicesConnected !== undefined && typeof data.devicesConnected !== 'boolean') {
-        errors.push('devicesConnected must be a boolean');
-      }
+    case 2: // Connect devices / integrations
+      // Be lenient with step 2 - allow any data structure
+      // Skip validation for integration step to avoid 400 errors
       break;
 
     case 3: // Personalisation

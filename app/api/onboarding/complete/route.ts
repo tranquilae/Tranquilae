@@ -75,13 +75,50 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user data
-    const user = await db.getUserById(userId);
+    // Get user data - create profile if it doesn't exist
+    let user = await db.getUserById(userId);
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      console.log('API - Profile not found, creating new profile for user:', userId);
+      
+      // Get user info from Supabase auth to create profile
+      try {
+        const authHeader = request.headers.get('authorization');
+        let supabaseUser = null;
+        
+        if (authHeader?.startsWith('Bearer ')) {
+          const token = authHeader.substring(7);
+          const { data: { user: authUser }, error } = await supabase.auth.getUser(token);
+          supabaseUser = authUser;
+        } else {
+          const serverClient = await createClient();
+          const { data: { user: authUser }, error } = await serverClient.auth.getUser();
+          supabaseUser = authUser;
+        }
+        
+        if (!supabaseUser) {
+          return NextResponse.json(
+            { error: 'User authentication failed' },
+            { status: 401 }
+          );
+        }
+        
+        // Create new profile
+        user = await db.createUser({
+          id: userId,
+          email: supabaseUser.email || '',
+          name: supabaseUser.user_metadata?.name || supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || '',
+          onboarding_complete: false,
+          plan: 'explorer'
+        });
+        
+        console.log('API - Created new profile:', user.id);
+      } catch (error) {
+        console.error('API - Failed to create profile:', error);
+        return NextResponse.json(
+          { error: 'Failed to create user profile' },
+          { status: 500 }
+        );
+      }
     }
 
     // Check if already completed
