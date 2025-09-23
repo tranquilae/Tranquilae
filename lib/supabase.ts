@@ -12,20 +12,36 @@ try {
   console.warn('jose package not found. Install with: npm install jose')
 }
 
-// Validate environment variables
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-  throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable')
+// Get environment variables with fallbacks
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fspoavmvfymlunmfubqp.supabase.co'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_i490cr3a929wFuz286rVKA_3EbsFJ7N'
+
+// Runtime validation
+function validateSupabaseConfig() {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Supabase configuration missing:', {
+      url: !!supabaseUrl,
+      key: !!supabaseAnonKey,
+      env: process.env.NODE_ENV
+    })
+    return false
+  }
+  return true
 }
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-  throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable')
-}
+// Validate on module load
+validateSupabaseConfig()
 
-// Regular client for client-side operations with updated JWT config
-export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  {
+// Create Supabase client factory function
+function createSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fspoavmvfymlunmfubqp.supabase.co'
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_i490cr3a929wFuz286rVKA_3EbsFJ7N'
+  
+  if (!key || key === '') {
+    throw new Error('Supabase anon key is required but not provided')
+  }
+  
+  return createClient(url, key, {
     auth: {
       // Enable automatic session refresh
       autoRefreshToken: true,
@@ -43,14 +59,19 @@ export const supabase = createClient(
         'X-Client-Info': 'tranquilae@2024'
       }
     }
-  }
-)
+  })
+}
+
+// Export the client instance
+export const supabase = createSupabaseClient()
 
 // Admin client for server-side operations with service role key
 // This should only be used in API routes and server components
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+
 export const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  supabaseUrl,
+  supabaseServiceKey,
   {
     auth: {
       // Disable auto refresh for service role (it doesn't expire)
