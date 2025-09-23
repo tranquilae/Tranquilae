@@ -1,4 +1,5 @@
 import { AuthForm } from "@/components/auth-form"
+import { EnvCheck } from "@/components/env-check"
 
 export default function SignupPage() {
   return (
@@ -10,6 +11,7 @@ export default function SignupPage() {
           subtitle="Join Tranquilae and start your wellness journey"
         />
       </div>
+      <EnvCheck />
     </div>
   )
 }
