@@ -76,18 +76,41 @@ export function AuthForm({ className, type, title, subtitle, ...props }: AuthFor
           
           const loginResult = await loginResponse.json()
           
+          console.log('🔍 Full Login API response:', loginResult)
+          
           if (!loginResponse.ok) {
             setError(loginResult.error || 'Login failed')
           } else {
             // Set the session in Supabase client
             if (loginResult.session) {
+              console.log('🔒 Setting session in Supabase client')
               await supabase.auth.setSession(loginResult.session)
+              
+              // Verify session was set
+              const { data: { session }, error } = await supabase.auth.getSession()
+              console.log('🔍 Session verification:', session ? 'Session set successfully' : 'Session not found', error)
             }
             
             // Use the redirectTo from the API response, default to dashboard
             const redirectPath = loginResult.redirectTo || '/dashboard'
-            console.log('🎯 Frontend: Redirecting to:', redirectPath)
-            router.push(redirectPath)
+            console.log('🎯 Frontend: Attempting redirect to:', redirectPath)
+            
+            try {
+              await router.push(redirectPath)
+              console.log('✅ router.push succeeded')
+            } catch (routerError) {
+              console.error('❌ router.push failed:', routerError)
+              console.log('🔄 Falling back to window.location.href')
+              window.location.href = redirectPath
+            }
+            
+            // Additional fallback after a delay
+            setTimeout(() => {
+              if (window.location.pathname === '/auth/login') {
+                console.warn('🚨 Still on login page after 1s, forcing redirect')
+                window.location.href = redirectPath
+              }
+            }, 1000)
           }
           break
           

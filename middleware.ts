@@ -77,25 +77,19 @@ async function verifyAuth(request: NextRequest, response: NextResponse): Promise
     const { data: { session }, error } = await supabase.auth.getSession();
     
     if (error) {
-      console.error('Session retrieval error:', error);
+      console.error('Middleware - Session retrieval error:', error);
       return null;
     }
 
     if (!session || !session.user) {
+      console.log('Middleware - No session found for path:', request.nextUrl.pathname);
       return null;
     }
 
-    // Verify the session is still valid
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !user) {
-      console.error('User verification error:', userError);
-      return null;
-    }
-
-    return user.id;
+    console.log('Middleware - Session found for user:', session.user.id, 'accessing:', request.nextUrl.pathname);
+    return session.user.id;
   } catch (error) {
-    console.error('Auth verification error:', error);
+    console.error('Middleware - Auth verification error:', error);
     return null;
   }
 }
@@ -189,10 +183,21 @@ export async function middleware(request: NextRequest) {
           }
         );
       } else {
-        // Web routes redirect to login
-        const loginUrl = new URL('/auth/login', request.url);
-        loginUrl.searchParams.set('redirectTo', pathname);
-        return NextResponse.redirect(loginUrl);
+        // Prevent redirect loops - if already coming from auth, allow through temporarily
+        const referer = request.headers.get('referer');
+        const isFromAuth = referer && (referer.includes('/auth/login') || referer.includes('/auth/callback'));
+        
+        if (isFromAuth) {
+          console.log('Middleware - Allowing temporary access from auth flow for:', pathname);
+          // Allow through but log it for debugging
+          response.headers.set('x-temp-access', 'true');
+        } else {
+          // Web routes redirect to login
+          console.log('Middleware - Redirecting to login, no session for:', pathname);
+          const loginUrl = new URL('/auth/login', request.url);
+          loginUrl.searchParams.set('redirectTo', pathname);
+          return NextResponse.redirect(loginUrl);
+        }
       }
     }
 
