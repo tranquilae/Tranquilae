@@ -5,10 +5,13 @@ export const envSchema = z.object({
   // Database
   DATABASE_URL: z.string().url().min(1, 'Database URL is required'),
   
-  // Supabase
+  // Supabase (new and legacy keys)
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().min(1, 'Supabase URL is required'),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, 'Supabase anon key is required'),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'Supabase service role key is required'),
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: z.string().optional(),
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
+  SUPABASE_SECRET_KEY: z.string().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   SUPABASE_JWT_SECRET: z.string().min(1, 'Supabase JWT secret is required'),
   
   // Stripe
@@ -185,7 +188,21 @@ export const apiSuccessSchema = z.object({
 // Utility functions for validation
 export function validateEnvironment() {
   try {
-    return envSchema.parse(process.env);
+    const env = envSchema.parse(process.env);
+    
+    // Custom validation for Supabase keys
+    const hasPublishableKey = !!(env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+    const hasSecretKey = !!(env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY);
+    
+    if (!hasPublishableKey) {
+      throw new Error('At least one Supabase publishable key is required: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, or NEXT_PUBLIC_SUPABASE_ANON_KEY');
+    }
+    
+    if (!hasSecretKey) {
+      throw new Error('At least one Supabase secret key is required: SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY');
+    }
+    
+    return env;
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error('Environment validation failed:');
