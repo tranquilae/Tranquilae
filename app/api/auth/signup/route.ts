@@ -92,13 +92,17 @@ export async function POST(request: NextRequest) {
       
       console.log('❌ Missing required fields:', missingFields)
       
-      await supabaseLogger.logSecurityEvent({
-        event_type: 'SIGNUP',
-        success: false,
-        error: `Missing required fields: ${missingFields.join(', ')}`,
-        ip_address: request.ip,
-        user_agent: request.headers.get('user-agent') || undefined
-      })
+      try {
+        await supabaseLogger.logSecurityEvent({
+          event_type: 'SIGNUP',
+          success: false,
+          error: `Missing required fields: ${missingFields.join(', ')}`,
+          ip_address: request.ip,
+          user_agent: request.headers.get('user-agent') || undefined
+        })
+      } catch (logError) {
+        console.warn('Failed to log validation error:', logError)
+      }
 
       return NextResponse.json(
         { 
@@ -143,13 +147,17 @@ export async function POST(request: NextRequest) {
     } catch (signUpError: any) {
       logDetailedError(signUpError, 'SUPABASE_SIGNUP_EXCEPTION', request)
       
-      await supabaseLogger.logSecurityEvent({
-        event_type: 'SIGNUP',
-        success: false,
-        error: `Signup exception: ${signUpError.message}`,
-        ip_address: request.ip,
-        user_agent: request.headers.get('user-agent') || undefined
-      })
+      try {
+        await supabaseLogger.logSecurityEvent({
+          event_type: 'SIGNUP',
+          success: false,
+          error: `Signup exception: ${signUpError.message}`,
+          ip_address: request.ip,
+          user_agent: request.headers.get('user-agent') || undefined
+        })
+      } catch (logError) {
+        console.warn('Failed to log signup exception:', logError)
+      }
       
       return NextResponse.json(
         { 
@@ -167,17 +175,44 @@ export async function POST(request: NextRequest) {
         code: authError.__isAuthError ? 'AUTH_ERROR' : 'UNKNOWN_ERROR'
       })
       
-      await supabaseLogger.logSecurityEvent({
-        event_type: 'SIGNUP',
-        success: false,
-        error: authError.message,
-        ip_address: request.ip,
-        user_agent: request.headers.get('user-agent') || undefined,
-        metadata: {
-          errorStatus: authError.status,
-          errorCode: authError.code
-        }
-      })
+      // Try to log security event, but don't fail signup if logging fails
+      try {
+        await supabaseLogger.logSecurityEvent({
+          event_type: 'SIGNUP',
+          success: false,
+          error: authError.message,
+          ip_address: request.ip,
+          user_agent: request.headers.get('user-agent') || undefined,
+          metadata: {
+            errorStatus: authError.status,
+            errorCode: authError.code
+          }
+        })
+      } catch (logError) {
+        console.warn('Failed to log security event:', logError)
+      }
+
+      // Handle rate limit errors specifically
+      if (authError.message?.includes('rate limit') || authError.status === 429) {
+        return NextResponse.json(
+          { 
+            error: 'Too many signup attempts. Please try again in a few minutes.',
+            code: 'RATE_LIMIT_EXCEEDED',
+            retryAfter: 3600, // 1 hour in seconds
+            details: {
+              message: 'Email sending rate limit exceeded. This resets every hour.',
+              nextRetryTime: new Date(Date.now() + 3600000).toISOString()
+            }
+          },
+          { 
+            status: 429,
+            headers: {
+              'Retry-After': '3600',
+              'X-RateLimit-Reset': Math.ceil(Date.now() / 1000 + 3600).toString()
+            }
+          }
+        )
+      }
 
       return NextResponse.json(
         { 
@@ -212,18 +247,22 @@ export async function POST(request: NextRequest) {
         // The auth user still exists and can be handled later
       }
 
-      // Log successful signup
-      await supabaseLogger.logSecurityEvent({
-        event_type: 'SIGNUP',
-        user_id: authData.user.id,
-        success: true,
-        ip_address: request.ip,
-        user_agent: request.headers.get('user-agent') || undefined,
-        metadata: {
-          email: authData.user.email,
-          email_confirmed: authData.user.email_confirmed_at !== null
-        }
-      })
+      // Log successful signup (graceful failure if audit table missing)
+      try {
+        await supabaseLogger.logSecurityEvent({
+          event_type: 'SIGNUP',
+          user_id: authData.user.id,
+          success: true,
+          ip_address: request.ip,
+          user_agent: request.headers.get('user-agent') || undefined,
+          metadata: {
+            email: authData.user.email,
+            email_confirmed: authData.user.email_confirmed_at !== null
+          }
+        })
+      } catch (logError) {
+        console.warn('Failed to log successful signup event:', logError)
+      }
 
       return NextResponse.json({
         success: true,
@@ -244,13 +283,17 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Signup error:', error)
     
-    await supabaseLogger.logSecurityEvent({
-      event_type: 'SIGNUP',
-      success: false,
-      error: error.message,
-      ip_address: request.ip,
-      user_agent: request.headers.get('user-agent') || undefined
-    })
+    try {
+      await supabaseLogger.logSecurityEvent({
+        event_type: 'SIGNUP',
+        success: false,
+        error: error.message,
+        ip_address: request.ip,
+        user_agent: request.headers.get('user-agent') || undefined
+      })
+    } catch (logError) {
+      console.warn('Failed to log general error:', logError)
+    }
 
     return NextResponse.json(
       { error: 'Internal server error' },
