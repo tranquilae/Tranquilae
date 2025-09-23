@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { supabaseLogger } from '@/lib/supabase-logger'
+import { db } from '@/lib/database'
 
-// Create server-side Supabase client
-const supabase = createClient(
+// Create Supabase client for Auth only (split architecture)
+const supabaseAuth = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
 export async function POST(request: NextRequest) {
@@ -28,8 +29,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Sign up user with Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // Sign up user with Supabase Auth (auth only)
+    const { data: authData, error: authError } = await supabaseAuth.auth.signUp({
       email,
       password,
       options: {
@@ -58,23 +59,20 @@ export async function POST(request: NextRequest) {
 
     // If user was created successfully
     if (authData.user) {
-      // Create user profile in users table
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert({
+      try {
+        // Create user profile in Neon DB (not Supabase)
+        await db.createUser({
           id: authData.user.id,
-          email: authData.user.email,
+          email: authData.user.email!,
           first_name: firstName,
           last_name: lastName,
-          full_name: `${firstName} ${lastName}`,
+          name: `${firstName} ${lastName}`,
           plan: 'explorer', // Default plan
-          onboarding_complete: false,
-          role: 'user',
-          status: 'active'
+          onboarding_complete: false
         })
 
-      if (profileError) {
-        console.error('Error creating user profile:', profileError)
+      } catch (profileError) {
+        console.error('Error creating user profile in Neon DB:', profileError)
         // Don't fail the signup if profile creation fails
         // The auth user still exists and can be handled later
       }

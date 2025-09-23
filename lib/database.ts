@@ -9,6 +9,8 @@ const sql = neon(process.env.DATABASE_URL!);
 export interface User {
   id: string;
   email: string;
+  first_name?: string;
+  last_name?: string;
   name?: string;
   onboarding_complete: boolean;
   plan: 'explorer' | 'pathfinder';
@@ -125,9 +127,34 @@ export const migrations = {
  */
 export const db = {
   // Users
+  async createUser(data: {
+    id: string;
+    email: string;
+    first_name?: string;
+    last_name?: string;
+    name?: string;
+    plan?: 'explorer' | 'pathfinder';
+    onboarding_complete?: boolean;
+  }): Promise<User> {
+    const result = await sql`
+      INSERT INTO profiles (
+        id, email, name, plan, onboarding_complete
+      )
+      VALUES (
+        ${data.id}, 
+        ${data.email}, 
+        ${data.name || null}, 
+        ${data.plan || 'explorer'}, 
+        ${data.onboarding_complete || false}
+      )
+      RETURNING *
+    `;
+    return result[0] as User;
+  },
+
   async getUserById(userId: string): Promise<User | null> {
     const result = await sql`
-      SELECT * FROM users WHERE id = ${userId}
+      SELECT * FROM profiles WHERE id = ${userId}
     `;
     return result[0] as User || null;
   },
@@ -139,7 +166,7 @@ export const db = {
       .join(', ');
 
     const result = await sql`
-      UPDATE users 
+      UPDATE profiles 
       SET ${sql.unsafe(updates)}, updated_at = NOW()
       WHERE id = ${userId}
       RETURNING *
