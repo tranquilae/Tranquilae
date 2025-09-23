@@ -1,7 +1,10 @@
 import { neon } from '@neondatabase/serverless';
 
 // Database connection
-const sql = neon(process.env.DATABASE_URL!);
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL is not set. Please configure it in .env.local');
+}
+const sql = neon(process.env.DATABASE_URL);
 
 /**
  * Database Schema Types
@@ -108,10 +111,10 @@ export interface OAuthState {
  * Database Migration Scripts
  */
 export const migrations = {
-  // Create users table extensions
-  async createUsersExtensions() {
+  // Create profiles table extensions (Supabase standard)
+  async createProfilesExtensions() {
     await sql`
-      ALTER TABLE users 
+      ALTER TABLE profiles 
       ADD COLUMN IF NOT EXISTS onboarding_complete BOOLEAN DEFAULT FALSE,
       ADD COLUMN IF NOT EXISTS plan VARCHAR(20) DEFAULT 'explorer'
     `;
@@ -122,7 +125,7 @@ export const migrations = {
     await sql`
       CREATE TABLE IF NOT EXISTS subscriptions (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
         plan VARCHAR(20) NOT NULL DEFAULT 'explorer',
         status VARCHAR(20) NOT NULL DEFAULT 'active',
         stripe_subscription_id VARCHAR(255),
@@ -150,7 +153,7 @@ export const migrations = {
     await sql`
       CREATE TABLE IF NOT EXISTS onboarding_progress (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
         step INTEGER NOT NULL DEFAULT 0,
         data JSONB NOT NULL DEFAULT '{}',
         created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -247,7 +250,7 @@ export const migrations = {
 
   // Run all migrations
   async runAll() {
-    await this.createUsersExtensions();
+    await this.createProfilesExtensions();
     await this.createSubscriptionsTable();
     await this.createOnboardingProgressTable();
     await this.createHealthIntegrationsTable();
@@ -294,17 +297,32 @@ export const db = {
   },
 
   async updateUser(userId: string, data: Partial<User>): Promise<User> {
-    const updates = Object.entries(data)
-      .filter(([_, value]) => value !== undefined)
-      .map(([key, value]) => `${key} = ${value}`)
-      .join(', ');
-
-    const result = await sql`
-      UPDATE profiles 
-      SET ${sql.unsafe(updates)}, updated_at = NOW()
-      WHERE id = ${userId}
+    // Build a parameterized SET clause safely
+    const fields: string[] = [];
+    const values: any[] = [];
+    
+    const pushField = (key: string, value: any) => {
+      fields.push(`${key} = $${values.length + 1}`);
+      values.push(value);
+    };
+    
+    if (data.email !== undefined) pushField('email', data.email);
+    if (data.first_name !== undefined) pushField('first_name', data.first_name);
+    if (data.last_name !== undefined) pushField('last_name', data.last_name);
+    if (data.name !== undefined) pushField('name', data.name);
+    if (data.onboarding_complete !== undefined) pushField('onboarding_complete', data.onboarding_complete);
+    if (data.plan !== undefined) pushField('plan', data.plan);
+    
+    // Always update updated_at
+    fields.push(`updated_at = NOW()`);
+    
+    const query = `
+      UPDATE profiles
+      SET ${fields.join(', ')}
+      WHERE id = $${values.length + 1}
       RETURNING *
     `;
+    const result = await sql.unsafe(query, [...values, userId]);
     return result[0] as User;
   },
 

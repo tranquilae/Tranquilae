@@ -212,6 +212,7 @@ export async function middleware(request: NextRequest) {
         // More comprehensive check for auth flow
         const referer = request.headers.get('referer');
         const userAgent = request.headers.get('user-agent') || '';
+        const origin = request.headers.get('origin');
         
         // Allow temporary access if coming from auth flow or during navigation
         const isFromAuthFlow = referer && (
@@ -224,22 +225,39 @@ export async function middleware(request: NextRequest) {
         // Check if this is a client-side navigation (Next.js router)
         const isClientNavigation = userAgent.includes('Next.js') || 
                                   request.headers.get('next-router-prefetch') === '1' ||
-                                  request.headers.get('purpose') === 'prefetch';
+                                  request.headers.get('purpose') === 'prefetch' ||
+                                  request.headers.get('x-nextjs-data') === '1';
         
-        if (isFromAuthFlow || isClientNavigation) {
+        // Check if this is same-origin request (likely from our app)
+        const isSameOrigin = origin && request.url.includes(origin);
+        
+        // Special handling for onboarding flow - be more lenient
+        const isOnboardingPath = pathname.startsWith('/onboarding');
+        
+        if (isFromAuthFlow || isClientNavigation || (isOnboardingPath && isSameOrigin)) {
           console.log('Middleware - Allowing access during auth flow for:', pathname, {
             fromAuthFlow: isFromAuthFlow,
             clientNav: isClientNavigation,
+            sameOrigin: isSameOrigin,
+            onboarding: isOnboardingPath,
             referer: referer?.substring(0, 100) // Truncate for logs
           });
           // Allow through but add header for debugging
           response.headers.set('x-temp-access', 'true');
-          response.headers.set('x-access-reason', isFromAuthFlow ? 'auth-flow' : 'client-nav');
+          response.headers.set('x-access-reason', 
+            isFromAuthFlow ? 'auth-flow' : 
+            isClientNavigation ? 'client-nav' : 
+            'onboarding-flow'
+          );
         } else {
-          // Web routes redirect to login
+          // Web routes redirect to login - add reason for debugging
           console.log('Middleware - Redirecting to login, no session for:', pathname);
           const loginUrl = new URL('/auth/login', request.url);
           loginUrl.searchParams.set('redirectTo', pathname);
+          // Only add session_expired if this wasn't an auth flow
+          if (!isFromAuthFlow && !isOnboardingPath) {
+            loginUrl.searchParams.set('reason', 'session_expired');
+          }
           return NextResponse.redirect(loginUrl);
         }
       }

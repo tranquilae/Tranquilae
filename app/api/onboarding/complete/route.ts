@@ -3,6 +3,7 @@ import { db } from '@/lib/database';
 import { rateLimit } from '@/lib/rate-limit';
 import { sendEmail } from '@/lib/email';
 import { createClient } from '@/utils/supabase/server';
+import { supabase } from '@/lib/supabase';
 
 /**
  * Complete onboarding and activate plan
@@ -25,19 +26,33 @@ export async function POST(request: NextRequest) {
     // If no user ID from middleware, try to get it directly from Supabase
     if (!userId) {
       try {
-        const supabase = await createClient();
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        
-        if (authError || !user) {
-          console.log('API - Authentication failed for /complete:', authError?.message || 'No user found');
-          return NextResponse.json(
-            { error: 'Authentication required', code: 'AUTH_REQUIRED' },
-            { status: 401 }
-          );
+        // Try Authorization header first (for API calls)
+        const authHeader = request.headers.get('authorization');
+        if (authHeader?.startsWith('Bearer ')) {
+          const token = authHeader.substring(7);
+          const { data: { user }, error: tokenError } = await supabase.auth.getUser(token);
+          if (user && !tokenError) {
+            userId = user.id;
+            console.log('API - Token auth successful for /complete user:', userId);
+          }
         }
         
-        userId = user.id;
-        console.log('API - Direct auth successful for /complete user:', userId);
+        // If no token auth, try server client with cookies
+        if (!userId) {
+          const serverClient = await createClient();
+          const { data: { user }, error: authError } = await serverClient.auth.getUser();
+          
+          if (authError || !user) {
+            console.log('API - Authentication failed for /complete:', authError?.message || 'No user found');
+            return NextResponse.json(
+              { error: 'Authentication required', code: 'AUTH_REQUIRED' },
+              { status: 401 }
+            );
+          }
+          
+          userId = user.id;
+          console.log('API - Server client auth successful for /complete user:', userId);
+        }
       } catch (error) {
         console.error('API - Auth verification error for /complete:', error);
         return NextResponse.json(
@@ -173,19 +188,33 @@ export async function GET(request: NextRequest) {
     // If no user ID from middleware, try to get it directly from Supabase
     if (!userId) {
       try {
-        const supabase = await createClient();
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        
-        if (authError || !user) {
-          console.log('API - Authentication failed for GET /complete:', authError?.message || 'No user found');
-          return NextResponse.json(
-            { error: 'Authentication required', code: 'AUTH_REQUIRED' },
-            { status: 401 }
-          );
+        // Try Authorization header first (for API calls)
+        const authHeader = request.headers.get('authorization');
+        if (authHeader?.startsWith('Bearer ')) {
+          const token = authHeader.substring(7);
+          const { data: { user }, error: tokenError } = await supabase.auth.getUser(token);
+          if (user && !tokenError) {
+            userId = user.id;
+            console.log('API - Token auth successful for GET /complete user:', userId);
+          }
         }
         
-        userId = user.id;
-        console.log('API - Direct auth successful for GET /complete user:', userId);
+        // If no token auth, try server client with cookies
+        if (!userId) {
+          const serverClient = await createClient();
+          const { data: { user }, error: authError } = await serverClient.auth.getUser();
+          
+          if (authError || !user) {
+            console.log('API - Authentication failed for GET /complete:', authError?.message || 'No user found');
+            return NextResponse.json(
+              { error: 'Authentication required', code: 'AUTH_REQUIRED' },
+              { status: 401 }
+            );
+          }
+          
+          userId = user.id;
+          console.log('API - Server client auth successful for GET /complete user:', userId);
+        }
       } catch (error) {
         console.error('API - Auth verification error for GET /complete:', error);
         return NextResponse.json(
