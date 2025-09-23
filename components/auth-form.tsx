@@ -9,6 +9,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Logo } from "@/components/logo"
+import { supabase } from "@/lib/supabase"
 
 interface AuthFormProps extends React.ComponentProps<"div"> {
   type: "login" | "signup" | "forgot-password" | "reset-password" | "verify-email"
@@ -19,30 +20,116 @@ interface AuthFormProps extends React.ComponentProps<"div"> {
 export function AuthForm({ className, type, title, subtitle, ...props }: AuthFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError(null)
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
-
-    // Handle different form types
-    switch (type) {
-      case "signup":
-        router.push("/auth/signup-success")
-        break
-      case "login":
-        router.push("/")
-        break
-      case "forgot-password":
-        router.push("/auth/verify-email")
-        break
-      case "reset-password":
-        router.push("/auth/login")
-        break
-      default:
-        break
+    const formData = new FormData(e.currentTarget as HTMLFormElement)
+    
+    try {
+      switch (type) {
+        case "signup":
+          const signupData = {
+            email: formData.get('email') as string,
+            password: formData.get('password') as string,
+            firstName: formData.get('first-name') as string,
+            lastName: formData.get('last-name') as string,
+          }
+          
+          // Check if passwords match
+          const confirmPassword = formData.get('confirm-password') as string
+          if (signupData.password !== confirmPassword) {
+            setError('Passwords do not match')
+            setIsLoading(false)
+            return
+          }
+          
+          const signupResponse = await fetch('/api/auth/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(signupData)
+          })
+          
+          const signupResult = await signupResponse.json()
+          
+          if (!signupResponse.ok) {
+            setError(signupResult.error || 'Signup failed')
+          } else {
+            router.push("/auth/signup-success")
+          }
+          break
+          
+        case "login":
+          const loginData = {
+            email: formData.get('email') as string,
+            password: formData.get('password') as string,
+          }
+          
+          const loginResponse = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(loginData)
+          })
+          
+          const loginResult = await loginResponse.json()
+          
+          if (!loginResponse.ok) {
+            setError(loginResult.error || 'Login failed')
+          } else {
+            // Set the session in Supabase client
+            if (loginResult.session) {
+              await supabase.auth.setSession(loginResult.session)
+            }
+            router.push("/")
+          }
+          break
+          
+        case "forgot-password":
+          const resetEmail = formData.get('email') as string
+          
+          const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+            resetEmail,
+            {
+              redirectTo: `${window.location.origin}/auth/reset-password`,
+            }
+          )
+          
+          if (resetError) {
+            setError(resetError.message)
+          } else {
+            router.push("/auth/verify-email")
+          }
+          break
+          
+        case "reset-password":
+          const newPassword = formData.get('password') as string
+          const confirmNewPassword = formData.get('confirm-password') as string
+          
+          if (newPassword !== confirmNewPassword) {
+            setError('Passwords do not match')
+            setIsLoading(false)
+            return
+          }
+          
+          const { error: updateError } = await supabase.auth.updateUser({
+            password: newPassword
+          })
+          
+          if (updateError) {
+            setError(updateError.message)
+          } else {
+            router.push("/auth/login")
+          }
+          break
+          
+        default:
+          break
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred')
     }
     
     setIsLoading(false)
@@ -52,22 +139,29 @@ export function AuthForm({ className, type, title, subtitle, ...props }: AuthFor
       <Card className="overflow-hidden glass-card border-0">
         <CardContent className="grid p-0 md:grid-cols-2">
           <form className="p-6 md:p-8" onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-6">
-              {/* Header */}
-              <div className="flex flex-col items-center text-center">
-                <div className="mb-4">
-                  <Logo className="h-8 w-auto" />
+              <div className="flex flex-col gap-6">
+                {/* Header */}
+                <div className="flex flex-col items-center text-center">
+                  <div className="mb-4">
+                    <Logo className="h-8 w-auto" />
+                  </div>
+                  <h1 className="text-2xl font-bold">{title}</h1>
+                  <p className="text-balance text-muted-foreground">{subtitle}</p>
                 </div>
-                <h1 className="text-2xl font-bold">{title}</h1>
-                <p className="text-balance text-muted-foreground">{subtitle}</p>
-              </div>
+
+                {/* Error Message */}
+                {error && (
+                  <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+                    {error}
+                  </div>
+                )}
 
               {/* Login Form */}
               {type === "login" && (
                 <>
                   <div className="grid gap-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="m@example.com" required />
+                    <Input id="email" name="email" type="email" placeholder="m@example.com" required />
                   </div>
                   <div className="grid gap-2">
                     <div className="flex items-center">
@@ -76,7 +170,7 @@ export function AuthForm({ className, type, title, subtitle, ...props }: AuthFor
                         Forgot your password?
                       </Link>
                     </div>
-                    <Input id="password" type="password" required />
+                    <Input id="password" name="password" type="password" required />
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Signing In..." : "Sign In"}
@@ -90,24 +184,24 @@ export function AuthForm({ className, type, title, subtitle, ...props }: AuthFor
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="first-name">First Name</Label>
-                      <Input id="first-name" type="text" placeholder="John" required />
+                      <Input id="first-name" name="first-name" type="text" placeholder="John" required />
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="last-name">Last Name</Label>
-                      <Input id="last-name" type="text" placeholder="Doe" required />
+                      <Input id="last-name" name="last-name" type="text" placeholder="Doe" required />
                     </div>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="m@example.com" required />
+                    <Input id="email" name="email" type="email" placeholder="m@example.com" required />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="password">Password</Label>
-                    <Input id="password" type="password" required />
+                    <Input id="password" name="password" type="password" required />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="confirm-password">Confirm Password</Label>
-                    <Input id="confirm-password" type="password" required />
+                    <Input id="confirm-password" name="confirm-password" type="password" required />
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Creating Account..." : "Create Account"}
@@ -120,7 +214,7 @@ export function AuthForm({ className, type, title, subtitle, ...props }: AuthFor
                 <>
                   <div className="grid gap-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="m@example.com" required />
+                    <Input id="email" name="email" type="email" placeholder="m@example.com" required />
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Sending..." : "Send Reset Link"}
@@ -138,11 +232,11 @@ export function AuthForm({ className, type, title, subtitle, ...props }: AuthFor
                 <>
                   <div className="grid gap-2">
                     <Label htmlFor="password">New Password</Label>
-                    <Input id="password" type="password" required />
+                    <Input id="password" name="password" type="password" required />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="confirm-password">Confirm New Password</Label>
-                    <Input id="confirm-password" type="password" required />
+                    <Input id="confirm-password" name="confirm-password" type="password" required />
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Resetting..." : "Reset Password"}
