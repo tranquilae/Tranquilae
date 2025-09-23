@@ -11,12 +11,13 @@ export function EnvCheck() {
 
   useEffect(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    // Check for new publishable key first, then fallback to old naming
+    const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     
     setEnvStatus({
       url: !!url,
       key: !!key,
-      keyValue: key?.substring(0, 20) + '...' || 'NOT SET'
+      keyValue: key?.substring(0, 30) + '...' || 'NOT SET'
     })
   }, [])
 
@@ -33,7 +34,7 @@ export function EnvCheck() {
       <div className="text-xs mt-2">Key: {envStatus.keyValue}</div>
       {!envStatus.key && (
         <div className="text-xs mt-2">
-          Missing NEXT_PUBLIC_SUPABASE_ANON_KEY in environment
+          Missing NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in environment
         </div>
       )}
     </div>

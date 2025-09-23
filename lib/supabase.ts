@@ -35,10 +35,11 @@ validateSupabaseConfig()
 // Create Supabase client factory function
 function createSupabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fspoavmvfymlunmfubqp.supabase.co'
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_i490cr3a929wFuz286rVKA_3EbsFJ7N'
+  // Use new Supabase publishable key format
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_i490cr3a929wFuz286rVKA_3EbsFJ7N'
   
   if (!key || key === '') {
-    throw new Error('Supabase anon key is required but not provided')
+    throw new Error('Supabase publishable key is required but not provided')
   }
   
   return createClient(url, key, {
@@ -67,7 +68,7 @@ export const supabase = createSupabaseClient()
 
 // Admin client for server-side operations with service role key
 // This should only be used in API routes and server components
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
 export const supabaseAdmin = createClient(
   supabaseUrl,
