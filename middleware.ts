@@ -73,11 +73,37 @@ async function verifyAuth(request: NextRequest, response: NextResponse): Promise
       }
     );
 
-    // Get the current session
-    const { data: { session }, error } = await supabase.auth.getSession();
+    // First try to get session from cookies (for web routes)
+    let session = null;
+    let sessionError = null;
     
-    if (error) {
-      console.error('Middleware - Session retrieval error:', error);
+    try {
+      const { data: sessionData, error } = await supabase.auth.getSession();
+      session = sessionData.session;
+      sessionError = error;
+    } catch (error) {
+      console.log('Middleware - Cookie session check failed:', error);
+    }
+
+    // If no session from cookies, try Authorization header (for API routes)
+    if (!session) {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        try {
+          const { data: { user }, error: tokenError } = await supabase.auth.getUser(token);
+          if (user && !tokenError) {
+            console.log('Middleware - Token auth successful for user:', user.id, 'accessing:', request.nextUrl.pathname);
+            return user.id;
+          }
+        } catch (error) {
+          console.log('Middleware - Token verification failed:', error);
+        }
+      }
+    }
+    
+    if (sessionError) {
+      console.error('Middleware - Session retrieval error:', sessionError);
       return null;
     }
 

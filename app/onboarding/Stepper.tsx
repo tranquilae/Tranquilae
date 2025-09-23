@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
+import { createClient } from '@/utils/supabase/client';
 import WelcomeStep from './steps/WelcomeStep';
 import GoalsStep from './steps/GoalsStep';
 import ConnectDevicesStep from './steps/ConnectDevicesStep';
@@ -44,6 +45,7 @@ export default function OnboardingStepper() {
   const [step, setStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [supabase] = useState(() => createClient());
   
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     goals: [],
@@ -77,15 +79,30 @@ export default function OnboardingStepper() {
     
     // Save to server
     try {
-      await fetch('/api/onboarding/progress', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ step: newStep, data: updatedData }),
-      });
+      // Get the current session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        const response = await fetch('/api/onboarding/progress', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({ step: newStep, data: updatedData }),
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Error saving progress to server:', errorData);
+        }
+      } else {
+        console.warn('No session found when trying to save progress');
+      }
     } catch (error) {
       console.error('Error saving progress to server:', error);
     }
-  }, [onboardingData]);
+  }, [onboardingData, supabase]);
 
   const nextStep = async (data?: any) => {
     setError(null);
@@ -120,9 +137,14 @@ export default function OnboardingStepper() {
     } else {
       // Complete onboarding for Explorer plan
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
         const response = await fetch('/api/onboarding/complete', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': session ? `Bearer ${session.access_token}` : ''
+          },
           body: JSON.stringify({ plan: 'explorer' }),
         });
         
