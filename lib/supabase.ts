@@ -33,7 +33,9 @@ export const supabase = createClient(
       // Detect session in URL (for email confirmations, password resets)
       detectSessionInUrl: true,
       // Flow type for PKCE (more secure)
-      flowType: 'pkce'
+      flowType: 'pkce',
+      // Default redirect URL for auth flows
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '')}/auth/callback`
     },
     // Global options for better performance
     global: {

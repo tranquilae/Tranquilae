@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Magic Link - Tranquilae</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #2d3748; background-color: #fdfbf7; margin: 0; padding: 0; width: 100%; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+  <div style="background-color: #fdfbf7; padding: 20px 0; min-height: 100vh;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);">
+      
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #6ba368 0%, #a7c7e7 100%); padding: 40px 30px; text-align: center;">
+        <img src="https://tranquilae.com/logo.svg" alt="Tranquilae" style="max-width: 120px; height: auto; margin-bottom: 20px; border: 0; line-height: 100%; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;">
+        <h1 style="color: #ffffff; font-size: 28px; font-weight: 600; margin: 0; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);">Your Magic Link</h1>
+        <div style="color: rgba(255, 255, 255, 0.9); font-size: 16px; font-weight: 400; margin-top: 8px;">Sign in securely with one click</div>
+      </div>
+      
+      <!-- Content -->
+      <div style="padding: 40px 30px; background-color: #ffffff;">
+        <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6;">Hello,</p>
+        
+        <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6;">Click the link below to securely sign in to your Tranquilae account. No password needed – just click and you're in!</p>
+        
+        <div style="background: #f0f9ff; border: 1px solid #a7c7e7; border-radius: 12px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0; font-size: 14px; line-height: 1.6;"><strong>✨ Magic Link Benefits:</strong></p>
+          <ul style="margin: 8px 0 0 20px; padding: 0; font-size: 14px; line-height: 1.6;">
+            <li>No password to remember</li>
+            <li>Secure, encrypted authentication</li>
+            <li>One-click access to your wellness dashboard</li>
+            <li>Works on any device</li>
+          </ul>
+        </div>
+        
+        <!-- CTA -->
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="{{ .ConfirmationURL }}" style="display: inline-block; background-color: #6ba368; color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 28px; font-weight: 600; font-size: 16px; box-shadow: 0 2px 8px rgba(107, 163, 104, 0.3);">Sign In to Tranquilae</a>
+          <br>
+          <small style="color: #718096; font-size: 12px; margin-top: 16px; display: inline-block;">
+            Can't click? Copy this link: {{ .ConfirmationURL }}
+          </small>
+        </div>
+        
+        <div style="background: #fef3cd; border: 1px solid #fbbf24; border-radius: 12px; padding: 16px; margin: 24px 0;">
+          <p style="margin: 0; font-size: 14px; line-height: 1.6;"><strong>⚠️ Security Notice:</strong></p>
+          <p style="margin: 8px 0 0 0; font-size: 14px; line-height: 1.6;">This magic link expires in 1 hour and can only be used once. If you didn't request this, you can safely ignore this email.</p>
+        </div>
+        
+        <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6;">Once signed in, you'll have full access to your wellness dashboard, AI insights, and all your personalized health data.</p>
+        
+        <p style="margin: 0; font-size: 16px; line-height: 1.6;">Ready to continue your wellness journey?</p>
+      </div>
+      
+      <!-- Footer -->
+      <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+        <p style="color: #718096; font-size: 14px; margin: 0 0 8px 0;"><strong>Tranquilae</strong> - Your wellness journey</p>
+        <p style="color: #718096; font-size: 14px; margin: 0 0 8px 0;">© 2024 Tranquilae. All rights reserved.</p>
+        <p style="color: #718096; font-size: 14px; margin: 0;">
+          <a href="{{ .SiteURL }}" style="color: #a7c7e7; text-decoration: none;">Visit Tranquilae</a> • 
+          <a href="{{ .SiteURL }}/support" style="color: #a7c7e7; text-decoration: none;">Support</a>
+        </p>
+      </div>
+      
+    </div>
+  </div>
+</body>
+</html>

@@ -93,7 +93,7 @@ export function AuthForm({ className, type, title, subtitle, ...props }: AuthFor
           const { error: resetError } = await supabase.auth.resetPasswordForEmail(
             resetEmail,
             {
-              redirectTo: `${window.location.origin}/auth/reset-password`,
+              redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/auth/callback?redirect_to=/auth/reset-password`,
             }
           )
           
