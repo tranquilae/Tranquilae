@@ -89,16 +89,20 @@ export async function GET(request: NextRequest) {
           // Import database here to avoid module loading issues
           const { db } = await import('@/lib/database')
           
+          console.log('🔍 Checking onboarding status for user:', data.user.id)
           const userData = await db.getUserById(data.user.id)
+          console.log('📊 User data from Neon:', userData ? 'Found' : 'Not found')
           
-          if (userData && !userData.onboarding_complete) {
-            redirectPath = '/onboarding'
-          } else if (!userData) {
-            // User doesn't exist in Neon - redirect to onboarding to create profile
+          if (userData && userData.onboarding_complete) {
+            console.log('✅ User has completed onboarding - redirecting to dashboard')
+            redirectPath = '/dashboard'
+          } else {
+            console.log('🎯 User needs onboarding - redirecting to onboarding')
             redirectPath = '/onboarding'
           }
         } catch (dbError) {
           console.warn('Could not check onboarding status from Neon DB:', dbError)
+          console.log('🎯 Defaulting to onboarding due to DB error')
           // Default to onboarding if we can't check
           redirectPath = '/onboarding'
         }
