@@ -8,6 +8,13 @@ const nextConfig = {
     ignoreBuildErrors: true,  // Temporarily disabled
   },
   
+  // Experimental features for better stability
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
+  },
+  
   // Security headers
   async headers() {
     return [
