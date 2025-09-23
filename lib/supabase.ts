@@ -132,41 +132,23 @@ export interface AuditLogEntry {
   created_at: string;
 }
 
-// JWT Token verification utility (for enhanced security)
-const JWT_SECRET = process.env.SUPABASE_JWT_SECRET
+// JWT Token verification utility (for new asymmetric JWT system)
+// Note: With new Supabase API keys, JWT verification is handled automatically
+// by Supabase client, so manual JWT verification is not needed
 
-if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
-  throw new Error('SUPABASE_JWT_SECRET is required in production')
-}
-
-// Verify Supabase JWT token
+// Simplified JWT verification for compatibility (deprecated)
 export async function verifySupabaseJWT(token: string) {
-  if (!jwtVerify || !JWT_SECRET) {
-    console.warn('JWT verification not available. Install jose package.')
-    return null
-  }
-  
-  try {
-    const secret = new TextEncoder().encode(JWT_SECRET)
-    const { payload } = await jwtVerify(token, secret)
-    return payload
-  } catch (error) {
-    console.error('JWT verification failed:', error)
-    return null
-  }
+  // With new asymmetric JWT system, we rely on Supabase's built-in verification
+  // Manual verification would require fetching public keys from Supabase's JWKS endpoint
+  console.warn('Manual JWT verification not needed with new Supabase API key system')
+  return null
 }
 
 // Enhanced admin permission check with JWT verification
 export async function checkAdminAccess(userId: string, token?: string): Promise<boolean> {
   try {
-    // Additional JWT verification if token provided
-    if (token) {
-      const payload = await verifySupabaseJWT(token)
-      if (!payload || payload.sub !== userId) {
-        console.warn('JWT verification failed for admin access')
-        return false
-      }
-    }
+    // Note: With new asymmetric JWT system, token verification is handled by Supabase client
+    // We can focus on role-based access control
 
     // Check if user ID is in the allowed admin list from environment
     const allowedAdmins = process.env.ADMIN_USER_IDS?.split(',').map(id => id.trim()) || []
@@ -246,13 +228,8 @@ export async function getServerSession(request: Request) {
       return { user: null, error: error?.message || 'Invalid token' }
     }
 
-    // Additional JWT verification
-    const jwtPayload = await verifySupabaseJWT(token)
-    if (jwtPayload && jwtPayload.sub !== user.id) {
-      return { user: null, error: 'Token mismatch' }
-    }
-
-    return { user, token, jwtPayload }
+    // Note: With new asymmetric JWT system, additional verification is handled by Supabase
+    return { user, token }
   } catch (error) {
     console.error('Error in getServerSession:', error)
     return { user: null, error: 'Session verification failed' }

@@ -12,7 +12,7 @@ export const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
   SUPABASE_SECRET_KEY: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
-  SUPABASE_JWT_SECRET: z.string().min(1, 'Supabase JWT secret is required'),
+  // SUPABASE_JWT_SECRET not needed with new asymmetric JWT system
   
   // Stripe
   STRIPE_SECRET_KEY: z.string().regex(/^sk_(test_|live_)/, 'Invalid Stripe secret key format'),
