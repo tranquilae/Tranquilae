@@ -1,4 +1,6 @@
 // Instrumentation file for Sentry and other monitoring tools
+import { captureRequestError } from '@sentry/nextjs';
+
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     const { init } = await import('@sentry/nextjs');
@@ -44,4 +46,9 @@ export async function register() {
       debug: process.env.NODE_ENV === 'development',
     });
   }
+}
+
+// Hook for capturing request errors in nested React Server Components
+export async function onRequestError(err: unknown, request: unknown, errorInfo: unknown) {
+  await captureRequestError(err, request, errorInfo);
 }
