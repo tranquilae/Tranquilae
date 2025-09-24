@@ -471,7 +471,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   console.log('Processing customer.subscription.updated:', subscription.id);
 
-  const userId = subscription.metadata?.user_id;
+  const userId = subscription.metadata?.['user_id'];
   if (!userId) {
     console.error('No user_id in subscription metadata');
     return;
@@ -495,7 +495,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   console.log('Processing customer.subscription.deleted:', subscription.id);
 
-  const userId = subscription.metadata?.user_id;
+  const userId = subscription.metadata?.['user_id'];
   if (!userId) {
     console.error('No user_id in subscription metadata');
     return;
@@ -536,7 +536,7 @@ async function handleSetupIntentSucceeded(setupIntent: Stripe.SetupIntent) {
   console.log('Processing setup_intent.succeeded:', setupIntent.id);
   
   // Card verification was successful
-  const userId = setupIntent.metadata?.user_id;
+  const userId = setupIntent.metadata?.['user_id'];
   if (userId) {
   console.log(`Card verification successful for user ${userId}`);
   }
@@ -556,7 +556,7 @@ async function handleRadarFraudWarning(warning: Stripe.Radar.EarlyFraudWarning) 
   let userId: string | undefined;
   if (paymentIntent) {
     const pi = await stripe.paymentIntents.retrieve(paymentIntent);
-    userId = pi.metadata?.user_id;
+    userId = pi.metadata?.['user_id'];
   }
 
   // Log fraud warning
@@ -637,7 +637,7 @@ async function handleReviewOpened(review: Stripe.Review) {
   let userId: string | undefined;
   if (paymentIntent) {
     const pi = await stripe.paymentIntents.retrieve(paymentIntent);
-    userId = pi.metadata?.user_id;
+    userId = pi.metadata?.['user_id'];
   }
 
   // Log review opening
@@ -687,7 +687,7 @@ async function handleReviewClosed(review: Stripe.Review) {
   let userId: string | undefined;
   if (paymentIntent) {
     const pi = await stripe.paymentIntents.retrieve(paymentIntent);
-    userId = pi.metadata?.user_id;
+    userId = pi.metadata?.['user_id'];
   }
 
   // Log review closure
