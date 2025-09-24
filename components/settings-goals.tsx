@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { fetchWithAuth, parseAPIResponse } from '@/lib/api'
+import { useToast } from '@/components/ui/use-toast'
 
 interface Settings {
   daily_calorie_goal: number
@@ -25,12 +27,13 @@ export function SettingsGoals() {
     macros_goal: { carbs: 0, protein: 0, fat: 0 }
   })
   const [saving, setSaving] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
     let mounted = true
     ;(async () => {
       try {
-        const res = await fetch('/api/user/settings', { cache: 'no-store' })
+        const res = await fetchWithAuth('/api/user/settings')
         if (res.ok) {
           const s = await res.json()
           if (mounted) setSettings({
@@ -54,13 +57,15 @@ export function SettingsGoals() {
   const save = async () => {
     try {
       setSaving(true)
-      const res = await fetch('/api/user/settings', {
+      const res = await fetchWithAuth('/api/user/settings', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)
       })
       if (!res.ok) throw new Error('Failed to save settings')
-    } catch {}
+      toast({ title: 'Goals updated' })
+    } catch (e) {
+      toast({ title: 'Save failed', description: e instanceof Error ? e.message : 'Please try again', variant: 'destructive' })
+    }
     finally { setSaving(false) }
   }
 

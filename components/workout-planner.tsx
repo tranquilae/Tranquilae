@@ -16,7 +16,8 @@ export function WorkoutPlanner() {
     let mounted = true
     ;(async () => {
       try {
-        const res = await fetch('/api/dashboard/workouts/plan', { cache: 'no-store' })
+        const { fetchWithAuth } = await import('@/lib/api')
+        const res = await fetchWithAuth('/api/dashboard/workouts/plan')
         if (res.ok) {
           const data = await res.json()
           if (mounted) setPlan(data.plan || [])
@@ -29,8 +30,9 @@ export function WorkoutPlanner() {
   const createQuick = async () => {
     try {
       setSaving(true)
-      const res = await fetch('/api/dashboard/workouts/plan', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const { fetchWithAuth } = await import('@/lib/api')
+      const res = await fetchWithAuth('/api/dashboard/workouts/plan', {
+        method: 'POST',
         body: JSON.stringify({ name: 'Quick Strength', type: 'strength', duration_min: 45, exercises: [
           { name: 'Push-ups', sets: 3, reps: 12, rest: 60 },
           { name: 'Pull-ups', sets: 3, reps: 8, rest: 90 },
@@ -109,8 +111,9 @@ export function WorkoutPlanner() {
                 const duration = workout.duration_min || 30
                 const calories = Math.round(duration * 6)
                 try {
-                  await fetch('/api/dashboard/workouts/history', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  const { fetchWithAuth } = await import('@/lib/api')
+                  await fetchWithAuth('/api/dashboard/workouts/history', {
+                    method: 'POST',
                     body: JSON.stringify({ name: workout.name, date: new Date().toISOString(), duration_min: duration, calories, type: workout.type || 'custom' })
                   })
                 } catch {}

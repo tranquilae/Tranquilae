@@ -54,7 +54,10 @@ export async function GET(request: NextRequest) {
         const { data: { user } } = await serverClient.auth.getUser()
         if (!user) throw new Error('No user in session')
         const created = await db.createUser({ id: user.id, email: user.email || '', name: user.email?.split('@')[0] || null, onboarding_complete: false })
-        return NextResponse.json(created)
+        const res = NextResponse.json(created)
+        // Ensure cookie reflects incomplete onboarding
+        res.cookies.set('onb', '0', { httpOnly: true, sameSite: 'lax', path: '/' })
+        return res
       } catch (createErr) {
         console.error('Failed to auto-create profile:', createErr)
         return NextResponse.json(
@@ -64,7 +67,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(profile)
+    const res = NextResponse.json(profile)
+    res.cookies.set('onb', profile.onboarding_complete ? '1' : '0', { httpOnly: true, sameSite: 'lax', path: '/' })
+    return res
 
   } catch (error) {
     console.error('Error fetching user profile:', error)
@@ -93,7 +98,11 @@ export async function PATCH(request: NextRequest) {
     if ('onboarding_complete' in body) allowed.onboarding_complete = body.onboarding_complete
 
     const updated = await db.updateUser(user.id, allowed)
-    return NextResponse.json(updated)
+    const res = NextResponse.json(updated)
+    if (typeof allowed.onboarding_complete === 'boolean') {
+      res.cookies.set('onb', allowed.onboarding_complete ? '1' : '0', { httpOnly: true, sameSite: 'lax', path: '/' })
+    }
+    return res
   } catch (error: any) {
     console.error('Error updating user profile:', error)
     return NextResponse.json({ error: error?.message || 'Internal server error' }, { status: 500 })

@@ -114,7 +114,8 @@ export function HealthIntegrationsPanel() {
 
   const loadIntegrations = async () => {
     try {
-      const response = await fetch('/api/integrations');
+      const { fetchWithAuth } = await import('@/lib/api');
+      const response = await fetchWithAuth('/api/integrations');
       if (response.ok) {
         const data = await response.json();
         setIntegrations(data.integrations || []);
@@ -135,7 +136,8 @@ export function HealthIntegrationsPanel() {
 
   const loadSyncStats = async () => {
     try {
-      const response = await fetch('/api/integrations/sync/stats');
+      const { fetchWithAuth } = await import('@/lib/api');
+      const response = await fetchWithAuth('/api/integrations/sync/stats');
       if (response.ok) {
         const data = await response.json();
         setSyncStats(data);
@@ -149,11 +151,9 @@ export function HealthIntegrationsPanel() {
     setConnectingService(serviceName);
     
     try {
-      const response = await fetch(`/api/integrations/connect`, {
+      const { fetchWithAuth } = await import('@/lib/api');
+      const response = await fetchWithAuth(`/api/integrations/connect`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ serviceName })
       });
 
@@ -178,7 +178,8 @@ export function HealthIntegrationsPanel() {
 
   const handleDisconnect = async (integrationId: string, serviceName: HealthServiceName) => {
     try {
-      const response = await fetch(`/api/integrations/${integrationId}/disconnect`, {
+      const { fetchWithAuth } = await import('@/lib/api');
+      const response = await fetchWithAuth(`/api/integrations/${integrationId}/disconnect`, {
         method: 'POST',
       });
 
@@ -203,11 +204,9 @@ export function HealthIntegrationsPanel() {
 
   const handleToggleActive = async (integrationId: string, isActive: boolean) => {
     try {
-      const response = await fetch(`/api/integrations/${integrationId}`, {
+      const { fetchWithAuth } = await import('@/lib/api');
+      const response = await fetchWithAuth(`/api/integrations/${integrationId}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ is_active: isActive })
       });
 
@@ -232,7 +231,8 @@ export function HealthIntegrationsPanel() {
 
   const handleSync = async (integrationId: string, serviceName: HealthServiceName) => {
     try {
-      const response = await fetch(`/api/integrations/${integrationId}/sync`, {
+      const { fetchWithAuth } = await import('@/lib/api');
+      const response = await fetchWithAuth(`/api/integrations/${integrationId}/sync`, {
         method: 'POST',
       });
 

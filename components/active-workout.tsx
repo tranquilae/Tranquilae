@@ -111,9 +111,9 @@ export function ActiveWorkout() {
               // Simple estimation (strength ~6 kcal/min)
               const estCalories = Math.round(durationMin * 6)
               try {
-                await fetch('/api/dashboard/workouts/history', {
+                const { fetchWithAuth } = await import('@/lib/api')
+                await fetchWithAuth('/api/dashboard/workouts/history', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ name: workout.name, date: new Date().toISOString(), duration_min: durationMin, calories: estCalories, type: 'strength' })
                 })
               } catch {}

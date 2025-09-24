@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      return NextResponse.json({
+      const res = NextResponse.json({
         success: true,
         message: 'Onboarding completed successfully',
         user: {
@@ -184,6 +184,9 @@ export async function POST(request: NextRequest) {
         },
         redirect: '/dashboard'
       });
+      // Set cookie indicating onboarding completed
+      res.cookies.set('onb', '1', { httpOnly: true, sameSite: 'lax', path: '/' })
+      return res;
 
     } catch (error) {
       console.error('Error completing onboarding:', error);

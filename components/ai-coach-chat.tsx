@@ -11,6 +11,7 @@ export function AICoachChat() {
   const [messages, setMessages] = useState<Array<{ role:'user'|'assistant'; content:string }>>([])
   const [loading, setLoading] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
+  const [notice, setNotice] = useState<string|null>(null)
 
   // Load recent AI messages (if any)
   // NOTE: We only render existing messages; no canned content/suggestions.
@@ -20,13 +21,18 @@ export function AICoachChat() {
     ;(async () => {
       try {
         setLoading(true)
-        const res = await fetch('/api/dashboard/ai', { cache: 'no-store' })
+        const { fetchWithAuth } = await import('@/lib/api')
+        const res = await fetchWithAuth('/api/dashboard/ai')
         if (res.ok) {
           const data = await res.json()
-          // If conversations exist, flatten the latest conversation's messages (future enhancement)
-          // For now, we just render nothing (no prefilled) unless API adds content.
           if (mounted && Array.isArray(data.messages)) {
             setMessages(data.messages)
+          }
+          const ps = data?.provider_status
+          if (ps && !ps.grokConfigured && !ps.openaiConfigured) {
+            setNotice('AI provider not configured. Add GROK_API_KEY or XAI_API_KEY (or OPENAI_API_KEY) in your environment to enable replies.')
+          } else {
+            setNotice(null)
           }
         }
       } catch {}
@@ -46,6 +52,11 @@ export function AICoachChat() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {notice && (
+          <div className="text-xs text-amber-600 bg-amber-100/50 border border-amber-200 p-2 rounded">
+            {notice}
+          </div>
+        )}
         {/* Chat messages */}
         <div className="space-y-3 max-h-48 overflow-y-auto">
           {messages.length === 0 && !loading && !isTyping ? (
@@ -90,17 +101,20 @@ export function AICoachChat() {
             try {
               setLoading(true)
               setIsTyping(true)
-              const res = await fetch('/api/dashboard/ai', {
+              const { fetchWithAuth } = await import('@/lib/api')
+              const res = await fetchWithAuth('/api/dashboard/ai', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content })
               })
-              if (!res.ok) throw new Error('Failed to send message')
+              if (!res.ok) {
+                const err = await res.json().catch(() => ({}))
+                throw new Error(err?.error || 'Failed to send message')
+              }
               setMessages(prev => [...prev, { role: 'user', content }])
               setMessage('')
               // Refresh to capture assistant reply if any
               try {
-                const mres = await fetch('/api/dashboard/ai', { cache: 'no-store' })
+                const mres = await (await import('@/lib/api')).fetchWithAuth('/api/dashboard/ai')
                 if (mres.ok) {
                   const data = await mres.json()
                   if (Array.isArray(data.messages)) setMessages(data.messages)

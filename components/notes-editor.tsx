@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Plus, Save, Search, FileText, Tag, Trash2 } from "lucide-react"
+import { fetchWithAuth } from '@/lib/api'
+import { useToast } from '@/components/ui/use-toast'
 
 interface Note {
   id: string
@@ -28,6 +30,7 @@ export function NotesEditor() {
   const [saving, setSaving] = useState(false)
 
   const selectedNote = useMemo(() => notes.find(n => n.id === selectedNoteId) || null, [notes, selectedNoteId])
+  const { toast } = useToast()
 
   // Load notes from API
   useEffect(() => {
@@ -35,7 +38,7 @@ export function NotesEditor() {
     ;(async () => {
       try {
         setLoading(true)
-        const res = await fetch('/api/dashboard/notes', { cache: 'no-store' })
+        const res = await fetchWithAuth('/api/dashboard/notes')
         if (res.ok) {
           const data = await res.json()
           if (mounted && Array.isArray(data.notes)) {
@@ -81,10 +84,11 @@ export function NotesEditor() {
 
   const handleDelete = async (note: Note) => {
     try {
-      const res = await fetch(`/api/dashboard/notes?id=${encodeURIComponent(note.id)}`, { method: 'DELETE' })
+      const res = await fetchWithAuth(`/api/dashboard/notes?id=${encodeURIComponent(note.id)}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Failed to delete note')
       setNotes(prev => prev.filter(n => n.id !== note.id))
       if (selectedNoteId === note.id) resetEditor()
+      toast({ title: 'Note deleted' })
     } catch (e) {
       // Add toast if needed
     }
@@ -101,28 +105,28 @@ export function NotesEditor() {
       if (!selectedNoteId) {
         // Create
         if (!noteContent.trim() && !noteTitle.trim()) return
-        const res = await fetch('/api/dashboard/notes', {
+        const res = await fetchWithAuth('/api/dashboard/notes', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title: noteTitle.trim() || null, content: noteContent, tags })
         })
         if (!res.ok) throw new Error('Failed to create note')
         const created: Note = await res.json()
         setNotes(prev => [created, ...prev])
         setSelectedNoteId(created.id)
+        toast({ title: 'Note created' })
       } else {
         // Update
-        const res = await fetch('/api/dashboard/notes', {
+        const res = await fetchWithAuth('/api/dashboard/notes', {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: selectedNoteId, title: noteTitle.trim() || null, content: noteContent, tags })
         })
         if (!res.ok) throw new Error('Failed to update note')
         const updated: Note = await res.json()
         setNotes(prev => prev.map(n => (n.id === updated.id ? updated : n)))
+        toast({ title: 'Note saved' })
       }
     } catch (e) {
-      // Add toast if needed
+      toast({ title: 'Action failed', description: e instanceof Error ? e.message : 'Please try again', variant: 'destructive' })
     } finally {
       setSaving(false)
     }

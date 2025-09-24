@@ -425,6 +425,8 @@ export const migrations = {
         this.createJournalEntriesTable,
         this.createUserSettingsTable,
         this.createCheckinsTable,
+        this.createWorkoutsTables,
+        this.createMealsTable,
         this.createOAuthStateTable,
       ];
       for (const step of steps) {
@@ -908,6 +910,60 @@ export const db = {
       RETURNING *
     `;
     return result[0];
+  },
+
+  // Meals schema
+  async createMealsTable() {
+    await sql`
+      CREATE TABLE IF NOT EXISTS meals (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES profiles(user_id) ON DELETE CASCADE,
+        date DATE NOT NULL,
+        name TEXT NOT NULL,
+        time TEXT,
+        type VARCHAR(20) NOT NULL CHECK (type IN ('breakfast','lunch','dinner','snack')),
+        calories INTEGER NOT NULL DEFAULT 0,
+        foods JSONB NOT NULL DEFAULT '[]',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )`;
+    await sql`CREATE INDEX IF NOT EXISTS meals_user_date_idx ON meals(user_id, date)`;
+  },
+
+  // Meals ops
+  async addMeal(userId: string, meal: { date: string; name: string; time?: string|null; type: 'breakfast'|'lunch'|'dinner'|'snack'; calories: number; foods: any[] }): Promise<any> {
+    const result = await sql`
+      INSERT INTO meals (user_id, date, name, time, type, calories, foods)
+      VALUES (${userId}, ${meal.date}, ${meal.name}, ${meal.time || null}, ${meal.type}, ${meal.calories}, ${JSON.stringify(meal.foods)})
+      RETURNING *
+    `;
+    return result[0];
+  },
+  async listMealsByDate(userId: string, date: string): Promise<any[]> {
+    const result = await sql`
+      SELECT * FROM meals WHERE user_id = ${userId} AND date = ${date} ORDER BY created_at ASC
+    `;
+    return result as any[];
+  },
+
+  // Workout history ops
+  async logWorkout(userId: string, data: { name: string; date: Date; duration_min?: number|null; calories?: number|null; type?: string|null }): Promise<any> {
+    const result = await sql`
+      INSERT INTO workout_logs (user_id, name, date, duration_min, calories, type)
+      VALUES (${userId}, ${data.name}, ${data.date}, ${data.duration_min ?? null}, ${data.calories ?? null}, ${data.type ?? null})
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  async listWorkoutHistory(userId: string, limit = 50): Promise<Array<{id:string; name:string; date:string; duration_min:number|null; calories:number|null; type:string|null}>> {
+    const result = await sql`
+      SELECT id, name, date, duration_min, calories, type
+      FROM workout_logs
+      WHERE user_id = ${userId}
+      ORDER BY date DESC
+      LIMIT ${limit}
+    `;
+    return result as any;
   },
 
   // AI usage helpers

@@ -4,17 +4,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Search, Plus } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { fetchWithAuth } from '@/lib/api'
 
 export function FoodSearch() {
   const [searchQuery, setSearchQuery] = useState("")
+  const [results, setResults] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
 
-  const recentFoods = [
-    { name: "Greek Yogurt", calories: 130, brand: "Chobani" },
-    { name: "Banana", calories: 105, brand: "Fresh" },
-    { name: "Chicken Breast", calories: 165, brand: "Organic" },
-    { name: "Brown Rice", calories: 216, brand: "Uncle Ben's" },
-  ]
+  useEffect(() => {
+    let active = true
+    const q = searchQuery.trim()
+    if (!q) {
+      setResults([])
+      return
+    }
+    const timer = setTimeout(async () => {
+      try {
+        setLoading(true)
+        const res = await fetchWithAuth(`/api/foods/search?query=${encodeURIComponent(q)}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (active) setResults(data?.results?.hints || [])
+        }
+      } finally {
+        setLoading(false)
+      }
+    }, 400)
+    return () => { active = false; clearTimeout(timer) }
+  }, [searchQuery])
 
   return (
     <Card className="glass-card">
@@ -33,23 +51,33 @@ export function FoodSearch() {
         </div>
 
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-muted-foreground">Recent Foods</h4>
-          {recentFoods.map((food, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between p-2 rounded-lg hover:bg-accent/20 transition-colors"
-            >
-              <div>
-                <p className="font-medium text-sm">{food.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {food.brand} • {food.calories} cal
-                </p>
+          <h4 className="text-sm font-medium text-muted-foreground">Results</h4>
+          {loading && <div className="text-xs text-muted-foreground">Searching...</div>}
+          {!loading && results.length === 0 && (
+            <div className="text-xs text-muted-foreground">{searchQuery ? 'No results' : 'Start typing to search foods'}</div>
+          )}
+          {results.map((hint, index) => {
+            const food = hint?.food || {}
+            const label = food?.label || 'Food'
+            const brand = food?.brand || food?.foodContentsLabel || ''
+            const calories = food?.nutrients?.ENERC_KCAL ? Math.round(food.nutrients.ENERC_KCAL) : undefined
+            return (
+              <div
+                key={index}
+                className="flex items-center justify-between p-2 rounded-lg hover:bg-accent/20 transition-colors"
+              >
+                <div>
+                  <p className="font-medium text-sm">{label}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {brand || '—'}{calories ? ` • ${calories} cal (per 100g)` : ''}
+                  </p>
+                </div>
+                <Button size="sm" variant="ghost" title="Add to meal (coming soon)">
+                  <Plus className="h-4 w-4" />
+                </Button>
               </div>
-              <Button size="sm" variant="ghost">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </CardContent>
     </Card>

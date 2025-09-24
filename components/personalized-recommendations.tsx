@@ -12,7 +12,8 @@ export function PersonalizedRecommendations() {
     let mounted = true
     ;(async () => {
       try {
-        const res = await fetch('/api/dashboard/recommendations', { cache: 'no-store' })
+        const { fetchWithAuth } = await import('@/lib/api')
+        const res = await fetchWithAuth('/api/dashboard/recommendations')
         if (res.ok) {
           const data = await res.json()
           if (mounted && Array.isArray(data.recommendations)) setRecs(data.recommendations)

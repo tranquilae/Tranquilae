@@ -18,6 +18,26 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const [userName, setUserName] = React.useState<string>('')
+  const [planLabel, setPlanLabel] = React.useState<string>('')
+
+  React.useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const { fetchWithAuth } = await import('@/lib/api')
+        const res = await fetchWithAuth('/api/user/profile')
+        if (res.ok) {
+          const p = await res.json()
+          if (mounted) {
+            setUserName(p?.name || p?.email?.split('@')[0] || 'User')
+            setPlanLabel(p?.plan ? (p.plan === 'pathfinder' ? 'Pathfinder Plan' : 'Explorer Plan') : 'Explorer Plan')
+          }
+        }
+      } catch {}
+    })()
+    return () => { mounted = false }
+  }, [])
 
   return (
     <div className="fixed inset-y-0 left-0 w-64 glass-card border-r">
@@ -54,8 +74,8 @@ export function Sidebar() {
               <span className="text-white font-medium">U</span>
             </div>
             <div>
-              <p className="text-sm font-medium text-foreground">User Profile</p>
-              <p className="text-xs text-muted-foreground">Premium Plan</p>
+              <p className="text-sm font-medium text-foreground">{userName || 'User'}</p>
+              <p className="text-xs text-muted-foreground">{planLabel || 'Explorer Plan'}</p>
             </div>
           </div>
         </div>

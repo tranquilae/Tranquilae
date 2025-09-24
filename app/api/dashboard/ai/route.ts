@@ -13,7 +13,9 @@ export async function GET() {
 
     const { db } = await import('@/lib/database')
     const messages = await db.listAIMessages(user.id)
-    return NextResponse.json({ userId: user.id, messages })
+    const grokConfigured = !!(process.env.GROK_API_KEY || process.env.XAI_API_KEY)
+    const openaiConfigured = !!process.env.OPENAI_API_KEY
+    return NextResponse.json({ userId: user.id, messages, provider_status: { grokConfigured, openaiConfigured } })
   } catch (error: any) {
     console.error('AI Coach API error:', error)
     return NextResponse.json({ error: error?.message || 'Unknown error' }, { status: 500 })
@@ -29,6 +31,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
+
+    const grokConfigured = !!(process.env.GROK_API_KEY || process.env.XAI_API_KEY)
+    const openaiConfigured = !!process.env.OPENAI_API_KEY
+    if (!grokConfigured && !openaiConfigured) {
+      return NextResponse.json({ error: 'No AI provider configured' }, { status: 501 })
+    }
     const { content } = body || {}
     if (!content || typeof content !== 'string') {
       return NextResponse.json({ error: 'content is required' }, { status: 400 })
