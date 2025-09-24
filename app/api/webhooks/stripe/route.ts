@@ -377,17 +377,29 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   if (isTrialSubscription || isFirstFailure) {
     console.log(`Downgrading user ${userId} from Pathfinder to Explorer due to payment failure`);
 
-    // Update subscription to Explorer
-    await db.updateSubscription(userId, {
+    // Update subscription to Explorer - omit fields to clear them
+    const updateData: any = {
       plan: 'explorer',
       status: 'active',
-      stripe_subscription_id: undefined, // Clear subscription ID
       stripe_customer_id: subscription.customer as string, // Keep customer ID
-      trial_end: undefined,
-      current_period_start: undefined,
-      current_period_end: undefined,
       cancel_at_period_end: false,
-    });
+    };
+    
+    // Explicitly set fields to clear them if the database method supports it
+    if ('stripe_subscription_id' in updateData) {
+      updateData.stripe_subscription_id = null;
+    }
+    if ('trial_end' in updateData) {
+      updateData.trial_end = null;
+    }
+    if ('current_period_start' in updateData) {
+      updateData.current_period_start = null;
+    }
+    if ('current_period_end' in updateData) {
+      updateData.current_period_end = null;
+    }
+    
+    await db.updateSubscription(userId, updateData);
 
     // Update user plan
     await db.updateUser(userId, {
