@@ -40,6 +40,12 @@ export async function GET(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
+    // Check if admin client is available
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client not available')
+      return NextResponse.json({ error: 'Admin operations not configured' }, { status: 503 })
+    }
+
     // Get user details including subscription info
     const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
@@ -119,6 +125,12 @@ export async function PUT(
     const isAdmin = await checkAdminAccess(user.id)
     if (!isAdmin) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+
+    // Check if admin client is available
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client not available')
+      return NextResponse.json({ error: 'Admin operations not configured' }, { status: 503 })
     }
 
     const body = await request.json()
@@ -227,6 +239,12 @@ export async function DELETE(
       return NextResponse.json({ 
         error: 'Cannot delete your own account' 
       }, { status: 400 })
+    }
+
+    // Check if admin client is available
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client not available')
+      return NextResponse.json({ error: 'Admin operations not configured' }, { status: 503 })
     }
 
     // Get user data before deletion for logging

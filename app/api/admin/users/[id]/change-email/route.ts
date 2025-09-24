@@ -38,6 +38,12 @@ export async function POST(
       return NextResponse.json({ error: 'Valid email address required' }, { status: 400 })
     }
 
+    // Check if admin client is available
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client not available')
+      return NextResponse.json({ error: 'Admin operations not configured' }, { status: 503 })
+    }
+
     // Get current user data
     const { data: currentUser } = await supabaseAdmin
       .from('users')

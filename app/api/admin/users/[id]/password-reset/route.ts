@@ -31,6 +31,12 @@ export async function POST(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
+    // Check if admin client is available
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client not available')
+      return NextResponse.json({ error: 'Admin operations not configured' }, { status: 503 })
+    }
+
     // Get target user data
     const { data: targetUser } = await supabaseAdmin
       .from('users')

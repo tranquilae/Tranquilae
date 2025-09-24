@@ -31,6 +31,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
+    // Check if admin client is available
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client not available')
+      return NextResponse.json({ error: 'Admin operations not configured' }, { status: 503 })
+    }
+
     let syncedCount = 0
     let errorCount = 0
     const errors: string[] = []
@@ -136,18 +142,23 @@ export async function POST(request: NextRequest) {
       }
 
       // Log the sync action
-      await logPaymentEvent({
+      const logData: any = {
         event_type: 'WEBHOOK_RECEIVED', // Using closest available type
         user_id: user.id,
         success: errorCount === 0,
-        error: errorCount > 0 ? `${errorCount} sync errors` : undefined,
         metadata: {
           admin_action: 'stripe_sync',
           synced_count: syncedCount,
           error_count: errorCount,
           total_processed: subscriptions.length
         }
-      })
+      }
+      
+      if (errorCount > 0) {
+        logData.error = `${errorCount} sync errors`
+      }
+      
+      await logPaymentEvent(logData)
 
       return NextResponse.json({
         success: true,

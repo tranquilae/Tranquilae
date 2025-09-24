@@ -4,7 +4,7 @@ import { supabaseAdmin, checkAdminAccess } from '@/lib/supabase'
 import { logPaymentEvent, logDatabaseEvent } from '@/lib/supabase-logger'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+const stripe = new Stripe(process.env['STRIPE_SECRET_KEY']!)
 
 export async function POST(
   request: NextRequest,
@@ -12,8 +12,8 @@ export async function POST(
 ) {
   try {
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+      process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
       {
         cookies: {
           get(name: string) {
@@ -39,6 +39,12 @@ export async function POST(
 
     if (!newPlan || !['explorer', 'pathfinder'].includes(newPlan)) {
       return NextResponse.json({ error: 'Invalid plan specified' }, { status: 400 })
+    }
+
+    // Check if admin client is available
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client not available')
+      return NextResponse.json({ error: 'Admin operations not configured' }, { status: 503 })
     }
 
     // Get subscription details
@@ -76,7 +82,7 @@ export async function POST(
       if (subscription.stripe_subscription_id) {
         if (newPlan === 'pathfinder') {
           // Upgrade to Pathfinder - modify Stripe subscription
-          const priceId = process.env.STRIPE_PRICE_ID_PATHFINDER_MONTHLY
+          const priceId = process.env['STRIPE_PRICE_ID_PATHFINDER_MONTHLY']
 
           if (!priceId) {
             return NextResponse.json({ 
