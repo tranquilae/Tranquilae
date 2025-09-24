@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card"
+import Image from "next/image"
 import { Activity, BarChart3, Target, Apple } from "lucide-react"
 
 export function FeaturesSection() {
@@ -15,7 +16,7 @@ export function FeaturesSection() {
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           <Card className="glass-card border-0 p-8 relative overflow-hidden">
             <div className="absolute top-4 right-4 w-16 h-16 rounded-full overflow-hidden opacity-20">
-              <img src="/person-running-on-scenic-trail.jpg" alt="" className="w-full h-full object-cover" />
+              <Image src="/person-running-on-scenic-trail.jpg" alt="" width={64} height={64} className="w-full h-full object-cover" />
             </div>
             <CardContent className="p-0 relative z-10">
               <div className="flex items-center gap-3 mb-4">
@@ -65,7 +66,7 @@ export function FeaturesSection() {
 
           <Card className="glass-card border-0 p-8 relative overflow-hidden">
             <div className="absolute top-4 right-4 w-16 h-16 rounded-full overflow-hidden opacity-20">
-              <img src="/group-doing-outdoor-yoga-class.jpg" alt="" className="w-full h-full object-cover" />
+              <Image src="/group-doing-outdoor-yoga-class.jpg" alt="" width={64} height={64} className="w-full h-full object-cover" />
             </div>
             <CardContent className="p-0 relative z-10">
               <div className="flex items-center gap-3 mb-4">
@@ -96,7 +97,7 @@ export function FeaturesSection() {
 
           <Card className="glass-card border-0 p-8 relative overflow-hidden">
             <div className="absolute top-4 right-4 w-16 h-16 rounded-full overflow-hidden opacity-20">
-              <img src="/healthy-meal-planning-and-prep.jpg" alt="" className="w-full h-full object-cover" />
+              <Image src="/healthy-meal-planning-and-prep.jpg" alt="" width={64} height={64} className="w-full h-full object-cover" />
             </div>
             <CardContent className="p-0 relative z-10">
               <div className="flex items-center gap-3 mb-4">
@@ -130,7 +131,7 @@ export function FeaturesSection() {
 
           <Card className="glass-card border-0 p-8 relative overflow-hidden">
             <div className="absolute top-4 right-4 w-16 h-16 rounded-full overflow-hidden opacity-20">
-              <img src="/woman-preparing-healthy-smoothie-bowl.jpg" alt="" className="w-full h-full object-cover" />
+              <Image src="/woman-preparing-healthy-smoothie-bowl.jpg" alt="" width={64} height={64} className="w-full h-full object-cover" />
             </div>
             <CardContent className="p-0 relative z-10">
               <div className="flex items-center gap-3 mb-4">

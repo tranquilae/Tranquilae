@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/components/AuthProvider';
 import {
   Shield,
@@ -367,7 +368,7 @@ export function MultiFactorAuth() {
                   1. Scan QR Code with your authenticator app
                 </h3>
                 <div className="inline-block p-4 bg-white rounded-lg border-2 border-gray-200">
-                  <img src={qrCode} alt="QR Code" className="w-48 h-48" />
+                  <Image src={qrCode} alt="QR Code" width={192} height={192} className="w-48 h-48" />
                 </div>
               </div>
 

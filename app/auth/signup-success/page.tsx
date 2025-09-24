@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
+import Image from "next/image"
 import { CheckCircle, ArrowRight } from "lucide-react"
 import { Logo } from "@/components/logo"
 
@@ -60,10 +61,11 @@ export default function SignupSuccessPage() {
             
             {/* Hero Image Section */}
             <div className="relative hidden bg-gradient-to-br from-green-500/10 to-primary/20 md:block">
-              <img
+              <Image
                 src="/chris-lee-70l1tDAI6rM.jpg"
                 alt="Welcome to Tranquilae"
-                className="absolute inset-0 h-full w-full object-cover mix-blend-overlay"
+                fill
+                className="object-cover mix-blend-overlay"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
               <div className="absolute bottom-8 left-8 text-white">

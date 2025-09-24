@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import {
   Plus,
@@ -114,7 +114,7 @@ export function CustomWorkoutBuilder() {
     }
   };
 
-  const calculateWorkoutMetrics = () => {
+  const calculateWorkoutMetrics = useCallback(() => {
     const totalDuration = workout.exercises.reduce((sum, exercise) => {
       const exerciseDuration = exercise.duration || 
         (exercise.sets && exercise.reps ? exercise.sets * 2 : 5); // Estimate 2 min per set
@@ -133,7 +133,7 @@ export function CustomWorkoutBuilder() {
       estimatedDuration: Math.round(totalDuration),
       targetCalories: Math.round(totalCalories),
     }));
-  };
+  }, [workout.exercises]);
 
   const filteredExercises = availableExercises.filter(exercise => {
     const matchesSearch = exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

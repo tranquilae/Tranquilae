@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card"
+import Image from "next/image"
 import { Activity, Users, Mountain } from "lucide-react"
 
 export function AdditionalFeaturesSection() {
@@ -45,9 +46,11 @@ export function AdditionalFeaturesSection() {
               className="glass-card border-0 overflow-hidden group hover:scale-105 transition-transform duration-300"
             >
               <div className="relative h-48 overflow-hidden">
-                <img
+                <Image
                   src={feature.image || "/placeholder.svg"}
                   alt={feature.title}
+                  width={400}
+                  height={192}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                 />
                 <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-primary/20 backdrop-blur-sm flex items-center justify-center">

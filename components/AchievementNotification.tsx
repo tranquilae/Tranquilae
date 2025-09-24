@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface Achievement {
   id: number;
@@ -47,10 +47,10 @@ export function AchievementNotification({ achievements, onDismiss }: Achievement
     }
   }, [achievements.length]);
 
-  const handleDismiss = () => {
+  const handleDismiss = useCallback(() => {
     setIsVisible(false);
     setTimeout(onDismiss, 300); // Wait for animation to complete
-  };
+  }, [onDismiss]);
 
   if (!achievements.length || !isVisible) {
     return null;

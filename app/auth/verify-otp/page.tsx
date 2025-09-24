@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import Link from "next/link"
+import Image from "next/image"
 import { CheckCircle, Mail, ArrowLeft } from "lucide-react"
 import { Logo } from "@/components/logo"
 
@@ -62,10 +63,11 @@ export default function VerifyOTPPage() {
               {/* Hero Image Section */}
               <div className="relative hidden bg-gradient-to-br from-green-500/10 to-primary/20 md:block overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-green-500/20 to-primary/30" />
-                <img
+                <Image
                   src="/chris-lee-70l1tDAI6rM.jpg"
                   alt="Welcome"
-                  className="absolute inset-0 h-full w-full object-cover opacity-80"
+                  fill
+                  className="object-cover opacity-80"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                 
@@ -169,10 +171,11 @@ export default function VerifyOTPPage() {
             {/* Hero Image Section */}
             <div className="relative hidden bg-gradient-to-br from-primary/5 to-secondary/10 md:block overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/20" />
-              <img
+              <Image
                 src="/chris-lee-70l1tDAI6rM.jpg"
                 alt="Verification"
-                className="absolute inset-0 h-full w-full object-cover opacity-80"
+                fill
+                className="object-cover opacity-80"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
               
