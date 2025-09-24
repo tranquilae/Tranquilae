@@ -77,22 +77,6 @@ export function AICoachChat() {
         </div>
 
         {/* Input */}
-          <div className="space-y-1">
-            {suggestions.map((suggestion, index) => (
-              <Button
-                key={index}
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start text-xs h-8 text-muted-foreground hover:text-foreground"
-                onClick={() => setMessage(suggestion)}
-              >
-                {suggestion}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        {/* Input */}
         <div className="flex space-x-2">
           <Input
             placeholder="Ask your AI coach..."
