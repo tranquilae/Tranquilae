@@ -1,3 +1,4 @@
+import React from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Activity, Clock, Trophy, Users, CheckCircle, Play } from "lucide-react"
