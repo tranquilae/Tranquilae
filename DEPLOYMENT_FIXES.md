@@ -55,6 +55,17 @@ const mapSubscriptionStatus = (stripeStatus: string): 'active' | 'trialing' | 'p
 };
 ```
 
+### 5. exactOptionalPropertyTypes Strict Mode Issues
+**Problem**: TypeScript's `exactOptionalPropertyTypes: true` rejected undefined assignments to optional fields
+**Files Affected**: `app/api/webhooks/stripe/route.ts`
+
+**Fixes Applied**:
+- Used conditional field assignment instead of setting fields to `undefined`
+- Fixed security event logging to only call when `userId` is available
+- Fixed Sentry context to conditionally include user data
+- Removed unsupported account status fields that weren't in User interface
+- Changed error field assignments from `undefined` to empty string
+
 ---
 
 ## 🖼️ Image Optimization Fixes
@@ -108,6 +119,7 @@ These are ESLint warnings that don't prevent compilation:
 5. `fix: bypass TypeScript exactOptionalPropertyTypes by using any type for subscription update` (cbe8be2)
 6. `fix: apply bracket notation for all metadata.user_id access patterns in Stripe webhook` (a8c9425)
 7. `fix: add status mapping for Stripe subscription status to database enum` (00244e0)
+8. `fix: resolve TypeScript exactOptionalPropertyTypes errors in Stripe webhook` (c121aa1)
 
 ---
 
@@ -179,6 +191,6 @@ All critical blocking errors have been systematically identified and resolved. T
 ---
 
 *Document created: September 24, 2025*  
-*Total fixes applied: 7 major commits*  
+*Total fixes applied: 8 major commits*  
 *Files modified: 10+ TypeScript/React components*  
 *Status: ✅ DEPLOYMENT READY*
