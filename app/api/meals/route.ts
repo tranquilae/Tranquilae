@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     // Also record calories into health_data_points for daily stats
     try {
       const { neon } = await import('@neondatabase/serverless')
-      const sql = neon(process.env.DATABASE_URL!)
+      const sql = neon(process.env['DATABASE_URL']!)
       await sql`INSERT INTO health_data_points (user_id, integration_id, data_type, value, unit, timestamp, metadata)
         VALUES (${user.id}, ${null}, ${'calories'}, ${calories}, ${'kcal'}, ${new Date().toISOString()}, ${JSON.stringify({ source: 'meal' })})`
     } catch (dpErr) {
@@ -65,4 +65,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: e?.message || 'Internal error' }, { status: 500 })
   }
 }
+
 

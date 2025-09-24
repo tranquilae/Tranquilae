@@ -127,6 +127,19 @@
     "postcss": "^8.5",
     "tailwindcss": "^4.1.13",
     "tw-animate-css": "1.3.8",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@jridgewell/sourcemap-codec": "^1.5.0",
+    "glob": "^11.0.0"
+  },
+  "resolutions": {
+    "sourcemap-codec": "npm:@jridgewell/sourcemap-codec@^1.5.0",
+    "glob": "^11.0.0",
+    "source-map": "^0.7.4"
+  },
+  "overrides": {
+    "sourcemap-codec": "npm:@jridgewell/sourcemap-codec@^1.5.0",
+    "glob": "^11.0.0",
+    "source-map": "^0.7.4",
+    "rollup-plugin-terser": "npm:@rollup/plugin-terser@^0.4.4"
   }
 }

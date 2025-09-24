@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 
 // Only allow access in development
 function isDevEnvironment() {
-  return process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'preview'
+  return process.env['NODE_ENV'] === 'development' || process.env['VERCEL_ENV'] === 'preview'
 }
 
 export async function GET(request: NextRequest) {
@@ -16,35 +16,35 @@ export async function GET(request: NextRequest) {
     // Collect all environment variables related to Supabase
     const envVars = {
       // URLs
-      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'NOT_SET',
-      NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || 'NOT_SET',
+      NEXT_PUBLIC_SUPABASE_URL: process.env['NEXT_PUBLIC_SUPABASE_URL'] || 'NOT_SET',
+      NEXT_PUBLIC_SITE_URL: process.env['NEXT_PUBLIC_SITE_URL'] || 'NOT_SET',
       
       // Keys (showing only presence/absence and first few chars for security)
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 
-        `SET (${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.substring(0, 10)}...)` : 'NOT_SET',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY'] ? 
+        `SET (${process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY'].substring(0, 10)}...)` : 'NOT_SET',
       
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ? 
-        `SET (${process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.substring(0, 10)}...)` : 'NOT_SET',
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'] ? 
+        `SET (${process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'].substring(0, 10)}...)` : 'NOT_SET',
       
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ? 
-        `SET (${process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY.substring(0, 10)}...)` : 'NOT_SET',
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] ? 
+        `SET (${process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'].substring(0, 10)}...)` : 'NOT_SET',
       
-      SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? 
-        `SET (${process.env.SUPABASE_SERVICE_ROLE_KEY.substring(0, 10)}...)` : 'NOT_SET',
+      SUPABASE_SERVICE_ROLE_KEY: process.env['SUPABASE_SERVICE_ROLE_KEY'] ? 
+        `SET (${process.env['SUPABASE_SERVICE_ROLE_KEY'].substring(0, 10)}...)` : 'NOT_SET',
       
-      SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY ? 
-        `SET (${process.env.SUPABASE_SECRET_KEY.substring(0, 10)}...)` : 'NOT_SET',
+      SUPABASE_SECRET_KEY: process.env['SUPABASE_SECRET_KEY'] ? 
+        `SET (${process.env['SUPABASE_SECRET_KEY'].substring(0, 10)}...)` : 'NOT_SET',
       
-      SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET ? 
-        `SET (${process.env.SUPABASE_JWT_SECRET.substring(0, 10)}...)` : 'NOT_SET',
+      SUPABASE_JWT_SECRET: process.env['SUPABASE_JWT_SECRET'] ? 
+        `SET (${process.env['SUPABASE_JWT_SECRET'].substring(0, 10)}...)` : 'NOT_SET',
     }
 
     // Test different key combinations
     const testResults = []
 
     // Test 1: Primary configuration
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const url = process.env['NEXT_PUBLIC_SUPABASE_URL']
+    const anonKey = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']
     
     if (url && anonKey) {
       try {
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Test 2: Publishable key
-    const pubKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+    const pubKey = process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY']
     if (url && pubKey) {
       try {
         const client = createClient(url, pubKey)
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Test 3: Service role key
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY
+    const serviceKey = process.env['SUPABASE_SERVICE_ROLE_KEY'] || process.env['SUPABASE_SECRET_KEY']
     if (url && serviceKey) {
       try {
         const adminClient = createClient(url, serviceKey)
@@ -156,8 +156,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       timestamp: new Date().toISOString(),
       environment: {
-        NODE_ENV: process.env.NODE_ENV,
-        VERCEL_ENV: process.env.VERCEL_ENV || 'NOT_VERCEL',
+        NODE_ENV: process.env['NODE_ENV'],
+        VERCEL_ENV: process.env['VERCEL_ENV'] || 'NOT_VERCEL',
       },
       environmentVariables: envVars,
       connectionTests: testResults,
@@ -219,3 +219,4 @@ function generateRecommendations(envVars: any, testResults: any[], keyValidation
 
   return recommendations
 }
+

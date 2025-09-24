@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
         success: false, 
         error: { 
           code: 'server_error', 
-          message: process.env.NODE_ENV === 'production' 
+          message: process.env['NODE_ENV'] === 'production' 
             ? 'Internal server error' 
             : error instanceof Error ? error.message : 'Unknown error'
         } 
@@ -154,3 +154,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+

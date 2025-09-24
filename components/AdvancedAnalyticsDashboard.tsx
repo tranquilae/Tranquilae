@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import {
   LineChart,
@@ -119,9 +119,9 @@ export function AdvancedAnalyticsDashboard() {
     if (user) {
       loadAnalyticsData();
     }
-  }, [user, timeRange]);
+  }, [user, timeRange, loadAnalyticsData]);
 
-  const loadAnalyticsData = async () => {
+  const loadAnalyticsData = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`/api/analytics/dashboard?timeRange=${timeRange}`);
@@ -134,7 +134,7 @@ export function AdvancedAnalyticsDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeRange]);
 
   const chartData = useMemo(() => {
     if (!data?.progressData) return [];

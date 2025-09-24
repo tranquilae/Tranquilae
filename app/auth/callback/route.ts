@@ -35,8 +35,8 @@ export async function GET(request: NextRequest) {
     // Handle successful authentication
     if (code) {
       const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+        process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
       )
 
       // Exchange code for session
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
         // Check if user has completed onboarding (using Neon DB, not Supabase)
         try {
           // Check if DATABASE_URL is configured
-          if (!process.env.DATABASE_URL) {
+          if (!process.env['DATABASE_URL']) {
             console.warn('⚠️ DATABASE_URL not configured - skipping onboarding check')
             console.log('🎯 DATABASE_URL missing - defaulting to onboarding')
             redirectPath = '/onboarding'
@@ -164,3 +164,4 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+

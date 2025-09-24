@@ -24,7 +24,7 @@ export async function GET() {
             isConfigured: config.isConfigured,
             status: config.status,
             // Don't expose missing variable names in production for security
-            ...(process.env.NODE_ENV === 'development' && {
+            ...(process.env['NODE_ENV'] === 'development' && {
               missingVars: config.missingVars,
               requiredVars: config.requiredVars
             })
@@ -45,3 +45,4 @@ export async function GET() {
     }, { status: 500 });
   }
 }
+

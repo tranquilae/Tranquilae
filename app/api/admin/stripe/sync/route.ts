@@ -4,13 +4,13 @@ import { supabaseAdmin, checkAdminAccess } from '@/lib/supabase'
 import { logPaymentEvent } from '@/lib/supabase-logger'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+const stripe = new Stripe(process.env['STRIPE_SECRET_KEY']!)
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+      process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
       {
         cookies: {
           get(name: string) {
@@ -110,8 +110,8 @@ export async function POST(request: NextRequest) {
           const planFromPrice = stripeSubscription.items.data[0]?.price?.id
           let userPlan = subscription.plan
 
-          if (planFromPrice === process.env.STRIPE_PRICE_ID_PATHFINDER_MONTHLY ||
-              planFromPrice === process.env.STRIPE_PRICE_ID_PATHFINDER_YEARLY) {
+          if (planFromPrice === process.env['STRIPE_PRICE_ID_PATHFINDER_MONTHLY'] ||
+              planFromPrice === process.env['STRIPE_PRICE_ID_PATHFINDER_YEARLY']) {
             userPlan = 'pathfinder'
           } else {
             userPlan = 'explorer'
@@ -179,4 +179,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
 

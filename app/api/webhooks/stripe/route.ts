@@ -7,9 +7,9 @@ import { assessPaymentRisk, analyzeSubscriptionPatterns } from '@/lib/stripe-rad
 import { logPaymentEvent, logSecurityEvent } from '@/lib/supabase-logger';
 import * as Sentry from '@sentry/nextjs';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripe = new Stripe(process.env['STRIPE_SECRET_KEY']!);
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const webhookSecret = process.env['STRIPE_WEBHOOK_SECRET']!;
 
 /**
  * Handle Stripe webhooks with comprehensive event processing
@@ -311,7 +311,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
               amount: (invoice.amount_paid / 100).toFixed(2),
               currency: invoice.currency.toUpperCase(),
               nextBillingDate: new Date(subscription.current_period_end * 1000).toLocaleDateString(),
-              dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+              dashboardUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard`,
             }
           });
         } catch (error) {
@@ -407,9 +407,9 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
             reason: isTrialSubscription 
               ? 'Card verification failed during your trial period'
               : 'Payment method was declined',
-            dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
-            upgradeUrl: `${process.env.NEXT_PUBLIC_APP_URL}/account/billing`,
-            supportUrl: `${process.env.NEXT_PUBLIC_APP_URL}/support`,
+            dashboardUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard`,
+            upgradeUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/account/billing`,
+            supportUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/support`,
           }
         });
 
@@ -422,8 +422,8 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
               template: 'upgrade-reminder',
               data: {
                 name: user.name || 'there',
-                upgradeUrl: `${process.env.NEXT_PUBLIC_APP_URL}/account/billing`,
-                featuresUrl: `${process.env.NEXT_PUBLIC_APP_URL}/plans`,
+                upgradeUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/account/billing`,
+                featuresUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/plans`,
               }
             });
           } catch (error) {
@@ -591,7 +591,7 @@ async function handleRadarFraudWarning(warning: Stripe.Radar.EarlyFraudWarning) 
           template: 'fraud-alert',
           data: {
             name: user.name || 'there',
-            supportUrl: `${process.env.NEXT_PUBLIC_APP_URL}/support`,
+            supportUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/support`,
           }
         });
       }
@@ -710,7 +710,7 @@ async function handleReviewClosed(review: Stripe.Review) {
               template: 'account-restored',
               data: {
                 name: user.name || 'there',
-                dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+                dashboardUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard`,
               }
             });
           }
@@ -739,3 +739,4 @@ async function handleReviewClosed(review: Stripe.Review) {
 
   console.log(`Review closed: ${review.id} with reason: ${review.reason}`);
 }
+

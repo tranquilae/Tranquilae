@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    if (!process.env.DATABASE_URL) {
+    if (!process.env['DATABASE_URL']) {
       return NextResponse.json({
         ok: false,
         error: 'DATABASE_URL not configured',
@@ -12,7 +12,7 @@ export async function GET() {
     }
 
     const { neon } = await import('@neondatabase/serverless')
-    const sql = neon(process.env.DATABASE_URL)
+    const sql = neon(process.env['DATABASE_URL'])
 
     const result = await sql`SELECT 1 as ok, NOW() as now`
 
@@ -26,4 +26,5 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: error?.message || 'Unknown error' }, { status: 500 })
   }
 }
+
 

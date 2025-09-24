@@ -4,8 +4,8 @@ import { supabaseLogger } from '@/lib/supabase-logger'
 
 // Create server-side Supabase client
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+  process.env['SUPABASE_SECRET_KEY'] || process.env['SUPABASE_SERVICE_ROLE_KEY']!
 )
 
 export async function POST(request: NextRequest) {
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       
       try {
         // Check if DATABASE_URL is configured
-        if (!process.env.DATABASE_URL) {
+        if (!process.env['DATABASE_URL']) {
           console.warn('⚠️ DATABASE_URL not configured - skipping onboarding check')
           console.log('🎯 DATABASE_URL missing - defaulting to onboarding')
           redirectTo = '/onboarding'
@@ -169,3 +169,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+

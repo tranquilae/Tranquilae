@@ -18,9 +18,9 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { hours = 7 } = body || {}
 
-    if (!process.env.DATABASE_URL) return NextResponse.json({ error: 'DB not configured' }, { status: 500 })
+    if (!process.env['DATABASE_URL']) return NextResponse.json({ error: 'DB not configured' }, { status: 500 })
     const { neon } = await import('@neondatabase/serverless')
-    const sql = neon(process.env.DATABASE_URL)
+    const sql = neon(process.env['DATABASE_URL'])
 
     await sql`INSERT INTO health_data_points (user_id, data_type, value, unit, timestamp, metadata) VALUES (${user.id}, ${'sleep'}, ${hours}, ${'hours'}, ${new Date()}, ${JSON.stringify({ source: 'quick-log' })})`
 
@@ -30,4 +30,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: e?.message || 'Internal error' }, { status: 500 })
   }
 }
+
 

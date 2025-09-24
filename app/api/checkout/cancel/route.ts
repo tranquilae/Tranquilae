@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function GET(request: NextRequest) {
   // Redirect back to onboarding with cancel status
-const base = process.env.NEXT_PUBLIC_APP_URL || "";
+const base = process.env['NEXT_PUBLIC_APP_URL'] || "";
 return NextResponse.redirect(`${base}/onboarding?payment=canceled&step=4`);
 }
+

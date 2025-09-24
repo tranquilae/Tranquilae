@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { WorkoutPlayer } from '@/components/WorkoutPlayer';
 import { useRouter } from 'next/navigation';
@@ -38,9 +38,9 @@ export default function WorkoutPage({ params }: WorkoutPageProps) {
     if (user && neonUser && !authLoading) {
       loadWorkoutDetails();
     }
-  }, [user, neonUser, authLoading, workoutId]);
+  }, [user, neonUser, authLoading, workoutId, loadWorkoutDetails]);
 
-  const loadWorkoutDetails = async () => {
+  const loadWorkoutDetails = useCallback(async () => {
     try {
       const response = await fetch(`/api/workouts/${workoutId}`);
       const result = await response.json();
@@ -56,7 +56,7 @@ export default function WorkoutPage({ params }: WorkoutPageProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [workoutId]);
 
   const handleStartWorkout = async () => {
     try {

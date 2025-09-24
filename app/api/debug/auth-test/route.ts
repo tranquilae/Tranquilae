@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 
 // Only allow access in development
 function isDevEnvironment() {
-  return process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'preview'
+  return process.env['NODE_ENV'] === 'development' || process.env['VERCEL_ENV'] === 'preview'
 }
 
 export async function GET(request: NextRequest) {
@@ -22,9 +22,9 @@ export async function GET(request: NextRequest) {
       details: {}
     }
     
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY
+    const url = process.env['NEXT_PUBLIC_SUPABASE_URL']
+    const anonKey = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']
+    const serviceKey = process.env['SUPABASE_SERVICE_ROLE_KEY'] || process.env['SUPABASE_SECRET_KEY']
     
     envTest.details = {
       url: url ? '✅ Set' : '❌ Missing',
@@ -245,8 +245,8 @@ export async function POST(request: NextRequest) {
     }
     
     // Test actual signup flow
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const url = process.env['NEXT_PUBLIC_SUPABASE_URL']
+    const anonKey = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']
     
     if (!url || !anonKey) {
       return NextResponse.json({ error: 'Supabase configuration missing' }, { status: 503 })
@@ -285,3 +285,4 @@ export async function POST(request: NextRequest) {
     }, { status: 500 })
   }
 }
+

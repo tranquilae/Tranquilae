@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -39,9 +39,9 @@ function WorkoutCompleteContent() {
       // Hide confetti after 3 seconds
       setTimeout(() => setShowConfetti(false), 3000);
     }
-  }, [userWorkoutId, user, neonUser]);
+  }, [userWorkoutId, user, neonUser, loadCompletionStats]);
 
-  const loadCompletionStats = async () => {
+  const loadCompletionStats = useCallback(async () => {
     try {
       const response = await fetch(`/api/workouts/completion-stats?userWorkoutId=${userWorkoutId}`);
       const result = await response.json();
@@ -60,7 +60,7 @@ function WorkoutCompleteContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userWorkoutId, duration]);
 
   const formatDuration = (minutes: number) => {
     if (minutes < 60) return `${minutes} minutes`;

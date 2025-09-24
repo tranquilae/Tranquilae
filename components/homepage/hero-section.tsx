@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Sparkles } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 export function HeroSection() {
   return (
@@ -10,13 +11,13 @@ export function HeroSection() {
       <div className="absolute inset-0 bg-[url('/calm-nature-background-with-soft-leaves.jpg')] bg-cover bg-center opacity-10" />
 
       <div className="absolute top-20 left-10 w-24 h-24 rounded-full overflow-hidden opacity-20 blur-sm">
-        <img src="/woman-preparing-healthy-smoothie-bowl.jpg" alt="" className="w-full h-full object-cover" />
+        <Image src="/woman-preparing-healthy-smoothie-bowl.jpg" alt="" width={96} height={96} className="w-full h-full object-cover" />
       </div>
       <div className="absolute top-40 right-16 w-32 h-32 rounded-full overflow-hidden opacity-15 blur-sm">
-        <img src="/group-doing-outdoor-yoga-class.jpg" alt="" className="w-full h-full object-cover" />
+        <Image src="/group-doing-outdoor-yoga-class.jpg" alt="" width={128} height={128} className="w-full h-full object-cover" />
       </div>
       <div className="absolute bottom-32 left-20 w-28 h-28 rounded-full overflow-hidden opacity-20 blur-sm">
-        <img src="/person-running-on-scenic-trail.jpg" alt="" className="w-full h-full object-cover" />
+        <Image src="/person-running-on-scenic-trail.jpg" alt="" width={112} height={112} className="w-full h-full object-cover" />
       </div>
 
       {/* Decorative elements inspired by Farway's pink clouds */}

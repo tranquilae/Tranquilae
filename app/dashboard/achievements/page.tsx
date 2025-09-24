@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { getNeonClient } from '@/lib/neonClient';
 
@@ -27,13 +27,7 @@ export default function AchievementsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      loadAchievements();
-    }
-  }, [user]);
-
-  const loadAchievements = async () => {
+  const loadAchievements = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -76,7 +70,14 @@ export default function AchievementsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadAchievements();
+    }
+  }, [user, loadAchievements]);
+
 
   const isEarned = (achievementId: number) => {
     return userAchievements.some(ua => ua.achievement_id === achievementId);

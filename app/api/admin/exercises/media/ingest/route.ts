@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     const adminToken = request.headers.get('x-admin-token') || ''
-    if (!process.env.ADMIN_IMPORT_TOKEN || adminToken !== process.env.ADMIN_IMPORT_TOKEN)
+    if (!process.env['ADMIN_IMPORT_TOKEN'] || adminToken !== process.env['ADMIN_IMPORT_TOKEN'])
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { seeds = [], maxDepth = 1, delayMs = 300, maxPages = 500 } = await request.json() || {}
@@ -32,15 +32,21 @@ export async function POST(request: NextRequest) {
       let m
       while ((m = reHref.exec(html)) !== null) {
         const rel = m[1]
-        const abs = new URL(rel, base).toString()
-        if (sameDomain(base, abs)) links.add(abs)
+        if (!rel) continue
+        try {
+          const abs = new URL(rel, base).toString()
+          if (sameDomain(base, abs)) links.add(abs)
+        } catch {
+          // Skip invalid URLs
+          continue
+        }
       }
       return Array.from(links)
     }
 
     const extractTitle = (html: string) => {
       const m = /<title>([^<]+)<\/title>/i.exec(html)
-      return m ? m[1].trim() : ''
+      return m && m[1] ? m[1].trim() : ''
     }
 
     const extractYouTube = (html: string) => {
@@ -78,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     // Heuristic: derive names from page title (first word combo) or URL slug
     const toName = (pageUrl: string, title: string) => {
-      if (title) return title.split('|')[0].split('-').slice(0, 6).join(' ').replace(/\s+/g, ' ').trim()
+      if (title && title.length > 0) return title.split('|')[0]?.split('-').slice(0, 6).join(' ').replace(/\s+/g, ' ').trim()
       try {
         const u = new URL(pageUrl)
         const seg = u.pathname.split('/').filter(Boolean).pop() || ''
@@ -90,7 +96,7 @@ export async function POST(request: NextRequest) {
     const items: Array<{ name:string; video_url:string }> = []
     const seen = new Set<string>()
     for (const p of pages) {
-      const nameBase = toName(p.url, p.title)
+      const nameBase = toName(p.url, p.title) || 'Unknown'
       for (const v of p.videos) {
         const key = `${nameBase}::${v}`
         if (seen.has(key)) continue
@@ -112,4 +118,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: e?.message || 'Internal error' }, { status: 500 })
   }
 }
+
 

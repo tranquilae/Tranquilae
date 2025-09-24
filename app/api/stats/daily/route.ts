@@ -23,9 +23,9 @@ export async function GET(request: NextRequest) {
     const dayEnd = new Date(dayStart)
     dayEnd.setUTCDate(dayStart.getUTCDate() + 1)
 
-    if (!process.env.DATABASE_URL) return NextResponse.json({ stats: {} })
+    if (!process.env['DATABASE_URL']) return NextResponse.json({ stats: {} })
     const { neon } = await import('@neondatabase/serverless')
-    const sql = neon(process.env.DATABASE_URL)
+    const sql = neon(process.env['DATABASE_URL'])
 
     const s = await sql`
       SELECT 
@@ -63,4 +63,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ stats: {} })
   }
 }
+
 

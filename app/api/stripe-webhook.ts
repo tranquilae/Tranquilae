@@ -4,3 +4,4 @@
 export default function handler() {
   return { error: 'This endpoint has been moved to /api/webhooks/stripe' };
 }
+

@@ -8,8 +8,8 @@ export async function POST(req: Request) {
     const calories = Number(body?.calories || 0)
     if (!calories) return NextResponse.json({ error: 'calories is required' }, { status: 400 })
 
-    const appId = process.env.EDAMAM_MEAL_APP_ID
-    const appKey = process.env.EDAMAM_MEAL_APP_KEY
+    const appId = process.env['EDAMAM_MEAL_APP_ID']
+    const appKey = process.env['EDAMAM_MEAL_APP_KEY']
     if (!appId || !appKey) {
       return NextResponse.json({ error: 'Edamam Meal Planner not configured' }, { status: 500 })
     }
@@ -36,4 +36,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e?.message || 'Internal error' }, { status: 500 })
   }
 }
+
 

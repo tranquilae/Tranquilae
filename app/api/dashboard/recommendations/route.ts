@@ -11,8 +11,8 @@ export async function GET() {
     if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { neon } = await import('@neondatabase/serverless')
-    if (!process.env.DATABASE_URL) return NextResponse.json({ recommendations: [] })
-    const sql = neon(process.env.DATABASE_URL)
+    if (!process.env['DATABASE_URL']) return NextResponse.json({ recommendations: [] })
+    const sql = neon(process.env['DATABASE_URL'])
 
     // Fetch goals
     const settings = await sql`SELECT * FROM user_settings WHERE user_id = ${user.id}`
@@ -66,4 +66,5 @@ export async function GET() {
     return NextResponse.json({ recommendations: [] })
   }
 }
+
 

@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
             data: {
               name: user.name || 'there',
               plan: plan,
-              dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+              dashboardUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard`
             }
           });
         } catch (emailError) {
@@ -296,3 +296,4 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+

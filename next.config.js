@@ -50,7 +50,6 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
-  serverComponentsExternalPackages: ['@supabase/supabase-js'],
   env: {
     SUPPRESS_SUPABASE_WARNINGS: 'true',
   },

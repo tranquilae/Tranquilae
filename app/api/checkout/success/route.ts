@@ -4,7 +4,7 @@ import Stripe from 'stripe';
 import { db } from '@/lib/database';
 import { sendEmail } from '@/lib/email';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripe = new Stripe(process.env['STRIPE_SECRET_KEY']!);
 
 /**
  * Handle successful checkout - verify session and update subscription
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     if (!sessionId) {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/onboarding?error=missing_session`
+        `${process.env['NEXT_PUBLIC_APP_URL']}/onboarding?error=missing_session`
       );
     }
 
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     if (!session.metadata?.user_id) {
       console.error('No user_id in session metadata');
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/onboarding?error=invalid_session`
+        `${process.env['NEXT_PUBLIC_APP_URL']}/onboarding?error=invalid_session`
       );
     }
 
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     if (!user) {
       console.error(`User not found: ${userId}`);
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/onboarding?error=user_not_found`
+        `${process.env['NEXT_PUBLIC_APP_URL']}/onboarding?error=user_not_found`
       );
     }
 
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     if (!subscription) {
       console.error('No subscription in session');
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/onboarding?error=no_subscription`
+        `${process.env['NEXT_PUBLIC_APP_URL']}/onboarding?error=no_subscription`
       );
     }
 
@@ -85,8 +85,8 @@ export async function GET(request: NextRequest) {
             trialEndDate: subscription.trial_end 
               ? new Date(subscription.trial_end * 1000).toLocaleDateString()
               : 'in 7 days',
-            dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
-            billingPortalUrl: `${process.env.NEXT_PUBLIC_APP_URL}/account/billing`
+            dashboardUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard`,
+            billingPortalUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/account/billing`
           }
         });
       } catch (emailError) {
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
 
     // Redirect to dashboard with success message
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?onboarding=complete&plan=pathfinder&trial=started`
+      `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard?onboarding=complete&plan=pathfinder&trial=started`
     );
 
   } catch (error: any) {
@@ -107,7 +107,8 @@ export async function GET(request: NextRequest) {
       console.error('Stripe error:', error.type, error.message);
     }
 
-const base = process.env.NEXT_PUBLIC_APP_URL || "";
+const base = process.env['NEXT_PUBLIC_APP_URL'] || "";
 return NextResponse.redirect(`${base}/onboarding?error=checkout_error`);
   }
 }
+

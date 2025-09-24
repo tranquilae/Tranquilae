@@ -16,8 +16,8 @@ export async function POST(request: Request) {
     }
 
     const { neon } = await import('@neondatabase/serverless')
-    if (!process.env.DATABASE_URL) return NextResponse.json({ error: 'DB not configured' }, { status: 500 })
-    const sql = neon(process.env.DATABASE_URL)
+    if (!process.env['DATABASE_URL']) return NextResponse.json({ error: 'DB not configured' }, { status: 500 })
+    const sql = neon(process.env['DATABASE_URL'])
 
     // Verify conversation belongs to user
     const conv = await sql`SELECT id FROM ai_conversations WHERE id = ${conversation_id} AND user_id = ${user.id}`
@@ -30,4 +30,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: e?.message || 'Internal error' }, { status: 500 })
   }
 }
+
 

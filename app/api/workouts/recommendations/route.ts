@@ -294,7 +294,7 @@ export async function GET(request: NextRequest) {
         success: false, 
         error: { 
           code: 'server_error', 
-          message: process.env.NODE_ENV === 'production' 
+          message: process.env['NODE_ENV'] === 'production' 
             ? 'Internal server error' 
             : error instanceof Error ? error.message : 'Unknown error'
         } 
@@ -343,3 +343,4 @@ function getRecommendationReasons(workout: any, userData: any, userHistory: any[
 
   return reasons.slice(0, 2); // Limit to top 2 reasons
 }
+
