@@ -3,64 +3,43 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signUp } from '@/lib/supabaseClient';
-import { createUser } from '@/lib/neonClient';
+import { signInWithPassword } from '@/lib/supabaseClient';
+import { getUserBySupabaseId } from '@/lib/neonClient';
 
-export default function SignUpPage() {
+export default function SignInPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setSuccess(null);
-
-    // Basic validation
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      setLoading(false);
-      return;
-    }
 
     try {
-      // Sign up with Supabase
-      const { user } = await signUp(email, password);
+      // Sign in with Supabase
+      const { user } = await signInWithPassword(email, password);
       
       if (user) {
+        // Check if user exists in Neon and get onboarding status
         try {
-          // Create user profile in Neon
-          await createUser(user.id, email, user.email?.split('@')[0]);
+          const neonUser = await getUserBySupabaseId(user.id);
           
-          setSuccess('Account created successfully! Please check your email to verify your account.');
-          
-          // Redirect to onboarding after a short delay
-          setTimeout(() => {
+          if (neonUser?.onboarded) {
+            router.push('/dashboard');
+          } else {
             router.push('/onboarding');
-          }, 2000);
-          
+          }
         } catch (neonError) {
-          console.error('Error creating user in Neon:', neonError);
-          // Still redirect to onboarding - the app can create the profile later
-          setSuccess('Account created successfully! Redirecting to onboarding...');
-          setTimeout(() => {
-            router.push('/onboarding');
-          }, 2000);
+          // User might not exist in Neon yet, redirect to onboarding
+          console.warn('User not found in Neon, redirecting to onboarding');
+          router.push('/onboarding');
         }
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred during sign up');
+      setError(err.message || 'An error occurred during sign in');
     } finally {
       setLoading(false);
     }
@@ -71,9 +50,9 @@ export default function SignUpPage() {
       <div className="w-full max-w-md">
         <div className="glass-card p-8 animate-slide-up">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gradient">Join Tranquilae</h1>
+            <h1 className="text-3xl font-bold text-gradient">Welcome Back</h1>
             <p className="text-gray-600 dark:text-gray-300 mt-2">
-              Create your wellness journey account
+              Sign in to your Tranquilae account
             </p>
           </div>
 
@@ -105,23 +84,7 @@ export default function SignUpPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="glass-input w-full text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                placeholder="Create a password (6+ characters)"
-                disabled={loading}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                Confirm Password
-              </label>
-              <input
-                id="confirmPassword"
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="glass-input w-full text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                placeholder="Confirm your password"
+                placeholder="Enter your password"
                 disabled={loading}
               />
             </div>
@@ -132,40 +95,32 @@ export default function SignUpPage() {
               </div>
             )}
 
-            {success && (
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
-                <p className="text-sm text-green-700 dark:text-green-300">{success}</p>
-              </div>
-            )}
-
             <button
               type="submit"
               disabled={loading}
               className="accent-button w-full py-3 px-4 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Creating account...' : 'Create Account'}
+              {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Already have an account?{' '}
+              Don't have an account?{' '}
               <Link 
-                href="/signin" 
+                href="/signup" 
                 className="font-medium text-purple-600 dark:text-purple-400 hover:text-purple-500 transition-colors"
               >
-                Sign in here
+                Sign up here
               </Link>
             </p>
             
-            <div className="mt-6 text-xs text-gray-500 dark:text-gray-400">
-              By creating an account, you agree to our{' '}
-              <Link href="/terms" className="underline hover:text-gray-700 dark:hover:text-gray-200">
-                Terms of Service
-              </Link>{' '}
-              and{' '}
-              <Link href="/privacy" className="underline hover:text-gray-700 dark:hover:text-gray-200">
-                Privacy Policy
+            <div className="mt-4">
+              <Link 
+                href="/auth/reset-password" 
+                className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+              >
+                Forgot your password?
               </Link>
             </div>
           </div>
