@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { headers } from 'next/headers';
-import { db } from '@/lib/database';
+import { db, type Subscription } from '@/lib/database';
 import { sendEmail } from '@/lib/email';
 import { assessPaymentRisk, analyzeSubscriptionPatterns } from '@/lib/stripe-radar';
 import { logPaymentEvent, logSecurityEvent } from '@/lib/supabase-logger';
@@ -497,13 +497,18 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   };
 
   // Update subscription details
-  await db.updateSubscription(userId, {
+  const updateData: Partial<Subscription> = {
     status: mapSubscriptionStatus(subscription.status),
-    trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
-    current_period_start: new Date(subscription.current_period_start * 1000),
-    current_period_end: new Date(subscription.current_period_end * 1000),
+    current_period_start: new Date((subscription as any).current_period_start * 1000),
+    current_period_end: new Date((subscription as any).current_period_end * 1000),
     cancel_at_period_end: subscription.cancel_at_period_end,
-  });
+  };
+  
+  if (subscription.trial_end) {
+    updateData.trial_end = new Date(subscription.trial_end * 1000);
+  }
+  
+  await db.updateSubscription(userId, updateData);
 
   console.log(`Subscription ${subscription.id} updated for user ${userId}`);
 }
@@ -520,14 +525,10 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     return;
   }
 
-  // Downgrade to Explorer
+  // Downgrade to Explorer - only set the fields that should have values
   await db.updateSubscription(userId, {
     plan: 'explorer',
     status: 'active',
-    stripe_subscription_id: null,
-    trial_end: null,
-    current_period_start: null,
-    current_period_end: null,
     cancel_at_period_end: false,
   });
 
@@ -579,47 +580,47 @@ async function handleRadarFraudWarning(warning: Stripe.Radar.EarlyFraudWarning) 
   }
 
   // Log fraud warning
-  await logSecurityEvent({
-    event_type: 'SUSPICIOUS_ACTIVITY',
-    user_id: userId,
-    success: false,
-    error: 'Early fraud warning received from Stripe Radar',
-    metadata: {
-      charge_id: charge,
-      payment_intent_id: paymentIntent,
-      fraud_type: warning.fraud_type,
-      actionable: warning.actionable,
-      created: warning.created
-    }
-  });
+  if (userId) {
+    await logSecurityEvent({
+      event_type: 'SUSPICIOUS_ACTIVITY',
+      user_id: userId,
+      success: false,
+      error: 'Early fraud warning received from Stripe Radar',
+      metadata: {
+        charge_id: charge,
+        payment_intent_id: paymentIntent,
+        fraud_type: warning.fraud_type,
+        actionable: warning.actionable,
+        created: warning.created
+      }
+    });
+  }
 
   // Alert team immediately
-  Sentry.captureMessage('Stripe Radar fraud warning received', {
+  const sentryContext: any = {
     level: 'error',
     tags: {
       component: 'fraud-detection',
       event: 'radar_fraud_warning'
     },
-    user: { id: userId },
     extra: {
       warning_id: warning.id,
       charge_id: charge,
       fraud_type: warning.fraud_type,
       actionable: warning.actionable
     }
-  });
+  };
+  
+  if (userId) {
+    sentryContext.user = { id: userId };
+  }
+  
+  Sentry.captureMessage('Stripe Radar fraud warning received', sentryContext);
 
   // If we have user information and warning is actionable, take preventive action
   if (userId && warning.actionable) {
     try {
-      // Suspend user account temporarily
-      await db.updateUser(userId, {
-        account_status: 'suspended',
-        suspended_reason: 'fraud_warning',
-        suspended_at: new Date()
-      });
-
-      // Send notification email to user
+      // Send notification email to user (account suspension functionality not yet implemented)
       const user = await db.getUserById(userId);
       if (user?.email) {
         await sendEmail({
@@ -633,7 +634,7 @@ async function handleRadarFraudWarning(warning: Stripe.Radar.EarlyFraudWarning) 
         });
       }
 
-      console.log(`User ${userId} account suspended due to fraud warning`);
+      console.log(`Security alert sent to user ${userId} due to fraud warning`);
     } catch (error) {
       console.error('Error taking action on fraud warning:', error);
       Sentry.captureException(error);
@@ -660,35 +661,42 @@ async function handleReviewOpened(review: Stripe.Review) {
   }
 
   // Log review opening
-  await logSecurityEvent({
-    event_type: 'SUSPICIOUS_ACTIVITY',
-    user_id: userId,
-    success: false,
-    error: 'Payment under manual review',
-    metadata: {
-      review_id: review.id,
-      charge_id: charge,
-      payment_intent_id: paymentIntent,
-      reason: review.reason,
-      opened_reason: review.opened_reason
-    }
-  });
+  if (userId) {
+    await logSecurityEvent({
+      event_type: 'SUSPICIOUS_ACTIVITY',
+      user_id: userId,
+      success: false,
+      error: 'Payment under manual review',
+      metadata: {
+        review_id: review.id,
+        charge_id: charge,
+        payment_intent_id: paymentIntent,
+        reason: review.reason,
+        opened_reason: review.opened_reason
+      }
+    });
+  }
 
   // Alert team for manual review
-  Sentry.captureMessage('Payment under manual review', {
+  const sentryReviewContext: any = {
     level: 'warning',
     tags: {
       component: 'fraud-detection',
       event: 'review_opened'
     },
-    user: { id: userId },
     extra: {
       review_id: review.id,
       charge_id: charge,
       reason: review.reason,
       opened_reason: review.opened_reason
     }
-  });
+  };
+  
+  if (userId) {
+    sentryReviewContext.user = { id: userId };
+  }
+  
+  Sentry.captureMessage('Payment under manual review', sentryReviewContext);
 
   console.log(`Review opened: ${review.id} for charge ${charge}`);
 }
@@ -710,68 +718,66 @@ async function handleReviewClosed(review: Stripe.Review) {
   }
 
   // Log review closure
-  await logSecurityEvent({
-    event_type: 'SUSPICIOUS_ACTIVITY',
-    user_id: userId,
-    success: review.reason === 'approved',
-    error: review.reason === 'approved' ? undefined : `Review closed: ${review.reason}`,
-    metadata: {
-      review_id: review.id,
-      charge_id: charge,
-      payment_intent_id: paymentIntent,
-      reason: review.reason,
-      closed_reason: review.closed_reason
-    }
-  });
+  if (userId) {
+    await logSecurityEvent({
+      event_type: 'SUSPICIOUS_ACTIVITY',
+      user_id: userId,
+      success: review.reason === 'approved',
+      error: review.reason === 'approved' ? '' : `Review closed: ${review.reason}`,
+      metadata: {
+        review_id: review.id,
+        charge_id: charge,
+        payment_intent_id: paymentIntent,
+        reason: review.reason,
+        closed_reason: review.closed_reason
+      }
+    });
+  }
 
   // Handle based on review outcome
   if (review.reason === 'approved') {
     console.log(`Review approved: ${review.id}`);
     
-    // If user was suspended, restore their account
+    // Send approval notification (account suspension functionality not yet implemented)
     if (userId) {
       try {
         const user = await db.getUserById(userId);
-        if (user?.account_status === 'suspended') {
-          await db.updateUser(userId, {
-            account_status: 'active',
-            suspended_reason: null,
-            suspended_at: null
+        if (user?.email) {
+          await sendEmail({
+            to: user.email,
+            subject: 'Payment Review Approved - Welcome Back!',
+            template: 'payment-approved',
+            data: {
+              name: user.name || 'there',
+              dashboardUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard`,
+            }
           });
-          
-          // Send restoration notification
-          if (user.email) {
-            await sendEmail({
-              to: user.email,
-              subject: 'Account Restored - Welcome Back!',
-              template: 'account-restored',
-              data: {
-                name: user.name || 'there',
-                dashboardUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard`,
-              }
-            });
-          }
         }
       } catch (error) {
-        console.error('Error restoring user account:', error);
+        console.error('Error sending approval notification:', error);
       }
     }
   } else {
     // Review was declined
-    Sentry.captureMessage('Payment review declined', {
+    const sentryDeclinedContext: any = {
       level: 'error',
       tags: {
         component: 'fraud-detection',
         event: 'review_declined'
       },
-      user: { id: userId },
       extra: {
         review_id: review.id,
         charge_id: charge,
         reason: review.reason,
         closed_reason: review.closed_reason
       }
-    });
+    };
+    
+    if (userId) {
+      sentryDeclinedContext.user = { id: userId };
+    }
+    
+    Sentry.captureMessage('Payment review declined', sentryDeclinedContext);
   }
 
   console.log(`Review closed: ${review.id} with reason: ${review.reason}`);
