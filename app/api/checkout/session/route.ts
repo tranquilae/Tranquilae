@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
       // Update existing customer if needed
       await stripe.customers.update(customerId, {
         email: user.email,
-        name: user.name || undefined,
+        name: user.name || '',
       });
     }
 
@@ -306,7 +306,7 @@ export async function POST(request: NextRequest) {
         operation: 'create-session',
         error_type: error.type || 'unknown'
       },
-      user: { id: userId },
+      user: { id: user.id || 'unknown' },
       extra: {
         stripe_error_type: error.type,
         stripe_error_code: error.code,
