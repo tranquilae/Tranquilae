@@ -43,7 +43,7 @@ export async function POST(
     }
 
     const neonUser = neonUserResult[0];
-    const userId = neonUser.id;
+    const userId = neonUser?.['id'];
 
     // Get workout details with exercises
     const workoutResult = await sql`
@@ -104,7 +104,7 @@ export async function POST(
 
     if (existingSessionResult.length > 0) {
       // Resume existing session
-      userWorkoutId = existingSessionResult[0].id;
+      userWorkoutId = existingSessionResult[0]?.['id'];
     } else {
       // Create new workout session
       const newSessionResult = await sql`
@@ -112,7 +112,7 @@ export async function POST(
         VALUES (${userId}, ${workoutId}, CURRENT_TIMESTAMP)
         RETURNING id
       `;
-      userWorkoutId = newSessionResult[0].id;
+      userWorkoutId = newSessionResult[0]?.['id'];
     }
 
     // Get exercise progress for this workout session
@@ -130,16 +130,16 @@ export async function POST(
     // Create progress map for easy lookup
     const progressMap = new Map();
     progressResult.forEach(p => {
-      progressMap.set(p.exercise_id, {
-        setsCompleted: p.sets_completed || 0,
-        repsCompleted: p.reps_completed || 0,
-        durationCompleted: p.duration_completed_seconds || 0,
-        isCompleted: !!p.completed_at
+      progressMap.set(p['exercise_id'], {
+        setsCompleted: p['sets_completed'] || 0,
+        repsCompleted: p['reps_completed'] || 0,
+        durationCompleted: p['duration_completed_seconds'] || 0,
+        isCompleted: !!p['completed_at']
       });
     });
 
     // Enhance exercises with progress data
-    const enhancedExercises = workout.exercises.map(exercise => ({
+    const enhancedExercises = workout?.['exercises']?.map((exercise: any) => ({
       ...exercise,
       progress: progressMap.get(exercise.exercise_id) || {
         setsCompleted: 0,
@@ -147,7 +147,7 @@ export async function POST(
         durationCompleted: 0,
         isCompleted: false
       }
-    }));
+    })) || [];
 
     return NextResponse.json({
       success: true,

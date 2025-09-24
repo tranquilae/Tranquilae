@@ -77,8 +77,8 @@ export async function GET(
     const workout = workoutResult[0];
 
     // Filter out any null exercises (in case there are workouts with no exercises)
-    if (workout.exercises && workout.exercises[0] === null) {
-      workout.exercises = [];
+    if (workout?.['exercises'] && workout['exercises'][0] === null) {
+      workout['exercises'] = [];
     }
 
     return NextResponse.json({

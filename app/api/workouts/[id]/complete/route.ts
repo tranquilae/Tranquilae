@@ -37,14 +37,14 @@ export async function POST(
       WHERE supabase_user_id = ${user.id}
     `;
 
-    if (neonUserResult.length === 0) {
+    if (!neonUserResult || neonUserResult.length === 0 || !neonUserResult[0]) {
       return NextResponse.json(
         { success: false, error: { code: 'user_not_found', message: 'User not found in database' } },
         { status: 404 }
       );
     }
 
-    const userId = neonUserResult[0].id;
+    const userId = neonUserResult[0]['id'];
 
     // Verify that the user_workout belongs to the current user and is not already completed
     const userWorkoutResult = await sql`
@@ -63,7 +63,7 @@ export async function POST(
 
     const userWorkout = userWorkoutResult[0];
 
-    if (userWorkout.completed_at) {
+    if (userWorkout?.['completed_at']) {
       return NextResponse.json(
         { success: false, error: { code: 'already_completed', message: 'Workout is already completed' } },
         { status: 400 }
@@ -81,7 +81,7 @@ export async function POST(
       RETURNING completed_at
     `;
 
-    const completedAt = completionResult[0].completed_at;
+    const completedAt = completionResult[0]?.['completed_at'];
 
     // Check and award milestone-based achievements
     try {
@@ -92,7 +92,7 @@ export async function POST(
         WHERE user_id = ${userId} AND completed_at IS NOT NULL
       `;
 
-      const totalWorkouts = totalWorkoutsResult[0].total_workouts;
+      const totalWorkouts = totalWorkoutsResult[0]?.['total_workouts'] || 0;
 
       // Check for workout count milestones
       const workoutMilestones = [1, 5, 10, 25, 50, 100, 250, 500, 1000];
@@ -110,7 +110,7 @@ export async function POST(
       for (const achievement of milestoneAchievements) {
         await sql`
           INSERT INTO user_achievements (user_id, achievement_id, earned_at)
-          VALUES (${userId}, ${achievement.id}, CURRENT_TIMESTAMP)
+          VALUES (${userId}, ${achievement?.['id']}, CURRENT_TIMESTAMP)
           ON CONFLICT (user_id, achievement_id) DO NOTHING
         `;
       }
@@ -151,7 +151,7 @@ export async function POST(
           )::int as current_streak
       `;
 
-      const currentStreak = streakResult[0]?.current_streak || 0;
+      const currentStreak = streakResult[0]?.['current_streak'] || 0;
 
       // Check for streak milestones
       const streakMilestones = [3, 7, 14, 30, 60, 100];
@@ -169,26 +169,26 @@ export async function POST(
       for (const achievement of streakAchievements) {
         await sql`
           INSERT INTO user_achievements (user_id, achievement_id, earned_at)
-          VALUES (${userId}, ${achievement.id}, CURRENT_TIMESTAMP)
+          VALUES (${userId}, ${achievement?.['id']}, CURRENT_TIMESTAMP)
           ON CONFLICT (user_id, achievement_id) DO NOTHING
         `;
       }
 
       // Check for difficulty-based achievements
-      if (userWorkout.difficulty) {
+      if (userWorkout?.['difficulty']) {
         const difficultyAchievements = await sql`
           SELECT a.id, a.name, a.description
           FROM achievements a
           LEFT JOIN user_achievements ua ON a.id = ua.achievement_id AND ua.user_id = ${userId}
           WHERE a.trigger_type = 'difficulty_completion'
-            AND a.difficulty_filter = ${userWorkout.difficulty}
+            AND a.difficulty_filter = ${userWorkout?.['difficulty']}
             AND ua.id IS NULL
         `;
 
         for (const achievement of difficultyAchievements) {
           await sql`
             INSERT INTO user_achievements (user_id, achievement_id, earned_at)
-            VALUES (${userId}, ${achievement.id}, CURRENT_TIMESTAMP)
+            VALUES (${userId}, ${achievement?.['id']}, CURRENT_TIMESTAMP)
             ON CONFLICT (user_id, achievement_id) DO NOTHING
           `;
         }
@@ -208,11 +208,11 @@ export async function POST(
           SELECT COUNT(*)::int as count
           FROM user_workouts
           WHERE user_id = ${userId} AND completed_at IS NOT NULL
-        `.then(r => r[0].count),
+        `.then(r => r[0]?.['count'] || 0),
         workout: {
-          id: userWorkout.workout_id,
-          title: userWorkout.title,
-          difficulty: userWorkout.difficulty
+          id: userWorkout?.['workout_id'],
+          title: userWorkout?.['title'],
+          difficulty: userWorkout?.['difficulty']
         }
       }
     });
