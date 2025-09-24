@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
           
           if (!userData) {
             try {
-              userData = await db.createUser({ id: authData.user.id, email: authData.user.email || '', name: authData.user.email?.split('@')[0] || null, onboarding_complete: false })
+              userData = await db.createUser({ id: authData.user.id, email: authData.user.email || '', name: authData.user.email?.split('@')[0] || '', onboarding_complete: false })
               console.log('🆕 Created minimal profile during login')
             } catch (createErr) {
               console.warn('Could not auto-create profile during login:', createErr)
