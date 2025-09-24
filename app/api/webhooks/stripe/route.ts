@@ -354,7 +354,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   console.log('Processing invoice.payment_failed:', invoice.id);
 
-  const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
+  const subscription = await stripe.subscriptions.retrieve((invoice as any).subscription as string);
   const userId = subscription.metadata?.user_id;
 
   if (!userId) {
