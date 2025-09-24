@@ -1,5 +1,6 @@
 "use client"
 
+import React from 'react'
 import { Home, Utensils, Dumbbell, Brain, BookOpen, MessageCircle, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
