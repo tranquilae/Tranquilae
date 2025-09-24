@@ -194,7 +194,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       metadata: {
         session_id: session.id,
         plan: 'pathfinder',
-        trial_end: subscription.trial_end
+        trial_end: (subscription as any).trial_end
       }
     });
 
@@ -236,10 +236,10 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
 
   try {
     // Perform fraud risk assessment on payment
-    if (invoice.payment_intent) {
-      const riskAssessment = await assessPaymentRisk(invoice.payment_intent as string, userId, {
+    if ((invoice as any).payment_intent) {
+      const riskAssessment = await assessPaymentRisk((invoice as any).payment_intent as string, userId, {
         invoice_id: invoice.id,
-        billing_reason: invoice.billing_reason,
+        billing_reason: (invoice as any).billing_reason,
         amount: invoice.amount_paid,
         context: 'recurring_payment'
       });
@@ -253,7 +253,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
           success: false,
           error: 'High-risk payment detected',
           metadata: {
-            payment_intent_id: invoice.payment_intent,
+            payment_intent_id: (invoice as any).payment_intent,
             risk_level: riskAssessment.risk_assessment.risk_level,
             risk_score: riskAssessment.risk_assessment.risk_score,
             reasons: riskAssessment.risk_assessment.reasons,
@@ -272,7 +272,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
             user: { id: userId },
             extra: {
               invoice_id: invoice.id,
-              payment_intent_id: invoice.payment_intent,
+              payment_intent_id: (invoice as any).payment_intent,
               risk_assessment: riskAssessment.risk_assessment
             }
           });
@@ -283,8 +283,8 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
     // Update subscription status to active
     await db.updateSubscription(userId, {
       status: 'active',
-      current_period_start: new Date(subscription.current_period_start * 1000),
-      current_period_end: new Date(subscription.current_period_end * 1000),
+      current_period_start: new Date((subscription as any).current_period_start * 1000),
+      current_period_end: new Date((subscription as any).current_period_end * 1000),
     });
 
     // Log successful payment
@@ -298,13 +298,13 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
       success: true,
       metadata: {
         invoice_id: invoice.id,
-        billing_reason: invoice.billing_reason,
-        payment_intent_id: invoice.payment_intent
+        billing_reason: (invoice as any).billing_reason,
+        payment_intent_id: (invoice as any).payment_intent
       }
     });
 
     // If this was the first payment after trial, send confirmation
-    if (invoice.billing_reason === 'subscription_cycle') {
+    if ((invoice as any).billing_reason === 'subscription_cycle') {
       const user = await db.getUserById(userId);
       if (user?.email) {
         try {
@@ -316,7 +316,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
               name: user.name || 'there',
               amount: (invoice.amount_paid / 100).toFixed(2),
               currency: invoice.currency.toUpperCase(),
-              nextBillingDate: new Date(subscription.current_period_end * 1000).toLocaleDateString(),
+              nextBillingDate: new Date((subscription as any).current_period_end * 1000).toLocaleDateString(),
               dashboardUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard`,
             }
           });
