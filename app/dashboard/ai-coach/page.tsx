@@ -1,8 +1,12 @@
 import React from 'react'
-import { AICoachChat } from "@/components/ai-coach-chat-full"
-import { PersonalizedRecommendations } from "@/components/personalized-recommendations"
-import { CoachInsights } from "@/components/coach-insights"
-import { WeeklyPlan } from "@/components/weekly-plan"
+import dynamic from 'next/dynamic'
+
+export const dynamic = 'force-dynamic'
+
+const AICoachChat = dynamic(() => import('@/components/ai-coach-chat-full').then(m => m.AICoachChat), { ssr: false })
+const PersonalizedRecommendations = dynamic(() => import('@/components/personalized-recommendations').then(m => m.PersonalizedRecommendations), { ssr: false })
+const CoachInsights = dynamic(() => import('@/components/coach-insights').then(m => m.CoachInsights), { ssr: false })
+const WeeklyPlan = dynamic(() => import('@/components/weekly-plan').then(m => m.WeeklyPlan), { ssr: false })
 
 export default function AICoachPage() {
   return (
