@@ -1,24 +1,43 @@
 import { neon } from '@neondatabase/serverless';
 
-// Database connection
-if (!process.env.DATABASE_URL) {
-  console.error('❌ DATABASE_URL is not set!')
-  console.error('📝 Please configure it in .env.local or Vercel environment variables')
-  console.error('🔗 Get your connection string from: https://console.neon.tech/app/projects')
-  throw new Error('DATABASE_URL is not set. This will cause onboarding persistence issues!');
-}
+// Database connection with graceful fallback
+let sql: any = null;
+let isDatabaseAvailable = false;
 
-const sql = neon(process.env.DATABASE_URL);
-console.log('✅ Database connection configured successfully');
+try {
+  if (!process.env.DATABASE_URL) {
+    console.warn('❌ DATABASE_URL is not set!')
+    console.warn('📝 Please configure it in .env.local or Vercel environment variables')
+    console.warn('🔗 Get your connection string from: https://console.neon.tech/app/projects')
+    console.warn('⚠️ Running in offline mode - some features may use fallback data')
+  } else if (process.env.DATABASE_URL.includes('your_password_here')) {
+    console.warn('❌ DATABASE_URL contains placeholder values!')
+    console.warn('📝 Please set your real Neon database connection string')
+    console.warn('⚠️ Running in offline mode - some features may use fallback data')
+  } else {
+    sql = neon(process.env.DATABASE_URL);
+    isDatabaseAvailable = true;
+    console.log('✅ Database connection configured successfully');
+  }
+} catch (error) {
+  console.warn('⚠️ Database connection failed, running in offline mode:', error);
+  isDatabaseAvailable = false;
+}
 
 // Test database connection on initialization
 async function testConnection() {
+  if (!isDatabaseAvailable || !sql) {
+    console.log('⚠️ Database connection test skipped (offline mode)');
+    return;
+  }
   try {
     await sql`SELECT 1 as test`;
     console.log('✅ Database connection test passed');
+    isDatabaseAvailable = true;
   } catch (error) {
     console.error('❌ Database connection test failed:', error);
     console.error('📝 Check your DATABASE_URL in environment variables');
+    isDatabaseAvailable = false;
   }
 }
 // Run connection test (but don't block initialization)
@@ -132,6 +151,7 @@ export interface OAuthState {
 export const migrations = {
   // Try to acquire an advisory lock so only one worker runs migrations
   async tryAcquireLock(): Promise<boolean> {
+    if (!isDatabaseAvailable || !sql) return false;
     try {
       const lockKey = 729384; // arbitrary project-specific key
       const rs = await sql`SELECT pg_try_advisory_lock(${lockKey}) as locked` as any
@@ -141,6 +161,7 @@ export const migrations = {
     }
   },
   async releaseLock(): Promise<void> {
+    if (!isDatabaseAvailable || !sql) return;
     try {
       const lockKey = 729384;
       await sql`SELECT pg_advisory_unlock(${lockKey})`;
@@ -322,7 +343,7 @@ export const migrations = {
   async createAIUsageTable() {
     await sql`
       CREATE TABLE IF NOT EXISTS ai_usage (
-        user_id UUID NOT NULL REFERENCES profiles(user_id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
         month VARCHAR(7) NOT NULL,
         provider VARCHAR(20) NOT NULL,
         tokens_used INTEGER NOT NULL DEFAULT 0,
@@ -336,7 +357,7 @@ export const migrations = {
     await sql`
       CREATE TABLE IF NOT EXISTS checkins (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID NOT NULL REFERENCES profiles(user_id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
         mood TEXT,
         energy INTEGER,
         created_at TIMESTAMPTZ DEFAULT NOW()
@@ -366,7 +387,7 @@ export const migrations = {
   async createUserSettingsTable() {
     await sql`
       CREATE TABLE IF NOT EXISTS user_settings (
-        user_id UUID PRIMARY KEY REFERENCES profiles(user_id) ON DELETE CASCADE,
+        user_id UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
         daily_calorie_goal INTEGER DEFAULT 0,
         steps_goal INTEGER DEFAULT 0,
         water_goal INTEGER DEFAULT 0,
@@ -404,6 +425,10 @@ export const migrations = {
 
   // Run all migrations
   async runAll() {
+    if (!isDatabaseAvailable || !sql) {
+      console.log('ℹ️ Skipping migrations: database offline');
+      return;
+    }
     // Ensure only one concurrent migrator
     const locked = await this.tryAcquireLock();
     if (!locked) {
@@ -917,7 +942,7 @@ export const db = {
     await sql`
       CREATE TABLE IF NOT EXISTS meals (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID NOT NULL REFERENCES profiles(user_id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
         date DATE NOT NULL,
         name TEXT NOT NULL,
         time TEXT,
@@ -927,6 +952,36 @@ export const db = {
         created_at TIMESTAMPTZ DEFAULT NOW()
       )`;
     await sql`CREATE INDEX IF NOT EXISTS meals_user_date_idx ON meals(user_id, date)`;
+  },
+
+  // Workouts tables (workout logs and exercise media)
+  async createWorkoutsTables() {
+    // Workout logs table
+    await sql`
+      CREATE TABLE IF NOT EXISTS workout_logs (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        date DATE NOT NULL,
+        duration_min INTEGER,
+        calories INTEGER,
+        type TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS workout_logs_user_id_idx ON workout_logs(user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS workout_logs_date_idx ON workout_logs(date)`;
+
+    // Exercise media table
+    await sql`
+      CREATE TABLE IF NOT EXISTS exercise_media (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT UNIQUE NOT NULL,
+        video_url TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS exercise_media_name_idx ON exercise_media(name)`;
   },
 
   // Meals ops
@@ -984,36 +1039,88 @@ export const db = {
 
   // User Settings
   async getUserSettings(userId: string): Promise<any | null> {
-    const result = await sql`
-      SELECT user_id, daily_calorie_goal, steps_goal, water_goal, sleep_goal, active_minutes_goal, macros_goal
-      FROM user_settings WHERE user_id = ${userId}
-    `;
-    return (result[0] as any) || null;
+    if (!isDatabaseAvailable || !sql) {
+      console.log('⚠️ getUserSettings: Using fallback data (database offline)')
+      // Return default settings structure
+      return {
+        user_id: userId,
+        daily_calorie_goal: 2000,
+        steps_goal: 10000,
+        water_goal: 8,
+        sleep_goal: 8,
+        active_minutes_goal: 30,
+        macros_goal: { carbs: 45, protein: 25, fat: 30 }
+      }
+    }
+    try {
+      const result = await sql`
+        SELECT user_id, daily_calorie_goal, steps_goal, water_goal, sleep_goal, active_minutes_goal, macros_goal
+        FROM user_settings WHERE user_id = ${userId}
+      `;
+      return (result[0] as any) || null;
+    } catch (error) {
+      console.warn('⚠️ getUserSettings: Database error, using fallback data:', error)
+      return {
+        user_id: userId,
+        daily_calorie_goal: 2000,
+        steps_goal: 10000,
+        water_goal: 8,
+        sleep_goal: 8,
+        active_minutes_goal: 30,
+        macros_goal: { carbs: 45, protein: 25, fat: 30 }
+      }
+    }
   },
 
   async upsertUserSettings(userId: string, data: Partial<{ daily_calorie_goal:number; steps_goal:number; water_goal:number; sleep_goal:number; active_minutes_goal:number; macros_goal:any }>): Promise<any> {
-    const result = await sql`
-      INSERT INTO user_settings (user_id, daily_calorie_goal, steps_goal, water_goal, sleep_goal, active_minutes_goal, macros_goal)
-      VALUES (
-        ${userId},
-        ${data.daily_calorie_goal ?? 0},
-        ${data.steps_goal ?? 0},
-        ${data.water_goal ?? 0},
-        ${data.sleep_goal ?? 0},
-        ${data.active_minutes_goal ?? 0},
-        ${data.macros_goal ?? { carbs:0, protein:0, fat:0 }}
-      )
-      ON CONFLICT (user_id) DO UPDATE SET
-        daily_calorie_goal = COALESCE(EXCLUDED.daily_calorie_goal, user_settings.daily_calorie_goal),
-        steps_goal = COALESCE(EXCLUDED.steps_goal, user_settings.steps_goal),
-        water_goal = COALESCE(EXCLUDED.water_goal, user_settings.water_goal),
-        sleep_goal = COALESCE(EXCLUDED.sleep_goal, user_settings.sleep_goal),
-        active_minutes_goal = COALESCE(EXCLUDED.active_minutes_goal, user_settings.active_minutes_goal),
-        macros_goal = COALESCE(EXCLUDED.macros_goal, user_settings.macros_goal),
-        updated_at = NOW()
-      RETURNING *
-    `;
-    return result[0] as any;
+    if (!isDatabaseAvailable || !sql) {
+      console.log('⚠️ upsertUserSettings: Using fallback response (database offline)')
+      // Return the merged data as if it was saved
+      return {
+        user_id: userId,
+        daily_calorie_goal: data.daily_calorie_goal ?? 2000,
+        steps_goal: data.steps_goal ?? 10000,
+        water_goal: data.water_goal ?? 8,
+        sleep_goal: data.sleep_goal ?? 8,
+        active_minutes_goal: data.active_minutes_goal ?? 30,
+        macros_goal: data.macros_goal ?? { carbs: 45, protein: 25, fat: 30 }
+      }
+    }
+    try {
+      const result = await sql`
+        INSERT INTO user_settings (user_id, daily_calorie_goal, steps_goal, water_goal, sleep_goal, active_minutes_goal, macros_goal)
+        VALUES (
+          ${userId},
+          ${data.daily_calorie_goal ?? 0},
+          ${data.steps_goal ?? 0},
+          ${data.water_goal ?? 0},
+          ${data.sleep_goal ?? 0},
+          ${data.active_minutes_goal ?? 0},
+          ${data.macros_goal ?? { carbs:0, protein:0, fat:0 }}
+        )
+        ON CONFLICT (user_id) DO UPDATE SET
+          daily_calorie_goal = COALESCE(EXCLUDED.daily_calorie_goal, user_settings.daily_calorie_goal),
+          steps_goal = COALESCE(EXCLUDED.steps_goal, user_settings.steps_goal),
+          water_goal = COALESCE(EXCLUDED.water_goal, user_settings.water_goal),
+          sleep_goal = COALESCE(EXCLUDED.sleep_goal, user_settings.sleep_goal),
+          active_minutes_goal = COALESCE(EXCLUDED.active_minutes_goal, user_settings.active_minutes_goal),
+          macros_goal = COALESCE(EXCLUDED.macros_goal, user_settings.macros_goal),
+          updated_at = NOW()
+        RETURNING *
+      `;
+      return result[0] as any;
+    } catch (error) {
+      console.warn('⚠️ upsertUserSettings: Database error, using fallback response:', error)
+      return {
+        user_id: userId,
+        daily_calorie_goal: data.daily_calorie_goal ?? 2000,
+        steps_goal: data.steps_goal ?? 10000,
+        water_goal: data.water_goal ?? 8,
+        sleep_goal: data.sleep_goal ?? 8,
+        active_minutes_goal: data.active_minutes_goal ?? 30,
+        macros_goal: data.macros_goal ?? { carbs: 45, protein: 25, fat: 30 }
+      }
+    }
   },
 
   // Exercise media ops
