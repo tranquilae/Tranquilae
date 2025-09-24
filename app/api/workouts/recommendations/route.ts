@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userData = neonUserResult[0];
-    const userId = userData.id;
+    const userId = userData?.['id'];
 
     // Get user's workout history for better recommendations
     const userHistoryResult = await sql`

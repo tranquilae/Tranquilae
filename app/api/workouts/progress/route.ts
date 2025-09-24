@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = neonUserResult[0].id;
+    const userId = neonUserResult[0]?.['id'];
 
     // Verify that the user_workout belongs to the current user
     const userWorkoutResult = await sql`
