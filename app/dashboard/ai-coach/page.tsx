@@ -1,3 +1,4 @@
+import React from 'react'
 import { AICoachChat } from "@/components/ai-coach-chat-full"
 import { PersonalizedRecommendations } from "@/components/personalized-recommendations"
 import { CoachInsights } from "@/components/coach-insights"
