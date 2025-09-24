@@ -4,13 +4,48 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Plus, Target, TrendingUp, Flame } from "lucide-react"
+import { useDailyStats } from "@/hooks/use-dashboard-data"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export function CalorieOverview() {
-  const dailyGoal = 2200
-  const consumed = 1650
-  const burned = 320
+  const { stats, loading, error } = useDailyStats()
+  
+  if (loading) {
+    return (
+      <Card className="glass-card">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-9 w-24" />
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="text-center space-y-2">
+            <Skeleton className="h-12 w-20 mx-auto" />
+            <Skeleton className="h-4 w-40 mx-auto" />
+          </div>
+          <Skeleton className="h-3 w-full" />
+          <div className="grid grid-cols-3 gap-4">
+            <Skeleton className="h-20" />
+            <Skeleton className="h-20" />
+            <Skeleton className="h-20" />
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+  
+  if (error || !stats) {
+    return (
+      <Card className="glass-card">
+        <CardContent className="py-8 text-center">
+          <p className="text-muted-foreground">Unable to load calorie data</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const { dailyCalorieGoal: dailyGoal, consumedCalories: consumed, burnedCalories: burned, macros } = stats
   const remaining = dailyGoal - consumed + burned
-  const progressPercentage = (consumed / dailyGoal) * 100
+  const progressPercentage = Math.min((consumed / dailyGoal) * 100, 100)
 
   return (
     <Card className="glass-card">
@@ -74,27 +109,36 @@ export function CalorieOverview() {
               <span className="text-sm text-muted-foreground">Carbs</span>
               <div className="flex items-center space-x-2">
                 <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-chart-1 rounded-full" style={{ width: "65%" }}></div>
+                  <div 
+                    className="h-full bg-chart-1 rounded-full transition-all duration-300" 
+                    style={{ width: `${Math.min((macros.carbs.consumed / macros.carbs.goal) * 100, 100)}%` }}
+                  ></div>
                 </div>
-                <span className="text-sm font-medium">180g</span>
+                <span className="text-sm font-medium">{macros.carbs.consumed}g</span>
               </div>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Protein</span>
               <div className="flex items-center space-x-2">
                 <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-chart-2 rounded-full" style={{ width: "80%" }}></div>
+                  <div 
+                    className="h-full bg-chart-2 rounded-full transition-all duration-300" 
+                    style={{ width: `${Math.min((macros.protein.consumed / macros.protein.goal) * 100, 100)}%` }}
+                  ></div>
                 </div>
-                <span className="text-sm font-medium">120g</span>
+                <span className="text-sm font-medium">{macros.protein.consumed}g</span>
               </div>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Fat</span>
               <div className="flex items-center space-x-2">
                 <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-chart-3 rounded-full" style={{ width: "45%" }}></div>
+                  <div 
+                    className="h-full bg-chart-3 rounded-full transition-all duration-300" 
+                    style={{ width: `${Math.min((macros.fat.consumed / macros.fat.goal) * 100, 100)}%` }}
+                  ></div>
                 </div>
-                <span className="text-sm font-medium">55g</span>
+                <span className="text-sm font-medium">{macros.fat.consumed}g</span>
               </div>
             </div>
           </div>

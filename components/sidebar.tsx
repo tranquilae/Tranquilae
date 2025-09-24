@@ -7,13 +7,13 @@ import { usePathname } from "next/navigation"
 import { Logo } from "@/components/logo"
 
 const navigation = [
-  { name: "Home", icon: Home, href: "/" },
-  { name: "Calories", icon: Utensils, href: "/calories" },
-  { name: "Workouts", icon: Dumbbell, href: "/workouts" },
-  { name: "Mindfulness", icon: Brain, href: "/mindfulness" },
-  { name: "Notes & Goals", icon: BookOpen, href: "/notes" },
-  { name: "AI Coach", icon: MessageCircle, href: "/ai-coach" },
-  { name: "Settings", icon: Settings, href: "/settings" },
+  { name: "Home", icon: Home, href: "/dashboard" },
+  { name: "Calories", icon: Utensils, href: "/dashboard/calories" },
+  { name: "Workouts", icon: Dumbbell, href: "/dashboard/workouts" },
+  { name: "Mindfulness", icon: Brain, href: "/dashboard/mindfulness" },
+  { name: "Notes & Goals", icon: BookOpen, href: "/dashboard/notes" },
+  { name: "AI Coach", icon: MessageCircle, href: "/dashboard/ai-coach" },
+  { name: "Settings", icon: Settings, href: "/dashboard/settings" },
 ]
 
 export function Sidebar() {
@@ -35,7 +35,8 @@ export function Sidebar() {
               href={item.href}
               className={cn(
                 "w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200",
-                pathname === item.href
+                // Handle active state for exact matches and nested routes
+                pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
                   ? "bg-primary text-primary-foreground shadow-lg"
                   : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
               )}

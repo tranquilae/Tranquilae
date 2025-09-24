@@ -6,60 +6,38 @@ import { Badge } from "@/components/ui/badge"
 import { Plus, Clock, Utensils } from "lucide-react"
 import { useState } from "react"
 import { AddMealDialog } from "./add-meal-dialog"
-
-interface Meal {
-  id: string
-  name: string
-  time: string
-  calories: number
-  type: "breakfast" | "lunch" | "dinner" | "snack"
-  foods: Array<{
-    name: string
-    calories: number
-    quantity: string
-  }>
-}
+import { useTodaysMeals, type Meal } from "@/hooks/use-dashboard-data"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export function TodaysMeals() {
-  const [meals, setMeals] = useState<Meal[]>([
-    {
-      id: "1",
-      name: "Breakfast",
-      time: "8:30 AM",
-      calories: 420,
-      type: "breakfast",
-      foods: [
-        { name: "Greek Yogurt", calories: 150, quantity: "1 cup" },
-        { name: "Blueberries", calories: 80, quantity: "1/2 cup" },
-        { name: "Granola", calories: 190, quantity: "1/4 cup" },
-      ],
-    },
-    {
-      id: "2",
-      name: "Lunch",
-      time: "12:45 PM",
-      calories: 650,
-      type: "lunch",
-      foods: [
-        { name: "Grilled Chicken Salad", calories: 350, quantity: "1 serving" },
-        { name: "Avocado", calories: 160, quantity: "1/2 medium" },
-        { name: "Olive Oil Dressing", calories: 140, quantity: "2 tbsp" },
-      ],
-    },
-    {
-      id: "3",
-      name: "Afternoon Snack",
-      time: "3:20 PM",
-      calories: 180,
-      type: "snack",
-      foods: [
-        { name: "Apple", calories: 95, quantity: "1 medium" },
-        { name: "Almond Butter", calories: 85, quantity: "1 tbsp" },
-      ],
-    },
-  ])
+  const { meals, loading, error, addMeal } = useTodaysMeals()
 
   const [showAddMeal, setShowAddMeal] = useState(false)
+
+  const handleAddMeal = async (newMeal: Omit<Meal, 'id' | 'user_id' | 'date'>) => {
+    try {
+      await addMeal(newMeal)
+      setShowAddMeal(false)
+    } catch (error) {
+      console.error('Failed to add meal:', error)
+    }
+  }
+
+  if (loading) {
+    return (
+      <Card className="glass-card">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-9 w-24" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-20" />
+          <Skeleton className="h-20" />
+          <Skeleton className="h-20" />
+        </CardContent>
+      </Card>
+    )
+  }
 
   const getMealTypeColor = (type: string) => {
     switch (type) {
@@ -90,7 +68,13 @@ export function TodaysMeals() {
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
-          {meals.map((meal) => (
+          {error && (
+            <div className="text-center py-4 text-muted-foreground">
+              <p className="text-sm">Unable to load meals</p>
+            </div>
+          )}
+          
+          {!error && meals.map((meal) => (
             <div key={meal.id} className="p-4 rounded-lg bg-muted/30 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -118,7 +102,7 @@ export function TodaysMeals() {
             </div>
           ))}
 
-          {meals.length === 0 && (
+          {!error && meals.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               <Utensils className="mx-auto h-12 w-12 mb-4 opacity-50" />
               <p>No meals logged today</p>
@@ -131,10 +115,7 @@ export function TodaysMeals() {
       <AddMealDialog
         open={showAddMeal}
         onOpenChange={setShowAddMeal}
-        onAddMeal={(newMeal) => {
-          setMeals([...meals, { ...newMeal, id: Date.now().toString() }])
-          setShowAddMeal(false)
-        }}
+        onAddMeal={handleAddMeal}
       />
     </>
   )
