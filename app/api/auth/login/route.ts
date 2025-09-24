@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
         event_type: 'LOGIN',
         success: false,
         error: 'Missing email or password',
-        ip_address: request.ip,
-        user_agent: request.headers.get('user-agent') || undefined
+        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+        user_agent: request.headers.get('user-agent') || 'unknown'
       })
 
       return NextResponse.json(
@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
         event_type: 'LOGIN',
         success: false,
         error: authError.message,
-        ip_address: request.ip,
-        user_agent: request.headers.get('user-agent') || undefined,
+        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+        user_agent: request.headers.get('user-agent') || 'unknown',
         metadata: {
           email: email
         }
@@ -121,8 +121,8 @@ export async function POST(request: NextRequest) {
           event_type: 'LOGIN',
           user_id: authData.user.id,
           success: true,
-          ip_address: request.ip,
-          user_agent: request.headers.get('user-agent') || undefined,
+          ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+          user_agent: request.headers.get('user-agent') || 'unknown',
           metadata: {
             email: authData.user.email,
             email_confirmed: authData.user.email_confirmed_at !== null,
@@ -159,8 +159,8 @@ export async function POST(request: NextRequest) {
       event_type: 'LOGIN',
       success: false,
       error: error.message,
-      ip_address: request.ip,
-      user_agent: request.headers.get('user-agent') || undefined
+      ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+      user_agent: request.headers.get('user-agent') || 'unknown'
     })
 
     return NextResponse.json(
