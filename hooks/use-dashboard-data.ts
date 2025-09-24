@@ -182,7 +182,8 @@ export function useDailyStats() {
         }
 
         // Fetch user settings (goals)
-        const settingsRes = await fetch('/api/user/settings', { cache: 'no-store' })
+        const token = (await supabase.auth.getSession()).data.session?.access_token
+        const settingsRes = await fetch('/api/user/settings', { cache: 'no-store', headers: token ? { Authorization: `Bearer ${token}` } : {} })
         let goals = getDefaultStats()
         if (settingsRes.ok) {
           const s = await settingsRes.json()
@@ -208,7 +209,7 @@ export function useDailyStats() {
 
         // Fetch daily stats (if endpoint exists); otherwise keep goals/zeros
         const today = new Date().toISOString().split('T')[0]
-        const response = await fetch(`/api/stats/daily?date=${today}`, { cache: 'no-store' })
+        const response = await fetch(`/api/stats/daily?date=${today}`, { cache: 'no-store', headers: token ? { Authorization: `Bearer ${token}` } : {} })
 
         if (response.ok) {
           const statsData = await response.json()

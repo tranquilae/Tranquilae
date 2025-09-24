@@ -1,12 +1,19 @@
 import { NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/utils/supabase/server'
+import { headers } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
     const supabase = await createServerSupabase()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const authHeader = (await headers()).get('authorization') || ''
+    const token = authHeader.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : undefined
+    const { data: { user }, error: authError } = token
+      ? await supabase.auth.getUser(token)
+      : await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -37,7 +44,13 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const supabase = await createServerSupabase()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const authHeader = request.headers.get('authorization') || ''
+    const token = authHeader.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : undefined
+    const { data: { user }, error: authError } = token
+      ? await supabase.auth.getUser(token)
+      : await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -57,7 +70,13 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const supabase = await createServerSupabase()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const authHeader = request.headers.get('authorization') || ''
+    const token = authHeader.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : undefined
+    const { data: { user }, error: authError } = token
+      ? await supabase.auth.getUser(token)
+      : await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

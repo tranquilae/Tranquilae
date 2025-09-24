@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { headers } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
     const supabase = await createClient()
-    const { data: { user }, error } = await supabase.auth.getUser()
+    const authHeader = (await headers()).get('authorization') || ''
+    const token = authHeader.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : undefined
+    const { data: { user }, error } = token
+      ? await supabase.auth.getUser(token)
+      : await supabase.auth.getUser()
     if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { db } = await import('@/lib/database')
@@ -29,7 +36,13 @@ export async function GET() {
 export async function PATCH(request: NextRequest) {
   try {
     const supabase = await createClient()
-    const { data: { user }, error } = await supabase.auth.getUser()
+    const authHeader = request.headers.get('authorization') || ''
+    const token = authHeader.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : undefined
+    const { data: { user }, error } = token
+      ? await supabase.auth.getUser(token)
+      : await supabase.auth.getUser()
     if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()

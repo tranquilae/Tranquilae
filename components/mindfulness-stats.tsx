@@ -4,6 +4,7 @@ import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { TrendingUp, Clock, Target } from "lucide-react"
+import { supabase } from '@/lib/supabase'
 
 export function MindfulnessStats() {
   const [summary, setSummary] = React.useState<{ totalSessionsThisWeek:number; totalMinutesThisWeek:number }>({ totalSessionsThisWeek: 0, totalMinutesThisWeek: 0 })
@@ -14,7 +15,8 @@ export function MindfulnessStats() {
     let mounted = true
     ;(async () => {
       try {
-        const res = await fetch('/api/dashboard/mindfulness', { cache: 'no-store' })
+        const token = (await supabase.auth.getSession()).data.session?.access_token
+        const res = await fetch('/api/dashboard/mindfulness', { cache: 'no-store', headers: token ? { Authorization: `Bearer ${token}` } : {} })
         if (res.ok) {
           const data = await res.json()
           const sessions: Array<{ started_at:string; duration_minutes:number }> = data.sessions || []

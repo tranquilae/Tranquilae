@@ -7,7 +7,13 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
-    const { data: { user }, error } = await supabase.auth.getUser()
+    const authHeader = request.headers.get('authorization') || ''
+    const token = authHeader.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : undefined
+    const { data: { user }, error } = token
+      ? await supabase.auth.getUser(token)
+      : await supabase.auth.getUser()
     if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const url = new URL(request.url)

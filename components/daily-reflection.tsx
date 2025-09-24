@@ -4,6 +4,7 @@ import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Heart, Smile, Meh, Frown, Sun } from "lucide-react"
+import { supabase } from '@/lib/supabase'
 
 export function DailyReflection() {
   const [selectedMood, setSelectedMood] = React.useState<number | null>(null)
@@ -32,7 +33,8 @@ export function DailyReflection() {
     ;(async () => {
       try {
         // Latest journal entry as highlight
-        const j = await fetch('/api/dashboard/journal', { cache: 'no-store' })
+        const token = (await supabase.auth.getSession()).data.session?.access_token
+        const j = await fetch('/api/dashboard/journal', { cache: 'no-store', headers: token ? { Authorization: `Bearer ${token}` } : {} })
         if (j.ok) {
           const data = await j.json()
           const entry = Array.isArray(data.entries) ? data.entries[0] : null
@@ -41,7 +43,7 @@ export function DailyReflection() {
       } catch {}
       try {
         // Streak based on mindfulness sessions
-        const m = await fetch('/api/dashboard/mindfulness', { cache: 'no-store' })
+        const m = await fetch('/api/dashboard/mindfulness', { cache: 'no-store', headers: token ? { Authorization: `Bearer ${token}` } : {} })
         if (m.ok) {
           const md = await m.json()
           const sessions: Array<{ started_at: string }> = md.sessions || []
@@ -67,8 +69,9 @@ export function DailyReflection() {
       setSaving(true)
       const mood = selectedMood !== null ? moods[selectedMood].label : null
       const energy = selectedEnergy !== null ? energyLevels[selectedEnergy].level : null
+      const token = (await supabase.auth.getSession()).data.session?.access_token
       await fetch('/api/dashboard/checkins', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ mood, energy })
       })
     } catch {}
