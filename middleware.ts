@@ -261,6 +261,41 @@ export async function middleware(request: NextRequest) {
           return NextResponse.redirect(loginUrl);
         }
       }
+    } else {
+      // We have a user, now decide onboarding vs dashboard based on profile
+      try {
+        const profileUrl = new URL('/api/user/profile', request.url)
+        const res = await fetch(profileUrl, {
+          method: 'GET',
+          headers: {
+            'x-user-id': userId
+          }
+        })
+        if (res.ok) {
+          const profile = await res.json() as { onboarding_complete?: boolean }
+          const completed = !!profile?.onboarding_complete
+          const isOnboardingPath = pathname.startsWith('/onboarding')
+          const isDashboardPath = pathname.startsWith('/dashboard')
+
+          // If completed but trying to access onboarding, send to dashboard
+          if (completed && isOnboardingPath) {
+            const url = new URL('/dashboard', request.url)
+            return NextResponse.redirect(url)
+          }
+
+          // If not completed and trying to access non-onboarding app sections, send to onboarding
+          const needsOnboardingRedirect = !completed && (
+            pathname.startsWith('/dashboard') || pathname.startsWith('/account') || pathname.startsWith('/settings')
+          )
+          if (needsOnboardingRedirect) {
+            const url = new URL('/onboarding', request.url)
+            url.searchParams.set('from', pathname)
+            return NextResponse.redirect(url)
+          }
+        }
+      } catch (e) {
+        console.warn('Middleware - Profile check failed, proceeding without redirect:', e)
+      }
     }
 
     // Add user ID to headers for API routes

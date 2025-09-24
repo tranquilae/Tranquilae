@@ -10,6 +10,7 @@
     "start": "next start",
     "setup": "node scripts/setup-tranquilae.js",
     "db:migrate": "node scripts/migrate-onboarding.js",
+    "db:fix-profiles": "node scripts/fix-profiles-schema.js",
     "db:test": "node scripts/test-database.js",
     "test:emails": "node -e \"require('./lib/email.ts').verifyEmailConfig()\"",
     "test:stripe": "node -e \"console.log('Testing Stripe...'); const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); stripe.accounts.retrieve().then(acc => console.log('✅ Stripe connected:', acc.id)).catch(e => console.error('❌ Stripe error:', e.message))\"",

@@ -24,15 +24,6 @@ async function testConnection() {
 // Run connection test (but don't block initialization)
 testConnection().catch(() => {});
 
-// Run idempotent migrations on module load to ensure required tables exist
-(async () => {
-  try {
-    await migrations.runAll();
-    console.log('✅ Database migrations ensured');
-  } catch (e) {
-    console.warn('⚠️ Failed to run migrations on init (will continue):', e);
-  }
-})();
 
 /**
  * Database Schema Types
@@ -411,6 +402,16 @@ export const migrations = {
     await this.createOAuthStateTable();
   }
 };
+
+// Run idempotent migrations on module load to ensure required tables exist
+(async () => {
+  try {
+    await migrations.runAll();
+    console.log('✅ Database migrations ensured');
+  } catch (e) {
+    console.warn('⚠️ Failed to run migrations on init (will continue):', e);
+  }
+})();
 
 /**
  * Database Operations
