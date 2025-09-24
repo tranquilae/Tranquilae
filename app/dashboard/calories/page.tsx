@@ -1,3 +1,4 @@
+import React from 'react'
 import { CalorieTracker } from "@/components/calorie-tracker"
 import { NutritionBreakdown } from "@/components/nutrition-breakdown"
 import { MealPlanner } from "@/components/meal-planner"

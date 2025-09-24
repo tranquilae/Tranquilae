@@ -1,3 +1,4 @@
+import React from 'react'
 import { PlanManagement } from "@/components/plan-management"
 import { UserProfile } from "@/components/user-profile"
 import { AppPreferences } from "@/components/app-preferences"

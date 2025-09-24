@@ -1,3 +1,4 @@
+import React from 'react'
 import { GoalTracker } from "@/components/goal-tracker"
 import { NotesEditor } from "@/components/notes-editor"
 import { RemindersPanel } from "@/components/reminders-panel"

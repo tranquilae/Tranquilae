@@ -1,5 +1,6 @@
 "use client"
 
+import React from 'react'
 import { DashboardHeader } from "@/components/dashboard-header"
 import { CalorieOverview } from "@/components/calorie-overview"
 import { TodaysMeals } from "@/components/todays-meals"

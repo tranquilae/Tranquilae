@@ -1,3 +1,4 @@
+import React from 'react'
 import { MeditationPlayer } from "@/components/meditation-player"
 import { JournalEntry } from "@/components/journal-entry"
 import { DailyReflection } from "@/components/daily-reflection"
