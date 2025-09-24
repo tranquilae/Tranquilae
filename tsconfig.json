@@ -5,14 +5,14 @@
     "target": "ES2022",
     "skipLibCheck": true,
     
-    // Strict type checking (temporarily disabled for build success)
-    "strict": false, // TODO: Re-enable after fixing all type issues
-    "noUncheckedIndexedAccess": false,
-    "noImplicitReturns": false,
-    "noFallthroughCasesInSwitch": false,
-    "exactOptionalPropertyTypes": false,
-    "noImplicitOverride": false,
-    "noPropertyAccessFromIndexSignature": false,
+    // Strict type checking (ENABLED for new app safety)
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
     
     // Module resolution
     "noEmit": true,
