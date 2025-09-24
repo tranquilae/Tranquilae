@@ -1,17 +1,11 @@
 "use client"
 
-import React from 'react'
-import dynamic from 'next/dynamic'
+import React, { useEffect, useState } from 'react'
 
-// Client page; ensure no static generation tries to SSR these client-only widgets
+// Prevent static generation and SSR issues
 export const dynamic = 'force-dynamic'
 
-const AICoachChat = dynamic(() => import('@/components/ai-coach-chat-full').then(m => m.AICoachChat), { ssr: false })
-const PersonalizedRecommendations = dynamic(() => import('@/components/personalized-recommendations').then(m => m.PersonalizedRecommendations), { ssr: false })
-const CoachInsights = dynamic(() => import('@/components/coach-insights').then(m => m.CoachInsights), { ssr: false })
-const WeeklyPlan = dynamic(() => import('@/components/weekly-plan').then(m => m.WeeklyPlan), { ssr: false })
-
-export default function AICoachPage() {
+function LoadingSkeleton() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -20,20 +14,41 @@ export default function AICoachPage() {
           <p className="text-muted-foreground mt-1">Your personal wellness companion</p>
         </div>
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main chat area */}
         <div className="lg:col-span-2 space-y-6">
-          <AICoachChat />
-          <WeeklyPlan />
+          <div className="h-64 animate-pulse bg-muted rounded-lg" />
+          <div className="h-64 animate-pulse bg-muted rounded-lg" />
         </div>
-
-        {/* Right sidebar */}
         <div className="space-y-6">
-          <PersonalizedRecommendations />
-          <CoachInsights />
+          <div className="h-48 animate-pulse bg-muted rounded-lg" />
+          <div className="h-48 animate-pulse bg-muted rounded-lg" />
         </div>
       </div>
     </div>
   )
+}
+
+export default function AICoachPage() {
+  const [mounted, setMounted] = useState(false)
+  const [AICoachWrapper, setAICoachWrapper] = useState<React.ComponentType | null>(null)
+
+  useEffect(() => {
+    setMounted(true)
+    
+    // Only import after component mounts
+    import('@/components/ai-coach-wrapper')
+      .then(module => {
+        setAICoachWrapper(() => module.AICoachWrapper)
+      })
+      .catch(() => {
+        // Fallback in case of import error
+        console.error('Failed to load AI Coach wrapper')
+      })
+  }, [])
+
+  if (!mounted || !AICoachWrapper) {
+    return <LoadingSkeleton />
+  }
+
+  return <AICoachWrapper />
 }

@@ -1,5 +1,7 @@
 "use client"
 
+export const dynamic = 'force-dynamic'
+
 import React from 'react'
 import { DashboardHeader } from "@/components/dashboard-header"
 import { CalorieOverview } from "@/components/calorie-overview"

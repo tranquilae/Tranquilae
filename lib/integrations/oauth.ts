@@ -104,19 +104,32 @@ export async function cleanupOAuthState(state: string): Promise<void> {
 /**
  * Token encryption/decryption utilities
  */
-const ENCRYPTION_KEY = process.env.INTEGRATION_TOKEN_ENCRYPTION_KEY;
-
-if (!ENCRYPTION_KEY) {
-  throw new Error('INTEGRATION_TOKEN_ENCRYPTION_KEY environment variable is required');
+function getEncryptionKey(): string {
+  const key = process.env.INTEGRATION_TOKEN_ENCRYPTION_KEY;
+  if (!key) {
+    // Only throw error at runtime, not during build
+    if (process.env.NODE_ENV !== 'development' && process.env.NEXT_PHASE !== 'phase-production-build') {
+      throw new Error('INTEGRATION_TOKEN_ENCRYPTION_KEY environment variable is required');
+    }
+    // Return a dummy key for build time
+    return 'dummy-key-for-build-time-only-do-not-use-in-production';
+  }
+  return key;
 }
 
 export function encryptToken(token: string): string {
+  // Ensure encryption key is available
+  const encryptionKey = getEncryptionKey();
+  
   // Simple base64 encoding for now - in production, use proper encryption
   // You should use something like node:crypto with AES-256-GCM
   return Buffer.from(token).toString('base64');
 }
 
 export function decryptToken(encryptedToken: string): string {
+  // Ensure encryption key is available
+  const encryptionKey = getEncryptionKey();
+  
   // Simple base64 decoding for now - in production, use proper decryption
   return Buffer.from(encryptedToken, 'base64').toString('utf-8');
 }

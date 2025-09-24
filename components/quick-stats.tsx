@@ -1,5 +1,6 @@
 "use client"
 
+import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Activity, Droplets, Moon, Footprints } from "lucide-react"
 import { useDailyStats } from "@/hooks/use-dashboard-data"
