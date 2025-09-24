@@ -130,6 +130,23 @@ export interface OAuthState {
  * Database Migration Scripts
  */
 export const migrations = {
+  // Try to acquire an advisory lock so only one worker runs migrations
+  async tryAcquireLock(): Promise<boolean> {
+    try {
+      const lockKey = 729384; // arbitrary project-specific key
+      const rs = await sql`SELECT pg_try_advisory_lock(${lockKey}) as locked` as any
+      return !!(rs && rs[0] && rs[0].locked)
+    } catch {
+      return false
+    }
+  },
+  async releaseLock(): Promise<void> {
+    try {
+      const lockKey = 729384;
+      await sql`SELECT pg_advisory_unlock(${lockKey})`;
+    } catch {}
+  },
+
   // Create profiles table extensions (Supabase standard)
   async createProfilesExtensions() {
     await sql`
@@ -387,19 +404,49 @@ export const migrations = {
 
   // Run all migrations
   async runAll() {
-    await this.createProfilesExtensions();
-    await this.createSubscriptionsTable();
-    await this.createOnboardingProgressTable();
-    await this.createHealthIntegrationsTable();
-    await this.createHealthDataPointsTable();
-    await this.createNotesTable();
-    await this.createMindfulnessSessionsTable();
-    await this.createAIConversationsTables();
-    await this.createAIUsageTable();
-    await this.createJournalEntriesTable();
-    await this.createUserSettingsTable();
-    await this.createCheckinsTable();
-    await this.createOAuthStateTable();
+    // Ensure only one concurrent migrator
+    const locked = await this.tryAcquireLock();
+    if (!locked) {
+      console.log('ℹ️ Skipping migrations: another worker holds the lock');
+      return;
+    }
+    try {
+      // Run each step defensively to tolerate parallel cold starts
+      const steps = [
+        this.createProfilesExtensions,
+        this.createSubscriptionsTable,
+        this.createOnboardingProgressTable,
+        this.createHealthIntegrationsTable,
+        this.createHealthDataPointsTable,
+        this.createNotesTable,
+        this.createMindfulnessSessionsTable,
+        this.createAIConversationsTables,
+        this.createAIUsageTable,
+        this.createJournalEntriesTable,
+        this.createUserSettingsTable,
+        this.createCheckinsTable,
+        this.createOAuthStateTable,
+      ];
+      for (const step of steps) {
+        try {
+          await step.call(this);
+        } catch (e: any) {
+          const msg = String(e?.message || e);
+          // Ignore benign concurrency or already-exists issues
+          if (
+            msg.includes('already exists') ||
+            msg.includes('duplicate key value') ||
+            msg.includes('pg_type_typname_nsp_index')
+          ) {
+            console.warn('⚠️ Migration step non-fatal:', msg.split('\n')[0]);
+            continue;
+          }
+          throw e;
+        }
+      }
+    } finally {
+      await this.releaseLock();
+    }
   }
 };
 
