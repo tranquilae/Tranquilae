@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { step, data } = body;
+    const { step, data: rawData } = body;
 
     // Validate input with better logging
     if (typeof step !== 'number' || step < 0 || step > 6) {
@@ -76,8 +76,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Allow empty data object or null data for certain steps
-    if (data !== null && data !== undefined && typeof data !== 'object') {
-      console.error('Invalid data format:', data, 'Type:', typeof data);
+    if (rawData !== null && rawData !== undefined && typeof rawData !== 'object') {
+      console.error('Invalid data format:', rawData, 'Type:', typeof rawData);
       return NextResponse.json(
         { error: 'Invalid data format' },
         { status: 400 }
@@ -85,9 +85,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Ensure data is at least an empty object
-    if (!data) {
-      data = {};
-    }
+    const data = rawData || {};
 
     // Validate data structure based on step
     const validationErrors = validateStepData(step, data);
@@ -122,7 +120,7 @@ export async function POST(request: NextRequest) {
           user = await db.createUser({
             id: userId,
             email: supabaseUser.email || '',
-            name: supabaseUser.user_metadata?.name || supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || '',
+            name: supabaseUser.user_metadata?.['name'] || supabaseUser.user_metadata?.['full_name'] || supabaseUser.email?.split('@')[0] || '',
             onboarding_complete: false,
             plan: 'explorer'
           });

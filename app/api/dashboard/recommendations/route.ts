@@ -37,20 +37,20 @@ export async function GET() {
     const recs: any[] = []
 
     // Nutrition suggestion
-    if ((s.daily_calorie_goal || 0) > 0) {
-      const calsToday = Number(today?.[0]?.cals_today || 0)
-      if (calsToday < (s.daily_calorie_goal || 0) * 0.75) {
+    if ((s['daily_calorie_goal'] || 0) > 0) {
+      const calsToday = Number(today?.[0]?.['cals_today'] || 0)
+      if (calsToday < (s['daily_calorie_goal'] || 0) * 0.75) {
         recs.push({
           type: 'nutrition',
           title: 'Calorie intake behind',
-          description: `You are at ${Math.round(calsToday)} / ${s.daily_calorie_goal} kcal today. Consider a nutritious snack.`,
+          description: `You are at ${Math.round(calsToday)} / ${s['daily_calorie_goal']} kcal today. Consider a nutritious snack.`,
           priority: 'medium'
         })
       }
     }
 
     // Fitness suggestion
-    const workoutsWeek = Number(week?.[0]?.workouts_week || 0)
+    const workoutsWeek = Number(week?.[0]?.['workouts_week'] || 0)
     if (workoutsWeek >= 4) {
       recs.push({
         type: 'fitness',

@@ -18,7 +18,7 @@ export async function GET() {
 
     return NextResponse.json({
       ok: true,
-      now: result?.[0]?.now ?? null,
+      now: result?.[0]?.['now'] ?? null,
       message: 'Database connection successful'
     })
   } catch (error: any) {

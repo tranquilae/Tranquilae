@@ -32,7 +32,13 @@ export async function GET(request: NextRequest) {
     }
 
     const neonUser = neonUserResult[0];
-    const userId = neonUser.id;
+    if (!neonUser) {
+      return NextResponse.json(
+        { success: false, error: { code: 'user_not_found', message: 'User data not found' } },
+        { status: 404 }
+      );
+    }
+    const userId = neonUser['id'];
 
     // Fetch dashboard stats in parallel
     const [
@@ -126,11 +132,11 @@ export async function GET(request: NextRequest) {
     };
 
     const recentActivity = recentActivityResult || [];
-    const currentStreak = streakResult[0]?.current_streak || 0;
+    const currentStreak = streakResult[0]?.['current_streak'] || 0;
 
     // Calculate progress percentage
-    const progressPercentage = achievementStats.total_achievements > 0 
-      ? Math.round((achievementStats.earned_achievements / achievementStats.total_achievements) * 100)
+    const progressPercentage = achievementStats['total_achievements'] > 0 
+      ? Math.round((achievementStats['earned_achievements'] / achievementStats['total_achievements']) * 100)
       : 0;
 
     return NextResponse.json({
@@ -138,29 +144,29 @@ export async function GET(request: NextRequest) {
       data: {
         user: {
           id: userId,
-          email: neonUser.email,
-          full_name: neonUser.full_name,
-          plan: neonUser.plan
+          email: neonUser['email'],
+          full_name: neonUser['full_name'],
+          plan: neonUser['plan']
         },
         stats: {
           workouts: {
-            total: workoutStats.total_workouts,
-            totalMinutes: workoutStats.total_minutes,
-            thisWeek: workoutStats.this_week,
-            thisMonth: workoutStats.this_month
+            total: workoutStats['total_workouts'],
+            totalMinutes: workoutStats['total_minutes'],
+            thisWeek: workoutStats['this_week'],
+            thisMonth: workoutStats['this_month']
           },
           achievements: {
-            total: achievementStats.total_achievements,
-            earned: achievementStats.earned_achievements,
+            total: achievementStats['total_achievements'],
+            earned: achievementStats['earned_achievements'],
             progressPercentage
           },
           currentStreak,
           recentActivity: recentActivity.map(activity => ({
-            id: activity.id,
-            title: activity.title,
-            difficulty: activity.difficulty,
-            duration: activity.duration_minutes,
-            completedAt: activity.completed_at
+            id: activity['id'],
+            title: activity['title'],
+            difficulty: activity['difficulty'],
+            duration: activity['duration_minutes'],
+            completedAt: activity['completed_at']
           }))
         }
       }

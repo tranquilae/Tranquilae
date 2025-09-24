@@ -40,15 +40,15 @@ export async function GET(request: NextRequest) {
 
     const stats = {
       dailyCalorieGoal: 0, // goals are fetched separately by hook
-      consumedCalories: Number(s?.[0]?.calories || 0),
-      burnedCalories: Number(s?.[0]?.burned || 0),
-      steps: Number(s?.[0]?.steps || 0),
+      consumedCalories: Number(s?.[0]?.['calories'] || 0),
+      burnedCalories: Number(s?.[0]?.['burned'] || 0),
+      steps: Number(s?.[0]?.['steps'] || 0),
       stepsGoal: 0,
-      waterGlasses: Number(s?.[0]?.water || 0),
+      waterGlasses: Number(s?.[0]?.['water'] || 0),
       waterGoal: 0,
-      sleepHours: Number(s?.[0]?.sleep || 0),
+      sleepHours: Number(s?.[0]?.['sleep'] || 0),
       sleepGoal: 0,
-      activeMinutes: Number(s?.[0]?.active_minutes || 0),
+      activeMinutes: Number(s?.[0]?.['active_minutes'] || 0),
       activeGoal: 0,
       macros: {
         carbs: { consumed: 0, goal: 0 },

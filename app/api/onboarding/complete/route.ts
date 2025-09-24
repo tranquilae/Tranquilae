@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
         user = await db.createUser({
           id: userId,
           email: supabaseUser.email || '',
-          name: supabaseUser.user_metadata?.name || supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || '',
+          name: supabaseUser.user_metadata?.['name'] || supabaseUser.user_metadata?.['full_name'] || supabaseUser.email?.split('@')[0] || '',
           onboarding_complete: false,
           plan: 'explorer'
         });

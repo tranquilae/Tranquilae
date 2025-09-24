@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { db } from '@/lib/database';
+import { db, Subscription } from '@/lib/database';
 import { sendEmail } from '@/lib/email';
 
 const stripe = new Stripe(process.env['STRIPE_SECRET_KEY']!);
@@ -26,14 +26,14 @@ export async function GET(request: NextRequest) {
       expand: ['subscription', 'customer']
     });
 
-    if (!session.metadata?.user_id) {
+    if (!session.metadata?.['user_id']) {
       console.error('No user_id in session metadata');
       return NextResponse.redirect(
         `${process.env['NEXT_PUBLIC_APP_URL']}/onboarding?error=invalid_session`
       );
     }
 
-    const userId = session.metadata.user_id;
+    const userId = session.metadata['user_id'];
 
     // Get user and subscription data
     const user = await db.getUserById(userId);
@@ -53,16 +53,22 @@ export async function GET(request: NextRequest) {
     }
 
     // Update subscription in database
-    await db.updateSubscription(userId, {
+    const updateData: Partial<Subscription> = {
       plan: 'pathfinder',
       status: subscription.status === 'trialing' ? 'trialing' : 'active',
       stripe_subscription_id: subscription.id,
       stripe_customer_id: subscription.customer as string,
-      trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
-      current_period_start: new Date(subscription.current_period_start * 1000),
-      current_period_end: new Date(subscription.current_period_end * 1000),
-      cancel_at_period_end: subscription.cancel_at_period_end,
-    });
+      current_period_start: new Date((subscription as any).current_period_start * 1000),
+      current_period_end: new Date((subscription as any).current_period_end * 1000),
+      cancel_at_period_end: (subscription as any).cancel_at_period_end,
+    };
+
+    // Only include trial_end if it exists
+    if (subscription.trial_end) {
+      updateData.trial_end = new Date(subscription.trial_end * 1000);
+    }
+
+    await db.updateSubscription(userId, updateData);
 
     // Update user plan
     await db.updateUser(userId, {

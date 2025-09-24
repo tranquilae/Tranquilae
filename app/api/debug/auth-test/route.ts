@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     tests.push(envTest)
     
     // Test 2: Client Creation
-    const clientTest = {
+    const clientTest: any = {
       name: 'Supabase Client Creation',
       status: 'checking',
       error: null,
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
           }
         })
         clientTest.status = 'passed'
-        clientTest.details.message = 'Client created successfully'
+        clientTest.details = { message: 'Client created successfully' }
       } else {
         clientTest.status = 'failed'
         clientTest.error = 'Missing URL or anon key'
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     tests.push(clientTest)
     
     // Test 3: Auth Service Connectivity
-    const connectivityTest = {
+    const connectivityTest: any = {
       name: 'Supabase Auth Connectivity',
       status: 'checking',
       error: null,
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
     tests.push(connectivityTest)
     
     // Test 4: Test Signup (Mock - doesn't actually create user)
-    const signupTest = {
+    const signupTest: any = {
       name: 'Signup Flow Test (Mock)',
       status: 'checking',
       error: null,
@@ -117,13 +117,13 @@ export async function GET(request: NextRequest) {
         // We expect this to fail with a validation error, which means the API is working
         if (error && error.message.includes('Invalid')) {
           signupTest.status = 'passed'
-          signupTest.details.message = 'Signup API is responding correctly (validation working)'
+          signupTest.details = { message: 'Signup API is responding correctly (validation working)' }
         } else if (error) {
           signupTest.status = 'warning'
-          signupTest.details.message = `Unexpected error: ${error.message}`
+          signupTest.details = { message: `Unexpected error: ${error.message}` }
         } else {
           signupTest.status = 'warning'
-          signupTest.details.message = 'Unexpected success with invalid email'
+          signupTest.details = { message: 'Unexpected success with invalid email' }
         }
       } else {
         signupTest.status = 'failed'
@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
     tests.push(signupTest)
     
     // Test 5: Database Connection (if available)
-    const dbTest = {
+    const dbTest: any = {
       name: 'Database Connection (via Supabase)',
       status: 'checking',
       error: null,
@@ -161,14 +161,14 @@ export async function GET(request: NextRequest) {
         
         if (!error) {
           dbTest.status = 'passed'
-          dbTest.details.message = 'Database connection working'
+          dbTest.details = { message: 'Database connection working' }
         } else {
           dbTest.status = 'failed'
           dbTest.error = error.message
         }
       } else {
         dbTest.status = 'skipped'
-        dbTest.details.message = 'Service key not available - skipped'
+        dbTest.details = { message: 'Service key not available - skipped' }
       }
     } catch (error: any) {
       dbTest.status = 'failed'

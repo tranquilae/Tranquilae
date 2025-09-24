@@ -306,7 +306,7 @@ export async function POST(request: NextRequest) {
         operation: 'create-session',
         error_type: error.type || 'unknown'
       },
-      user: { id: user.id || 'unknown' },
+      user: { id: userId || 'unknown' },
       extra: {
         stripe_error_type: error.type,
         stripe_error_code: error.code,

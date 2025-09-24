@@ -18,7 +18,8 @@ const webhookSecret = process.env['STRIPE_WEBHOOK_SECRET']!;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text();
-    const signature = headers().get('stripe-signature');
+    const headersList = await headers();
+    const signature = headersList.get('stripe-signature');
 
     if (!signature) {
       console.error('Missing Stripe signature');
@@ -119,7 +120,7 @@ export async function POST(request: NextRequest) {
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
   console.log('Processing checkout.session.completed:', session.id);
 
-  const userId = session.metadata?.user_id;
+  const userId = session.metadata?.['user_id'];
   if (!userId) {
     console.error('No user_id in session metadata');
     return;
@@ -162,15 +163,20 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     }
 
     // Update subscription in database
-    await db.updateSubscription(userId, {
+    const updateData: any = {
       plan: 'pathfinder',
       status: subscription.status === 'trialing' ? 'trialing' : 'active',
       stripe_subscription_id: subscription.id,
       stripe_customer_id: subscription.customer as string,
-      trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
-      current_period_start: new Date(subscription.current_period_start * 1000),
-      current_period_end: new Date(subscription.current_period_end * 1000),
-    });
+      current_period_start: new Date((subscription as any).current_period_start * 1000),
+      current_period_end: new Date((subscription as any).current_period_end * 1000),
+    };
+    
+    if ((subscription as any).trial_end) {
+      updateData.trial_end = new Date((subscription as any).trial_end * 1000);
+    }
+    
+    await db.updateSubscription(userId, updateData);
 
     // Update user
     await db.updateUser(userId, {
@@ -220,8 +226,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   console.log('Processing invoice.payment_succeeded:', invoice.id);
 
-  const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
-  const userId = subscription.metadata?.user_id;
+  const subscription = await stripe.subscriptions.retrieve((invoice as any).subscription as string);
+  const userId = (subscription as any).metadata?.['user_id'];
 
   if (!userId) {
     console.error('No user_id in subscription metadata');

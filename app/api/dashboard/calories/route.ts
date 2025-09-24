@@ -38,11 +38,11 @@ export async function GET(request: Request) {
     return NextResponse.json({
       userId: user.id,
       totals: {
-        today: Number(totals?.[0]?.today ?? 0),
-        week: Number(totals?.[0]?.week ?? 0),
-        month: Number(totals?.[0]?.month ?? 0)
+        today: Number(totals?.[0]?.['today'] ?? 0),
+        week: Number(totals?.[0]?.['week'] ?? 0),
+        month: Number(totals?.[0]?.['month'] ?? 0)
       },
-      breakdown: breakdownRows.map((r: any) => ({ day: r.day, total: Number(r.total) }))
+      breakdown: breakdownRows.map((r: any) => ({ day: r['day'], total: Number(r['total']) }))
     })
   } catch (error: any) {
     console.error('Calories API error:', error)

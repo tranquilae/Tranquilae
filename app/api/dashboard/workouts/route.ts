@@ -40,14 +40,14 @@ export async function GET() {
     return NextResponse.json({
       userId: user.id,
       summary: {
-        totalWorkoutsThisWeek: Number(weekSummary?.[0]?.entries ?? 0),
-        totalMinutesThisWeek: Number(weekSummary?.[0]?.total_minutes ?? 0)
+        totalWorkoutsThisWeek: Number(weekSummary?.[0]?.['entries'] ?? 0),
+        totalMinutesThisWeek: Number(weekSummary?.[0]?.['total_minutes'] ?? 0)
       },
       workouts: recent.map((r: any) => ({
-        timestamp: r.timestamp,
-        minutes: Number(r.value),
-        unit: r.unit,
-        metadata: r.metadata || null
+        timestamp: r['timestamp'],
+        minutes: Number(r['value']),
+        unit: r['unit'],
+        metadata: r['metadata'] || null
       }))
     })
   } catch (error: any) {

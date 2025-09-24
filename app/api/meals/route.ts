@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
     if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const url = new URL(request.url)
-    const date = url.searchParams.get('date') || new Date().toISOString().split('T')[0]
+    const dateParam = url.searchParams.get('date')
+    const date = (dateParam || new Date().toISOString().split('T')[0]) as string
 
     const { db } = await import('@/lib/database')
     const meals = await db.listMealsByDate(user.id, date)
