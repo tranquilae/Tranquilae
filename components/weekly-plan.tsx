@@ -36,34 +36,6 @@ export function WeeklyPlan() {
     })()
     return () => { mounted = false }
   }, [])
-    {
-      day: "Monday",
-      date: "Dec 23",
-      activities: [
-        { type: "workout", title: "Upper Body Strength", time: "7:00 AM", duration: "45 min" },
-        { type: "meal", title: "Protein-rich breakfast", time: "8:00 AM", calories: 420 },
-        { type: "mindfulness", title: "Morning meditation", time: "6:30 AM", duration: "10 min" },
-      ],
-    },
-    {
-      day: "Tuesday",
-      date: "Dec 24",
-      activities: [
-        { type: "workout", title: "Cardio & Core", time: "7:00 AM", duration: "30 min" },
-        { type: "meal", title: "Mediterranean lunch", time: "12:30 PM", calories: 580 },
-        { type: "mindfulness", title: "Evening reflection", time: "8:00 PM", duration: "15 min" },
-      ],
-    },
-    {
-      day: "Wednesday",
-      date: "Dec 25",
-      activities: [
-        { type: "workout", title: "Yoga Flow", time: "8:00 AM", duration: "60 min" },
-        { type: "meal", title: "Holiday balanced meal", time: "1:00 PM", calories: 650 },
-        { type: "mindfulness", title: "Gratitude practice", time: "7:00 PM", duration: "10 min" },
-      ],
-    },
-  ]
 
   const getActivityIcon = (type: string) => {
     switch (type) {
