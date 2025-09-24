@@ -429,9 +429,9 @@ export const migrations = {
         this.createMealsTable,
         this.createOAuthStateTable,
       ];
-      for (const step of steps) {
+      for (const step of steps.filter((s) => typeof s === 'function')) {
         try {
-          await step.call(this);
+          await (step as any).call(this);
         } catch (e: any) {
           const msg = String(e?.message || e);
           // Ignore benign concurrency or already-exists issues
