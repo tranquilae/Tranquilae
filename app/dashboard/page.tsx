@@ -6,6 +6,7 @@ import { TodaysMeals } from "@/components/todays-meals"
 import { QuickStats } from "@/components/quick-stats"
 import { AICoachChat } from "@/components/ai-coach-chat"
 import { WhatYouAteBoard } from "@/components/what-you-ate-board"
+import { QuickLog } from "@/components/quick-log"
 
 export default function DashboardPage() {
   return (
@@ -23,6 +24,7 @@ export default function DashboardPage() {
         {/* Right sidebar */}
         <div className="space-y-6">
           <QuickStats />
+          <QuickLog />
           <AICoachChat />
         </div>
       </div>

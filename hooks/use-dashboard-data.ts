@@ -181,22 +181,43 @@ export function useDailyStats() {
           return
         }
 
-        const today = new Date().toISOString().split('T')[0]
-        const response = await fetch(`/api/stats/daily?date=${today}`, {
-          headers: {
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        // Fetch user settings (goals)
+        const settingsRes = await fetch('/api/user/settings', { cache: 'no-store' })
+        let goals = getDefaultStats()
+        if (settingsRes.ok) {
+          const s = await settingsRes.json()
+          goals = {
+            dailyCalorieGoal: Number(s.daily_calorie_goal || 0),
+            consumedCalories: 0,
+            burnedCalories: 0,
+            steps: 0,
+            stepsGoal: Number(s.steps_goal || 0),
+            waterGlasses: 0,
+            waterGoal: Number(s.water_goal || 0),
+            sleepHours: 0,
+            sleepGoal: Number(s.sleep_goal || 0),
+            activeMinutes: 0,
+            activeGoal: Number(s.active_minutes_goal || 0),
+            macros: {
+              carbs: { consumed: 0, goal: Number(s?.macros_goal?.carbs || 0) },
+              protein: { consumed: 0, goal: Number(s?.macros_goal?.protein || 0) },
+              fat: { consumed: 0, goal: Number(s?.macros_goal?.fat || 0) },
+            }
           }
-        })
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch stats')
         }
 
-        const statsData = await response.json()
-        setStats(statsData.stats || getDefaultStats())
+        // Fetch daily stats (if endpoint exists); otherwise keep goals/zeros
+        const today = new Date().toISOString().split('T')[0]
+        const response = await fetch(`/api/stats/daily?date=${today}`, { cache: 'no-store' })
+
+        if (response.ok) {
+          const statsData = await response.json()
+          setStats({ ...goals, ...(statsData.stats || {}) })
+        } else {
+          setStats(goals)
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch stats')
-        // Use default stats on error
         setStats(getDefaultStats())
       } finally {
         setLoading(false)
@@ -212,21 +233,21 @@ export function useDailyStats() {
 // Default stats for new users
 function getDefaultStats(): UserStats {
   return {
-    dailyCalorieGoal: 2000,
+    dailyCalorieGoal: 0,
     consumedCalories: 0,
     burnedCalories: 0,
     steps: 0,
-    stepsGoal: 10000,
+    stepsGoal: 0,
     waterGlasses: 0,
-    waterGoal: 8,
+    waterGoal: 0,
     sleepHours: 0,
-    sleepGoal: 8,
+    sleepGoal: 0,
     activeMinutes: 0,
-    activeGoal: 60,
+    activeGoal: 0,
     macros: {
-      carbs: { consumed: 0, goal: 250 },
-      protein: { consumed: 0, goal: 150 },
-      fat: { consumed: 0, goal: 67 }
+      carbs: { consumed: 0, goal: 0 },
+      protein: { consumed: 0, goal: 0 },
+      fat: { consumed: 0, goal: 0 }
     }
   }
 }

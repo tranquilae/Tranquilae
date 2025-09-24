@@ -21,6 +21,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "scrape:videos": "node scripts/scrape-workout-videos.js",
+    "ingest:media": "node scripts/trigger-ingest.js"
     "postinstall": "echo '🌿 Tranquilae installed! Run npm run setup to configure your system.'"
   },
   "dependencies": {

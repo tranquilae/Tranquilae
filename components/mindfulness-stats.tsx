@@ -1,42 +1,64 @@
 "use client"
 
+import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { TrendingUp, Clock, Target, Award } from "lucide-react"
+import { TrendingUp, Clock, Target } from "lucide-react"
 
 export function MindfulnessStats() {
-  const stats = [
-    {
-      label: "This Week",
-      value: "45 min",
-      target: "60 min",
-      progress: 75,
-      icon: Clock,
-    },
-    {
-      label: "Sessions",
-      value: "12",
-      target: "15",
-      progress: 80,
-      icon: Target,
-    },
-    {
-      label: "Streak",
-      value: "7 days",
-      target: "10 days",
-      progress: 70,
-      icon: Award,
-    },
-  ]
+  const [summary, setSummary] = React.useState<{ totalSessionsThisWeek:number; totalMinutesThisWeek:number }>({ totalSessionsThisWeek: 0, totalMinutesThisWeek: 0 })
+  const [weekly, setWeekly] = React.useState<Array<{ day:string; minutes:number }>>([])
+  const [badges, setBadges] = React.useState<string[]>([])
 
-  const weeklyData = [
-    { day: "Mon", minutes: 10 },
-    { day: "Tue", minutes: 15 },
-    { day: "Wed", minutes: 0 },
-    { day: "Thu", minutes: 20 },
-    { day: "Fri", minutes: 5 },
-    { day: "Sat", minutes: 25 },
-    { day: "Sun", minutes: 15 },
+  React.useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const res = await fetch('/api/dashboard/mindfulness', { cache: 'no-store' })
+        if (res.ok) {
+          const data = await res.json()
+          const sessions: Array<{ started_at:string; duration_minutes:number }> = data.sessions || []
+          // Build last 7 days histogram
+          const labels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+          const byDay = new Array(7).fill(0)
+          const now = new Date()
+          for (const s of sessions) {
+            const d = new Date(s.started_at)
+            const diff = Math.floor((now.getTime() - d.getTime()) / (24*3600*1000))
+            if (diff >= 0 && diff < 7) {
+              const idx = d.getDay()
+              byDay[idx] += Number(s.duration_minutes || 0)
+            }
+          }
+          const week = labels.map((label, idx) => ({ day: label, minutes: byDay[idx] }))
+          if (mounted) {
+            setWeekly(week)
+            setSummary({ totalSessionsThisWeek: data.summary?.totalSessionsThisWeek || 0, totalMinutesThisWeek: data.summary?.totalMinutesThisWeek || 0 })
+            // Achievements
+            const uniqueDays = new Set(sessions.map(s => new Date(s.started_at).toISOString().slice(0,10)))
+            const totalSessions = sessions.length
+            const b: string[] = []
+            if (totalSessions > 0) b.push('First session')
+            // Compute current streak ending today
+            let streak = 0
+            for (let i=0; i<30; i++) {
+              const d = new Date(); d.setUTCDate(d.getUTCDate() - i)
+              const key = d.toISOString().slice(0,10)
+              if (uniqueDays.has(key)) streak++; else break
+            }
+            if (streak >= 3) b.push('3-day streak')
+            if (streak >= 7) b.push('7-day streak')
+            setBadges(b)
+          }
+        }
+      } catch {}
+    })()
+    return () => { mounted = false }
+  }, [])
+
+  const stats = [
+    { label: 'This Week', value: `${summary.totalMinutesThisWeek} min`, target: '—', progress: 0, icon: Clock },
+    { label: 'Sessions', value: `${summary.totalSessionsThisWeek}`, target: '—', progress: 0, icon: Target },
   ]
 
   return (
@@ -48,7 +70,6 @@ export function MindfulnessStats() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Weekly Stats */}
         {stats.map((stat, index) => {
           const Icon = stat.icon
           return (
@@ -59,39 +80,34 @@ export function MindfulnessStats() {
                   <span className="text-sm font-medium">{stat.label}</span>
                 </div>
                 <span className="text-sm text-muted-foreground">
-                  {stat.value} / {stat.target}
+                  {stat.value}{stat.target !== '—' ? ` / ${stat.target}` : ''}
                 </span>
               </div>
-              <Progress value={stat.progress} className="h-2" />
+              {stat.progress > 0 && <Progress value={stat.progress} className="h-2" />}
             </div>
           )
         })}
 
-        {/* Weekly Chart */}
+        {badges.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {badges.map((b, i) => (
+              <span key={i} className="px-2 py-1 text-xs rounded-full bg-primary/10 border border-primary/20 text-primary">{b}</span>
+            ))}
+          </div>
+        )}
+
         <div className="space-y-3">
           <h3 className="font-medium text-sm text-muted-foreground">This Week</h3>
           <div className="flex items-end justify-between gap-1 h-20">
-            {weeklyData.map((day, index) => (
+            {weekly.map((day, index) => (
               <div key={index} className="flex flex-col items-center gap-1 flex-1">
-                <div className="w-full bg-primary rounded-t-sm" style={{ height: `${(day.minutes / 25) * 100}%` }} />
+                <div className="w-full bg-primary rounded-t-sm" style={{ height: `${Math.min(100, (day.minutes / Math.max(1, Math.max(...weekly.map(d=>d.minutes)))) * 100)}%` }} />
                 <span className="text-xs text-muted-foreground">{day.day}</span>
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Achievements */}
-        <div className="space-y-2">
-          <h3 className="font-medium text-sm text-muted-foreground">Recent Achievements</h3>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 p-2 rounded-lg bg-accent/10">
-              <Award className="h-4 w-4 text-yellow-500" />
-              <span className="text-sm">7-day streak!</span>
-            </div>
-            <div className="flex items-center gap-2 p-2 rounded-lg bg-accent/10">
-              <Target className="h-4 w-4 text-green-500" />
-              <span className="text-sm">First meditation completed</span>
-            </div>
+            {weekly.length === 0 && (
+              <div className="text-xs text-muted-foreground">No sessions this week.</div>
+            )}
           </div>
         </div>
       </CardContent>

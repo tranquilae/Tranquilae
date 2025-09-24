@@ -84,10 +84,19 @@ export async function POST(request: NextRequest) {
           onboardingComplete = false
         } else {
           const { db } = await import('@/lib/database')
-          const userData = await db.getUserById(authData.user.id)
+          let userData = await db.getUserById(authData.user.id)
           
           console.log('🔍 Login: Checking onboarding status for user:', authData.user.id)
           console.log('📊 Login: User data from Neon:', userData ? { onboardingComplete: userData.onboarding_complete } : 'Not found')
+          
+          if (!userData) {
+            try {
+              userData = await db.createUser({ id: authData.user.id, email: authData.user.email || '', name: authData.user.email?.split('@')[0] || null, onboarding_complete: false })
+              console.log('🆕 Created minimal profile during login')
+            } catch (createErr) {
+              console.warn('Could not auto-create profile during login:', createErr)
+            }
+          }
           
           if (userData && userData.onboarding_complete === true) {
             console.log('✅ Login: User has completed onboarding - redirect to dashboard')

@@ -2,6 +2,7 @@ import { MeditationPlayer } from "@/components/meditation-player"
 import { JournalEntry } from "@/components/journal-entry"
 import { DailyReflection } from "@/components/daily-reflection"
 import { MindfulnessStats } from "@/components/mindfulness-stats"
+import { MindfulnessSessionPanel } from "@/components/mindfulness-session-panel"
 
 export default function MindfulnessPage() {
   return (
@@ -22,7 +23,7 @@ export default function MindfulnessPage() {
 
         {/* Right sidebar */}
         <div className="space-y-6">
-          <DailyReflection />
+          <MindfulnessSessionPanel />
           <MindfulnessStats />
         </div>
       </div>

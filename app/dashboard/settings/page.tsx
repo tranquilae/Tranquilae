@@ -3,6 +3,7 @@ import { UserProfile } from "@/components/user-profile"
 import { AppPreferences } from "@/components/app-preferences"
 import { IntegrationsPanel } from "@/components/integrations-panel"
 import { AccountSettings } from "@/components/account-settings"
+import { SettingsGoals } from "@/components/settings-goals"
 
 export default function SettingsPage() {
   return (
@@ -20,6 +21,7 @@ export default function SettingsPage() {
           <PlanManagement />
           <UserProfile />
           <AppPreferences />
+          <SettingsGoals />
         </div>
 
         {/* Right sidebar */}

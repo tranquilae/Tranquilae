@@ -1,15 +1,25 @@
 "use client"
 
+import React, { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { BookOpen, Save, Calendar } from "lucide-react"
-import { useState } from "react"
+
+interface JournalItem {
+  id: string
+  content: string
+  prompt: string | null
+  mood: string | null
+  created_at?: string
+}
 
 export function JournalEntry() {
   const [currentEntry, setCurrentEntry] = useState("")
   const [selectedPrompt, setSelectedPrompt] = useState(0)
+  const [entries, setEntries] = useState<JournalItem[]>([])
+  const [saving, setSaving] = useState(false)
 
   const journalPrompts = [
     "What am I grateful for today?",
@@ -20,23 +30,38 @@ export function JournalEntry() {
     "What intention do I want to set for tomorrow?",
   ]
 
-  const recentEntries = [
-    {
-      date: "Dec 22",
-      preview: "Today I felt grateful for the small moments of peace...",
-      mood: "Peaceful",
-    },
-    {
-      date: "Dec 21",
-      preview: "The morning meditation helped me start the day with clarity...",
-      mood: "Focused",
-    },
-    {
-      date: "Dec 20",
-      preview: "I noticed my stress levels were high, but breathing exercises...",
-      mood: "Reflective",
-    },
-  ]
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const res = await fetch('/api/dashboard/journal', { cache: 'no-store' })
+        if (res.ok) {
+          const data = await res.json()
+          if (mounted && Array.isArray(data.entries)) setEntries(data.entries)
+        }
+      } catch {}
+    })()
+    return () => { mounted = false }
+  }, [])
+
+  const handleSave = async () => {
+    const content = currentEntry.trim()
+    if (!content) return
+    try {
+      setSaving(true)
+      const prompt = journalPrompts[selectedPrompt]
+      const res = await fetch('/api/dashboard/journal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, prompt })
+      })
+      if (!res.ok) throw new Error('Failed to save entry')
+      const created = await res.json()
+      setEntries(prev => [created, ...prev])
+      setCurrentEntry("")
+    } catch {}
+    finally { setSaving(false) }
+  }
 
   return (
     <Card className="glass-card">
@@ -81,7 +106,7 @@ export function JournalEntry() {
             className="min-h-32 resize-none"
           />
           <div className="flex justify-end">
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={handleSave} disabled={saving}>
               <Save className="h-4 w-4" />
               Save Entry
             </Button>
@@ -91,15 +116,22 @@ export function JournalEntry() {
         {/* Recent Entries */}
         <div className="space-y-3">
           <h3 className="font-medium text-muted-foreground">Recent Entries</h3>
-          {recentEntries.map((entry, index) => (
-            <div key={index} className="p-3 rounded-lg border border-border/50 hover:bg-accent/20 transition-colors">
+          {entries.length === 0 && (
+            <div className="text-xs text-muted-foreground">No entries yet.</div>
+          )}
+          {entries.map((entry) => (
+            <div key={entry.id} className="p-3 rounded-lg border border-border/50 hover:bg-accent/20 transition-colors">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">{entry.date}</span>
-                <Badge variant="outline" className="text-xs">
-                  {entry.mood}
-                </Badge>
+                <span className="text-sm font-medium">
+                  {entry.created_at ? new Date(entry.created_at).toLocaleDateString() : ''}
+                </span>
+                {entry.mood && (
+                  <Badge variant="outline" className="text-xs">
+                    {entry.mood}
+                  </Badge>
+                )}
               </div>
-              <p className="text-sm text-muted-foreground">{entry.preview}</p>
+              <p className="text-sm text-muted-foreground">{entry.content}</p>
             </div>
           ))}
         </div>

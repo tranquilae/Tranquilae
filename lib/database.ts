@@ -24,6 +24,16 @@ async function testConnection() {
 // Run connection test (but don't block initialization)
 testConnection().catch(() => {});
 
+// Run idempotent migrations on module load to ensure required tables exist
+(async () => {
+  try {
+    await migrations.runAll();
+    console.log('✅ Database migrations ensured');
+  } catch (e) {
+    console.warn('⚠️ Failed to run migrations on init (will continue):', e);
+  }
+})();
+
 /**
  * Database Schema Types
  */
@@ -223,7 +233,7 @@ export const migrations = {
       CREATE TABLE IF NOT EXISTS health_data_points (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-        integration_id UUID NOT NULL REFERENCES health_integrations(id) ON DELETE CASCADE,
+        integration_id UUID REFERENCES health_integrations(id) ON DELETE SET NULL,
         data_type VARCHAR(50) NOT NULL,
         value DECIMAL NOT NULL,
         unit VARCHAR(20) NOT NULL,
@@ -241,6 +251,124 @@ export const migrations = {
     await sql`CREATE INDEX IF NOT EXISTS health_data_points_type_idx ON health_data_points(data_type)`;
     await sql`CREATE INDEX IF NOT EXISTS health_data_points_timestamp_idx ON health_data_points(timestamp)`;
     await sql`CREATE INDEX IF NOT EXISTS health_data_points_user_type_timestamp_idx ON health_data_points(user_id, data_type, timestamp)`;
+  },
+
+  // Notes table
+  async createNotesTable() {
+    await sql`
+      CREATE TABLE IF NOT EXISTS notes (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+        title TEXT,
+        content TEXT NOT NULL,
+        tags TEXT[] DEFAULT '{}',
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS notes_user_id_idx ON notes(user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS notes_created_at_idx ON notes(created_at)`;
+  },
+
+  // Mindfulness sessions table
+  async createMindfulnessSessionsTable() {
+    await sql`
+      CREATE TABLE IF NOT EXISTS mindfulness_sessions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+        started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        duration_minutes INTEGER NOT NULL DEFAULT 0,
+        type VARCHAR(40) DEFAULT 'meditation',
+        notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS mindfulness_user_id_idx ON mindfulness_sessions(user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS mindfulness_started_at_idx ON mindfulness_sessions(started_at)`;
+  },
+
+  // AI conversations tables
+  async createAIConversationsTables() {
+    await sql`
+      CREATE TABLE IF NOT EXISTS ai_conversations (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+        title TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS ai_messages (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        conversation_id UUID NOT NULL REFERENCES ai_conversations(id) ON DELETE CASCADE,
+        role VARCHAR(10) NOT NULL CHECK (role IN ('user','assistant')),
+        content TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS ai_conversations_user_id_idx ON ai_conversations(user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS ai_messages_conversation_id_idx ON ai_messages(conversation_id)`;
+  },
+
+  // AI usage table (for fallback budgeting)
+  async createAIUsageTable() {
+    await sql`
+      CREATE TABLE IF NOT EXISTS ai_usage (
+        user_id UUID NOT NULL REFERENCES profiles(user_id) ON DELETE CASCADE,
+        month VARCHAR(7) NOT NULL,
+        provider VARCHAR(20) NOT NULL,
+        tokens_used INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (user_id, month, provider)
+      )
+    `;
+  },
+
+  // Check-ins table (mood/energy)
+  async createCheckinsTable() {
+    await sql`
+      CREATE TABLE IF NOT EXISTS checkins (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES profiles(user_id) ON DELETE CASCADE,
+        mood TEXT,
+        energy INTEGER,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS checkins_user_id_idx ON checkins(user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS checkins_created_at_idx ON checkins(created_at)`;
+  },
+
+  // Journal entries table
+  async createJournalEntriesTable() {
+    await sql`
+      CREATE TABLE IF NOT EXISTS journal_entries (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+        content TEXT NOT NULL,
+        prompt TEXT,
+        mood TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS journal_user_id_idx ON journal_entries(user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS journal_created_at_idx ON journal_entries(created_at)`;
+  },
+
+  // User settings/goals table
+  async createUserSettingsTable() {
+    await sql`
+      CREATE TABLE IF NOT EXISTS user_settings (
+        user_id UUID PRIMARY KEY REFERENCES profiles(user_id) ON DELETE CASCADE,
+        daily_calorie_goal INTEGER DEFAULT 0,
+        steps_goal INTEGER DEFAULT 0,
+        water_goal INTEGER DEFAULT 0,
+        sleep_goal INTEGER DEFAULT 0,
+        active_minutes_goal INTEGER DEFAULT 0,
+        macros_goal JSONB DEFAULT '{"carbs":0,"protein":0,"fat":0}',
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
   },
 
   // Create OAuth state table
@@ -273,6 +401,13 @@ export const migrations = {
     await this.createOnboardingProgressTable();
     await this.createHealthIntegrationsTable();
     await this.createHealthDataPointsTable();
+    await this.createNotesTable();
+    await this.createMindfulnessSessionsTable();
+    await this.createAIConversationsTables();
+    await this.createAIUsageTable();
+    await this.createJournalEntriesTable();
+    await this.createUserSettingsTable();
+    await this.createCheckinsTable();
     await this.createOAuthStateTable();
   }
 };
@@ -520,6 +655,62 @@ export const db = {
     await sql`DELETE FROM health_integrations WHERE user_id = ${userId} AND service_name = ${serviceName}`;
   },
 
+  // Notes CRUD
+  async listNotes(userId: string): Promise<Array<{id:string; title:string|null; content:string; tags:string[]; created_at: Date; updated_at: Date}>> {
+    const result = await sql`
+      SELECT id, title, content, tags, created_at, updated_at
+      FROM notes WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+    `;
+    return result as any;
+  },
+
+  async createNote(userId: string, note: { title?: string|null; content: string; tags?: string[] }): Promise<any> {
+    const result = await sql`
+      INSERT INTO notes (user_id, title, content, tags)
+      VALUES (${userId}, ${note.title || null}, ${note.content}, ${note.tags || []})
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  async updateNote(userId: string, id: string, note: { title?: string|null; content?: string; tags?: string[] }): Promise<any> {
+    const result = await sql`
+      UPDATE notes SET 
+        title = COALESCE(${note.title ?? null}, title),
+        content = COALESCE(${note.content ?? null}, content),
+        tags = COALESCE(${note.tags ?? null}, tags),
+        updated_at = NOW()
+      WHERE id = ${id} AND user_id = ${userId}
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  async deleteNote(userId: string, id: string): Promise<void> {
+    await sql`DELETE FROM notes WHERE id = ${id} AND user_id = ${userId}`;
+  },
+
+  // Journal entries
+  async listJournalEntries(userId: string): Promise<Array<{id:string; content:string; prompt:string|null; mood:string|null; created_at: Date}>> {
+    const result = await sql`
+      SELECT id, content, prompt, mood, created_at
+      FROM journal_entries
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+    `;
+    return result as any;
+  },
+
+  async createJournalEntry(userId: string, data: { content: string; prompt?: string|null; mood?: string|null }): Promise<any> {
+    const result = await sql`
+      INSERT INTO journal_entries (user_id, content, prompt, mood)
+      VALUES (${userId}, ${data.content}, ${data.prompt || null}, ${data.mood || null})
+      RETURNING *
+    `;
+    return result[0];
+  },
+
   // Health Data Points
   async saveHealthDataPoints(dataPoints: Omit<HealthDataPoint, 'id' | 'created_at'>[]): Promise<void> {
     if (dataPoints.length === 0) return;
@@ -549,6 +740,191 @@ export const db = {
       ORDER BY timestamp ASC
     `;
     return result as HealthDataPoint[];
+  },
+
+  // Mindfulness CRUD
+  async listMindfulnessSessions(userId: string): Promise<Array<{id:string; started_at: Date; duration_minutes: number; type: string; notes: string|null}>> {
+    const result = await sql`
+      SELECT id, started_at, duration_minutes, type, notes
+      FROM mindfulness_sessions
+      WHERE user_id = ${userId}
+      ORDER BY started_at DESC
+    `;
+    return result as any;
+  },
+
+  async createMindfulnessSession(userId: string, data: { started_at?: Date; duration_minutes?: number; type?: string; notes?: string|null }): Promise<any> {
+    const result = await sql`
+      INSERT INTO mindfulness_sessions (user_id, started_at, duration_minutes, type, notes)
+      VALUES (
+        ${userId},
+        ${data.started_at || new Date()},
+        ${data.duration_minutes ?? 0},
+        ${data.type || 'meditation'},
+        ${data.notes || null}
+      )
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  async deleteMindfulnessSession(userId: string, id: string): Promise<void> {
+    await sql`DELETE FROM mindfulness_sessions WHERE id = ${id} AND user_id = ${userId}`;
+  },
+
+  // AI Conversations & Messages
+  async listAIMessages(userId: string): Promise<Array<{id:string; role:'user'|'assistant'; content:string; created_at: Date;}>> {
+    // Return messages from the most recent conversation or empty if none
+    const conv = await sql`
+      SELECT id FROM ai_conversations WHERE user_id = ${userId}
+      ORDER BY created_at DESC LIMIT 1
+    `;
+    if (!conv[0]) return [] as any;
+    const cid = conv[0].id as string;
+    const messages = await sql`
+      SELECT id, role, content, created_at FROM ai_messages
+      WHERE conversation_id = ${cid}
+      ORDER BY created_at ASC
+    `;
+    return messages as any;
+  },
+
+  async addAIUserMessage(userId: string, content: string): Promise<{conversation_id:string; message_id:string}> {
+    // Ensure a conversation exists
+    let conv = await sql`
+      SELECT id FROM ai_conversations WHERE user_id = ${userId}
+      ORDER BY created_at DESC LIMIT 1
+    `;
+    if (!conv[0]) {
+      conv = await sql`
+        INSERT INTO ai_conversations (user_id, title) VALUES (${userId}, ${'Conversation'}) RETURNING id
+      `;
+    }
+    const conversation_id = conv[0].id as string;
+    const msg = await sql`
+      INSERT INTO ai_messages (conversation_id, role, content)
+      VALUES (${conversation_id}, ${'user'}, ${content}) RETURNING id
+    `;
+    return { conversation_id, message_id: msg[0].id as string };
+  },
+
+  // Workouts schema
+  async createWorkoutsTables() {
+    await sql`
+      CREATE TABLE IF NOT EXISTS workouts (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES profiles(user_id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        type TEXT,
+        scheduled_at TIMESTAMPTZ,
+        duration_min INTEGER,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )`;
+    await sql`
+      CREATE TABLE IF NOT EXISTS workout_exercises (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        workout_id UUID NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        sets INTEGER NOT NULL DEFAULT 3,
+        reps INTEGER NOT NULL DEFAULT 10,
+        rest INTEGER NOT NULL DEFAULT 60
+      )`;
+    await sql`
+      CREATE TABLE IF NOT EXISTS workout_logs (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES profiles(user_id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        date DATE NOT NULL,
+        duration_min INTEGER,
+        calories INTEGER,
+        type TEXT
+      )`;
+    await sql`CREATE INDEX IF NOT EXISTS workouts_user_idx ON workouts(user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS workout_logs_user_date_idx ON workout_logs(user_id, date)`;
+  },
+
+  // Check-in ops
+  async listCheckins(userId: string, limit = 10): Promise<Array<{id:string; mood:string|null; energy:number|null; created_at: Date}>> {
+    const result = await sql`
+      SELECT id, mood, energy, created_at FROM checkins
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+      LIMIT ${limit}
+    `;
+    return result as any;
+  },
+  async createCheckin(userId: string, data: { mood?: string|null; energy?: number|null }): Promise<any> {
+    const result = await sql`
+      INSERT INTO checkins (user_id, mood, energy)
+      VALUES (${userId}, ${data.mood || null}, ${data.energy ?? null})
+      RETURNING *
+    `;
+    return result[0];
+  },
+
+  // AI usage helpers
+  async getAIUsage(userId: string, provider: 'openai'|'grok'): Promise<{ tokens_used:number } | null> {
+    const month = new Date().toISOString().slice(0,7)
+    const result = await sql`SELECT tokens_used FROM ai_usage WHERE user_id = ${userId} AND provider = ${provider} AND month = ${month}`
+    return result[0] || null
+  },
+  async addAIUsage(userId: string, provider: 'openai'|'grok', tokens: number): Promise<void> {
+    const month = new Date().toISOString().slice(0,7)
+    await sql`
+      INSERT INTO ai_usage (user_id, month, provider, tokens_used)
+      VALUES (${userId}, ${month}, ${provider}, ${tokens})
+      ON CONFLICT (user_id, month, provider)
+      DO UPDATE SET tokens_used = ai_usage.tokens_used + ${tokens}
+    `
+  },
+
+  // User Settings
+  async getUserSettings(userId: string): Promise<any | null> {
+    const result = await sql`
+      SELECT user_id, daily_calorie_goal, steps_goal, water_goal, sleep_goal, active_minutes_goal, macros_goal
+      FROM user_settings WHERE user_id = ${userId}
+    `;
+    return (result[0] as any) || null;
+  },
+
+  async upsertUserSettings(userId: string, data: Partial<{ daily_calorie_goal:number; steps_goal:number; water_goal:number; sleep_goal:number; active_minutes_goal:number; macros_goal:any }>): Promise<any> {
+    const result = await sql`
+      INSERT INTO user_settings (user_id, daily_calorie_goal, steps_goal, water_goal, sleep_goal, active_minutes_goal, macros_goal)
+      VALUES (
+        ${userId},
+        ${data.daily_calorie_goal ?? 0},
+        ${data.steps_goal ?? 0},
+        ${data.water_goal ?? 0},
+        ${data.sleep_goal ?? 0},
+        ${data.active_minutes_goal ?? 0},
+        ${data.macros_goal ?? { carbs:0, protein:0, fat:0 }}
+      )
+      ON CONFLICT (user_id) DO UPDATE SET
+        daily_calorie_goal = COALESCE(EXCLUDED.daily_calorie_goal, user_settings.daily_calorie_goal),
+        steps_goal = COALESCE(EXCLUDED.steps_goal, user_settings.steps_goal),
+        water_goal = COALESCE(EXCLUDED.water_goal, user_settings.water_goal),
+        sleep_goal = COALESCE(EXCLUDED.sleep_goal, user_settings.sleep_goal),
+        active_minutes_goal = COALESCE(EXCLUDED.active_minutes_goal, user_settings.active_minutes_goal),
+        macros_goal = COALESCE(EXCLUDED.macros_goal, user_settings.macros_goal),
+        updated_at = NOW()
+      RETURNING *
+    `;
+    return result[0] as any;
+  },
+
+  // Exercise media ops
+  async listExerciseMedia(): Promise<Array<{ name:string; video_url:string }>> {
+    const rs = await sql`SELECT name, video_url FROM exercise_media ORDER BY name ASC`;
+    return rs as any
+  },
+  async upsertExerciseMedia(name: string, video_url: string): Promise<any> {
+    const rs = await sql`
+      INSERT INTO exercise_media (name, video_url)
+      VALUES (${name}, ${video_url})
+      ON CONFLICT (name) DO UPDATE SET video_url = EXCLUDED.video_url
+      RETURNING name, video_url
+    `;
+    return rs[0]
   },
 
   // OAuth State Management
