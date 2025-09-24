@@ -1,6 +1,9 @@
+"use client"
+
 import React from 'react'
 import dynamic from 'next/dynamic'
 
+// Client page; ensure no static generation tries to SSR these client-only widgets
 export const dynamic = 'force-dynamic'
 
 const AICoachChat = dynamic(() => import('@/components/ai-coach-chat-full').then(m => m.AICoachChat), { ssr: false })
