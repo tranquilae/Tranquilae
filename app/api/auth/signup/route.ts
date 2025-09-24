@@ -10,7 +10,7 @@ function logDetailedError(error: any, context: string, request: NextRequest) {
     name: error.name,
     stack: error.stack,
     timestamp: new Date().toISOString(),
-    ip: request.ip,
+    ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
     userAgent: request.headers.get('user-agent')
   })
 }
@@ -97,8 +97,8 @@ export async function POST(request: NextRequest) {
           event_type: 'SIGNUP',
           success: false,
           error: `Missing required fields: ${missingFields.join(', ')}`,
-          ip_address: request.ip,
-          user_agent: request.headers.get('user-agent') || undefined
+          ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+          user_agent: request.headers.get('user-agent') || 'unknown'
         })
       } catch (logError) {
         console.warn('Failed to log validation error:', logError)
@@ -152,8 +152,8 @@ export async function POST(request: NextRequest) {
           event_type: 'SIGNUP',
           success: false,
           error: `Signup exception: ${signUpError.message}`,
-          ip_address: request.ip,
-          user_agent: request.headers.get('user-agent') || undefined
+          ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+          user_agent: request.headers.get('user-agent') || 'unknown'
         })
       } catch (logError) {
         console.warn('Failed to log signup exception:', logError)
@@ -181,8 +181,8 @@ export async function POST(request: NextRequest) {
           event_type: 'SIGNUP',
           success: false,
           error: authError.message,
-          ip_address: request.ip,
-          user_agent: request.headers.get('user-agent') || undefined,
+          ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+          user_agent: request.headers.get('user-agent') || 'unknown',
           metadata: {
             errorStatus: authError.status,
             errorCode: authError.code
@@ -265,8 +265,8 @@ export async function POST(request: NextRequest) {
           event_type: 'SIGNUP',
           user_id: authData.user.id,
           success: true,
-          ip_address: request.ip,
-          user_agent: request.headers.get('user-agent') || undefined,
+          ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+          user_agent: request.headers.get('user-agent') || 'unknown',
           metadata: {
             email: authData.user.email,
             email_confirmed: authData.user.email_confirmed_at !== null
@@ -300,8 +300,8 @@ export async function POST(request: NextRequest) {
         event_type: 'SIGNUP',
         success: false,
         error: error.message,
-        ip_address: request.ip,
-        user_agent: request.headers.get('user-agent') || undefined
+        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+        user_agent: request.headers.get('user-agent') || 'unknown'
       })
     } catch (logError) {
       console.warn('Failed to log general error:', logError)
