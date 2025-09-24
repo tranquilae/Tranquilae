@@ -381,11 +381,11 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     await db.updateSubscription(userId, {
       plan: 'explorer',
       status: 'active',
-      stripe_subscription_id: null,
+      stripe_subscription_id: undefined, // Clear subscription ID
       stripe_customer_id: subscription.customer as string, // Keep customer ID
-      trial_end: null,
-      current_period_start: null,
-      current_period_end: null,
+      trial_end: undefined,
+      current_period_start: undefined,
+      current_period_end: undefined,
       cancel_at_period_end: false,
     });
 
