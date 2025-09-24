@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Play, Pause, SkipForward, Timer } from "lucide-react"
 import React, { useEffect, useState } from "react"
+import { fetchWithAuth } from '@/lib/api'
 
 const DEMO_VIDEOS: Record<string, string> = {
   'Push-ups': 'https://www.youtube.com/embed/IODxDxX7oi4',
@@ -21,7 +22,7 @@ function useExerciseMediaOverrides() {
     let mounted = true
     ;(async () => {
       try {
-        const res = await fetch('/api/admin/exercises/media', { cache: 'no-store' })
+        const res = await fetchWithAuth('/api/admin/exercises/media')
         if (res.ok) {
           const data = await res.json()
           const map: Record<string, string> = {}

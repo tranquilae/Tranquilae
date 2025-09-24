@@ -4,7 +4,7 @@ import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, TrendingUp } from "lucide-react"
-import { supabase } from '@/lib/supabase'
+import { fetchWithAuth } from '@/lib/api'
 
 type LogItem = { id:string; name:string; date:string; duration_min?:number|null; calories?:number|null; type?:string|null }
 
@@ -16,8 +16,7 @@ export function WorkoutHistory() {
     let mounted = true
     ;(async () => {
       try {
-        const token = (await supabase.auth.getSession()).data.session?.access_token
-        const res = await fetch('/api/dashboard/workouts/history', { cache: 'no-store', headers: token ? { Authorization: `Bearer ${token}` } : {} })
+        const res = await fetchWithAuth('/api/dashboard/workouts/history')
         if (res.ok) {
           const data = await res.json()
           if (mounted) {

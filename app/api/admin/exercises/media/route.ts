@@ -7,7 +7,15 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    // Attempt token auth first (for client fetches)
+    const headers = (await import('next/headers')).headers
+    const authHeader = (await headers()).get('authorization') || ''
+    const token = authHeader.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : undefined
+    const { data: { user } } = token
+      ? await supabase.auth.getUser(token)
+      : await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { db } = await import('@/lib/database')
@@ -22,7 +30,13 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const authHeader = request.headers.get('authorization') || ''
+    const token = authHeader.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : undefined
+    const { data: { user } } = token
+      ? await supabase.auth.getUser(token)
+      : await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()

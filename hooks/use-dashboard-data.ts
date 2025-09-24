@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { fetchWithAuth } from '@/lib/api'
 
 export interface UserStats {
   dailyCalorieGoal: number
@@ -63,11 +64,7 @@ export function useUserProfile() {
           return
         }
 
-        const response = await fetch('/api/user/profile', {
-          headers: {
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-          }
-        })
+        const response = await fetchWithAuth('/api/user/profile')
 
         if (!response.ok) {
           throw new Error('Failed to fetch profile')
@@ -105,11 +102,7 @@ export function useTodaysMeals() {
       }
 
       const today = new Date().toISOString().split('T')[0]
-      const response = await fetch(`/api/meals?date=${today}`, {
-        headers: {
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-        }
-      })
+      const response = await fetchWithAuth(`/api/meals?date=${today}`)
 
       if (!response.ok) {
         throw new Error('Failed to fetch meals')
@@ -136,12 +129,8 @@ export function useTodaysMeals() {
         throw new Error('Authentication required')
       }
 
-      const response = await fetch('/api/meals', {
+      const response = await fetchWithAuth(`/api/meals`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-        },
         body: JSON.stringify({
           ...meal,
           date: new Date().toISOString().split('T')[0]
@@ -183,7 +172,7 @@ export function useDailyStats() {
 
         // Fetch user settings (goals)
         const token = (await supabase.auth.getSession()).data.session?.access_token
-        const settingsRes = await fetch('/api/user/settings', { cache: 'no-store', headers: token ? { Authorization: `Bearer ${token}` } : {} })
+        const settingsRes = await fetchWithAuth('/api/user/settings')
         let goals = getDefaultStats()
         if (settingsRes.ok) {
           const s = await settingsRes.json()
@@ -209,7 +198,7 @@ export function useDailyStats() {
 
         // Fetch daily stats (if endpoint exists); otherwise keep goals/zeros
         const today = new Date().toISOString().split('T')[0]
-        const response = await fetch(`/api/stats/daily?date=${today}`, { cache: 'no-store', headers: token ? { Authorization: `Bearer ${token}` } : {} })
+        const response = await fetchWithAuth(`/api/stats/daily?date=${today}`)
 
         if (response.ok) {
           const statsData = await response.json()

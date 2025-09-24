@@ -14,8 +14,9 @@ export function QuickLog() {
   const logWater = async () => {
     try {
       setSaving(true)
-      await fetch('/api/log/water', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const { fetchWithAuth } = await import('@/lib/api')
+      await fetchWithAuth('/api/log/water', {
+        method: 'POST',
         body: JSON.stringify({ amount: water })
       })
     } finally { setSaving(false) }
@@ -24,8 +25,9 @@ export function QuickLog() {
   const logSleep = async () => {
     try {
       setSaving(true)
-      await fetch('/api/log/sleep', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const { fetchWithAuth } = await import('@/lib/api')
+      await fetchWithAuth('/api/log/sleep', {
+        method: 'POST',
         body: JSON.stringify({ hours: sleep })
       })
     } finally { setSaving(false) }

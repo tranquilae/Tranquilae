@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { BookOpen, Save, Calendar } from "lucide-react"
-import { supabase } from '@/lib/supabase'
+import { fetchWithAuth } from '@/lib/api'
 
 interface JournalItem {
   id: string
@@ -35,8 +35,7 @@ export function JournalEntry() {
     let mounted = true
     ;(async () => {
       try {
-        const token = (await supabase.auth.getSession()).data.session?.access_token
-        const res = await fetch('/api/dashboard/journal', { cache: 'no-store', headers: token ? { Authorization: `Bearer ${token}` } : {} })
+        const res = await fetchWithAuth('/api/dashboard/journal')
         if (res.ok) {
           const data = await res.json()
           if (mounted && Array.isArray(data.entries)) setEntries(data.entries)
@@ -52,10 +51,8 @@ export function JournalEntry() {
     try {
       setSaving(true)
       const prompt = journalPrompts[selectedPrompt]
-      const token = (await supabase.auth.getSession()).data.session?.access_token
-      const res = await fetch('/api/dashboard/journal', {
+      const res = await fetchWithAuth('/api/dashboard/journal', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ content, prompt })
       })
       if (!res.ok) throw new Error('Failed to save entry')

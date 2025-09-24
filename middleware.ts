@@ -124,6 +124,22 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const ip = request.ip || request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
 
+  // Global domain normalization (production only): enforce www.tranquilae.com
+  try {
+    const host = request.headers.get('host') || request.nextUrl.host;
+    const isLocal = host?.includes('localhost') || host?.includes('127.0.0.1');
+    const isVercelPreview = host?.includes('.vercel.app');
+    if (process.env.NODE_ENV === 'production' && !isLocal && !isVercelPreview) {
+      if (host === 'tranquilae.com') {
+        const url = new URL(request.url);
+        url.host = 'www.tranquilae.com';
+        return NextResponse.redirect(url, 308);
+      }
+    }
+  } catch (e) {
+    console.warn('Middleware - domain normalization skipped:', e);
+  }
+
   // Security headers (additional to Next.js config)
   const response = NextResponse.next();
   
