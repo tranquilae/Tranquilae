@@ -1,56 +1,46 @@
 "use client"
 
 import React from 'react'
-import { Home, Utensils, Dumbbell, Brain, BookOpen, MessageCircle, Settings } from "lucide-react"
+import { Home, Utensils, Dumbbell, Brain, BookOpen, MessageCircle, Settings, Shield } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Logo } from "@/components/logo"
+import { useAuth } from "@/components/AuthProvider"
 
 const navigation = [
   { name: "Home", icon: Home, href: "/dashboard" },
-  { name: "Calories", icon: Utensils, href: "/dashboard/calories" },
   { name: "Workouts", icon: Dumbbell, href: "/dashboard/workouts" },
-  { name: "Mindfulness", icon: Brain, href: "/dashboard/mindfulness" },
-  { name: "Notes & Goals", icon: BookOpen, href: "/dashboard/notes" },
-  { name: "AI Coach", icon: MessageCircle, href: "/dashboard/ai-coach" },
+  { name: "Achievements", icon: BookOpen, href: "/dashboard/achievements" },
   { name: "Settings", icon: Settings, href: "/dashboard/settings" },
+  { name: "Admin Media", icon: Shield, href: "/dashboard/admin/media", adminOnly: true },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
-  const [userName, setUserName] = React.useState<string>('')
-  const [planLabel, setPlanLabel] = React.useState<string>('')
-
-  React.useEffect(() => {
-    let mounted = true
-    ;(async () => {
-      try {
-        const { fetchWithAuth } = await import('@/lib/api')
-        const res = await fetchWithAuth('/api/user/profile')
-        if (res.ok) {
-          const p = await res.json()
-          if (mounted) {
-            setUserName(p?.name || p?.email?.split('@')[0] || 'User')
-            setPlanLabel(p?.plan ? (p.plan === 'pathfinder' ? 'Pathfinder Plan' : 'Explorer Plan') : 'Explorer Plan')
-          }
-        }
-      } catch {}
-    })()
-    return () => { mounted = false }
-  }, [])
+  const { user, neonUser } = useAuth()
+  
+  const isAdmin = neonUser?.email?.includes('admin') || false
+  const filteredNavigation = navigation.filter(item => !item.adminOnly || isAdmin)
+  
+  const userName = neonUser?.display_name || user?.email?.split('@')[0] || 'User'
+  const planLabel = neonUser?.explorer ? 'Explorer Plan' : 'Pathfinder Plan'
 
   return (
     <div className="fixed inset-y-0 left-0 w-64 glass-card border-r">
       <div className="flex flex-col h-full">
         {/* Logo */}
         <div className="flex items-center px-6 py-8">
-          <Logo href="/dashboard" className="h-8 w-auto" />
+          <Link href="/dashboard" className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl flex items-center justify-center">
+              <span className="text-white font-bold text-sm">T</span>
+            </div>
+            <span className="text-xl font-bold text-gradient">Tranquilae</span>
+          </Link>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 px-4 space-y-2">
-          {navigation.map((item) => (
+          {filteredNavigation.map((item) => (
             <Link
               key={item.name}
               href={item.href}
