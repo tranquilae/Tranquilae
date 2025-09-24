@@ -90,12 +90,22 @@ export async function POST(
             }, { status: 500 })
           }
 
+          // Get current subscription first
+          const currentSubscription = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id)
+          const currentItemId = currentSubscription.items.data[0]?.id
+          
+          if (!currentItemId) {
+            return NextResponse.json({ 
+              error: 'Unable to find current subscription item to upgrade' 
+            }, { status: 500 })
+          }
+          
           stripeSubscription = await stripe.subscriptions.update(
             subscription.stripe_subscription_id,
             {
               items: [
                 {
-                  id: (await stripe.subscriptions.retrieve(subscription.stripe_subscription_id)).items.data[0]?.id,
+                  id: currentItemId,
                   price: priceId,
                 }
               ],
@@ -150,9 +160,10 @@ export async function POST(
       }
 
       if (stripeSubscription) {
-        subscriptionUpdate.current_period_start = new Date(stripeSubscription.current_period_start * 1000).toISOString()
-        subscriptionUpdate.current_period_end = new Date(stripeSubscription.current_period_end * 1000).toISOString()
-        subscriptionUpdate.cancel_at_period_end = stripeSubscription.cancel_at_period_end
+        const sub = stripeSubscription as any
+        subscriptionUpdate.current_period_start = new Date(sub.current_period_start * 1000).toISOString()
+        subscriptionUpdate.current_period_end = new Date(sub.current_period_end * 1000).toISOString()
+        subscriptionUpdate.cancel_at_period_end = sub.cancel_at_period_end
       }
 
       const { error: updateSubError } = await supabaseAdmin
