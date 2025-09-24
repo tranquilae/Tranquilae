@@ -477,9 +477,28 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     return;
   }
 
+  // Map Stripe subscription status to database enum
+  const mapSubscriptionStatus = (stripeStatus: string): 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' => {
+    switch (stripeStatus) {
+      case 'active':
+        return 'active';
+      case 'trialing':
+        return 'trialing';
+      case 'past_due':
+        return 'past_due';
+      case 'canceled':
+      case 'incomplete_expired':
+        return 'canceled';
+      case 'incomplete':
+      case 'unpaid':
+      default:
+        return 'incomplete';
+    }
+  };
+
   // Update subscription details
   await db.updateSubscription(userId, {
-    status: subscription.status,
+    status: mapSubscriptionStatus(subscription.status),
     trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
     current_period_start: new Date(subscription.current_period_start * 1000),
     current_period_end: new Date(subscription.current_period_end * 1000),
