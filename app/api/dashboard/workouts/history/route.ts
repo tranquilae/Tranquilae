@@ -38,7 +38,8 @@ export async function POST(request: Request) {
     if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
-    let { name, date, duration_min = null, calories = null, type = null } = body || {}
+    const { name, date, duration_min = null, type = null } = body || {}
+    let { calories = null } = body || {}
     if (!name || !date) return NextResponse.json({ error: 'name and date are required' }, { status: 400 })
 
     // Auto-estimate calories if missing

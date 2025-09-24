@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
 
 interface DashboardStats {
@@ -265,9 +266,9 @@ export default function DashboardPage() {
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
                   No workouts completed yet
                 </p>
-                <a href="/dashboard/workouts" className="accent-button px-4 py-2">
+                <Link href="/dashboard/workouts" className="accent-button px-4 py-2">
                   Start Your First Workout
-                </a>
+                </Link>
               </div>
             ) : (
               <div className="space-y-4">
@@ -300,12 +301,12 @@ export default function DashboardPage() {
                 ))}
                 
                 <div className="pt-4 border-t border-glass-border">
-                  <a 
+                  <Link 
                     href="/dashboard/workouts" 
                     className="glass-button w-full justify-center py-2 text-center"
                   >
                     View All Workouts
-                  </a>
+                  </Link>
                 </div>
               </div>
             )}
@@ -319,7 +320,7 @@ export default function DashboardPage() {
           </div>
           
           <div className="p-6 space-y-4">
-            <a 
+            <Link 
               href="/dashboard/workouts"
               className="flex items-center justify-between p-4 glass-subtle rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
             >
@@ -337,9 +338,9 @@ export default function DashboardPage() {
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-            </a>
+            </Link>
 
-            <a 
+            <Link 
               href="/dashboard/achievements"
               className="flex items-center justify-between p-4 glass-subtle rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
             >
@@ -357,9 +358,9 @@ export default function DashboardPage() {
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-            </a>
+            </Link>
 
-            <a 
+            <Link 
               href="/dashboard/settings"
               className="flex items-center justify-between p-4 glass-subtle rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
             >
@@ -378,7 +379,7 @@ export default function DashboardPage() {
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-            </a>
+            </Link>
             
             {stats.user.plan === 'free' && (
               <div className="p-4 bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/50 dark:to-blue-900/50 rounded-lg">

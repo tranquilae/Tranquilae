@@ -118,8 +118,8 @@ export async function GET(request: NextRequest) {
       .slice(0, 3);
 
     // Build the recommendation query
-    let whereConditions = [];
-    let queryParams: any = {};
+    const whereConditions = [];
+    const queryParams: any = {};
 
     // Exclude recently completed workouts
     if (recentWorkoutIds.length > 0) {
