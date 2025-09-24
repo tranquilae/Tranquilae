@@ -1,10 +1,10 @@
 "use client"
 
+import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Search, Plus } from "lucide-react"
-import { useState } from "react"
 
 export function ExerciseLibrary() {
   const [searchQuery, setSearchQuery] = useState("")
