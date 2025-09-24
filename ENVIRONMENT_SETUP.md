@@ -27,6 +27,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY="sb_publishable_YOUR_KEY_HERE"
 SUPABASE_SECRET_KEY="sb_secret_YOUR_KEY_HERE"
 SUPABASE_SERVICE_ROLE_KEY="sb_secret_YOUR_KEY_HERE"
 
+# 😨 CRITICAL: Database Connection (Required for onboarding persistence!)
+# Without this, users will get stuck in onboarding loops
+DATABASE_URL="postgresql://neondb_owner:YOUR_PASSWORD@ep-YOUR-ENDPOINT.neon.tech/neondb?sslmode=require"
+
 # Development Settings
 NODE_ENV="development"
 ```
@@ -61,3 +65,41 @@ Once deployed, the red diagnostic box should disappear and your app should work 
 - **Secret key**: Starts with `sb_secret_` (keep this private!)
 
 Make sure you're copying the full keys including the `sb_` prefix!
+
+---
+
+## 😨 CRITICAL: Database Connection Setup
+
+**The #1 reason onboarding doesn't persist is missing `DATABASE_URL`!**
+
+### Problem:
+Users complete onboarding → data tries to save to Neon DB → but connection fails → on login, can't read onboarding status → assumes user needs onboarding again → **infinite loop**.
+
+### Solution:
+
+1. **Get your Neon connection string:**
+   - Go to [Neon Console](https://console.neon.tech/app/projects)
+   - Select your Tranquilae project
+   - Go to "Connection Details"
+   - Copy the full connection string
+
+2. **Add to local `.env.local`:**
+   ```bash
+   DATABASE_URL="postgresql://neondb_owner:your_password@ep-xyz.neon.tech/neondb?sslmode=require"
+   ```
+
+3. **Add to Vercel environment variables:**
+   - Go to Vercel dashboard → Settings → Environment Variables
+   - Add `DATABASE_URL` with your connection string
+   - Redeploy your app
+
+### Test it works:
+After setting `DATABASE_URL`, login should show these logs:
+- ✅ `🔍 Checking onboarding status for user: [id]`
+- ✅ `📊 User data from Neon: Found`
+
+**Bad signs (DATABASE_URL is wrong):**
+- ❌ `⚠️ DATABASE_URL not configured`
+- ❌ `❌ Database error checking onboarding status`
+
+Fix this and the onboarding persistence issue will be resolved!

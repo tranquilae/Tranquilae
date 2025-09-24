@@ -2,9 +2,27 @@ import { neon } from '@neondatabase/serverless';
 
 // Database connection
 if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL is not set. Please configure it in .env.local');
+  console.error('❌ DATABASE_URL is not set!')
+  console.error('📝 Please configure it in .env.local or Vercel environment variables')
+  console.error('🔗 Get your connection string from: https://console.neon.tech/app/projects')
+  throw new Error('DATABASE_URL is not set. This will cause onboarding persistence issues!');
 }
+
 const sql = neon(process.env.DATABASE_URL);
+console.log('✅ Database connection configured successfully');
+
+// Test database connection on initialization
+async function testConnection() {
+  try {
+    await sql`SELECT 1 as test`;
+    console.log('✅ Database connection test passed');
+  } catch (error) {
+    console.error('❌ Database connection test failed:', error);
+    console.error('📝 Check your DATABASE_URL in environment variables');
+  }
+}
+// Run connection test (but don't block initialization)
+testConnection().catch(() => {});
 
 /**
  * Database Schema Types
@@ -274,6 +292,7 @@ export const db = {
     onboarding_complete?: boolean;
   }): Promise<User> {
     try {
+      console.log(`🆕 Creating/updating user profile:`, { id: data.id, email: data.email, plan: data.plan || 'explorer', onboardingComplete: data.onboarding_complete || false });
       const result = await sql`
         INSERT INTO profiles (
           user_id, email, name, plan, onboarding_complete
@@ -291,18 +310,28 @@ export const db = {
           updated_at = NOW()
         RETURNING *
       `;
-      return result[0] as User;
+      const user = result[0] as User;
+      console.log(`✅ User profile created/updated successfully:`, { id: user.id, onboardingComplete: user.onboarding_complete });
+      return user;
     } catch (error) {
-      console.error('Database - Error creating user:', error);
+      console.error(`❌ Database error creating user (${data.id}):`, error);
+      console.error('📝 Check if profiles table exists and DATABASE_URL is correct');
       throw error;
     }
   },
 
   async getUserById(userId: string): Promise<User | null> {
-    const result = await sql`
-      SELECT * FROM profiles WHERE user_id = ${userId}
-    `;
-    return result[0] as User || null;
+    try {
+      const result = await sql`
+        SELECT * FROM profiles WHERE user_id = ${userId}
+      `;
+      const user = result[0] as User || null;
+      console.log(`📊 getUserById(${userId}):`, user ? { onboardingComplete: user.onboarding_complete, plan: user.plan } : 'Not found');
+      return user;
+    } catch (error) {
+      console.error(`❌ Error getting user by ID (${userId}):`, error);
+      throw error;
+    }
   },
 
   async updateUser(userId: string, data: Partial<User>): Promise<User> {

@@ -76,23 +76,31 @@ export async function POST(request: NextRequest) {
       let onboardingComplete = false;
       
       try {
-        const { db } = await import('@/lib/database')
-        const userData = await db.getUserById(authData.user.id)
-        
-        console.log('🔍 Login: Checking onboarding status for user:', authData.user.id)
-        console.log('📊 Login: User data from Neon:', userData ? 'Found' : 'Not found')
-        
-        if (userData && userData.onboarding_complete) {
-          console.log('✅ Login: User has completed onboarding - redirect to dashboard')
-          redirectTo = '/dashboard'
-          onboardingComplete = true
-        } else {
-          console.log('🎯 Login: User needs onboarding - redirect to onboarding')
+        // Check if DATABASE_URL is configured
+        if (!process.env.DATABASE_URL) {
+          console.warn('⚠️ DATABASE_URL not configured - skipping onboarding check')
+          console.log('🎯 DATABASE_URL missing - defaulting to onboarding')
           redirectTo = '/onboarding'
           onboardingComplete = false
+        } else {
+          const { db } = await import('@/lib/database')
+          const userData = await db.getUserById(authData.user.id)
+          
+          console.log('🔍 Login: Checking onboarding status for user:', authData.user.id)
+          console.log('📊 Login: User data from Neon:', userData ? { onboardingComplete: userData.onboarding_complete } : 'Not found')
+          
+          if (userData && userData.onboarding_complete === true) {
+            console.log('✅ Login: User has completed onboarding - redirect to dashboard')
+            redirectTo = '/dashboard'
+            onboardingComplete = true
+          } else {
+            console.log('🎯 Login: User needs onboarding or profile not found - redirect to onboarding')
+            redirectTo = '/onboarding'
+            onboardingComplete = false
+          }
         }
       } catch (dbError) {
-        console.warn('Could not check onboarding status during login:', dbError)
+        console.error('❌ Database error checking onboarding status:', dbError)
         console.log('🎯 Login: Defaulting to onboarding due to DB error')
         redirectTo = '/onboarding'
         onboardingComplete = false

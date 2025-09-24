@@ -86,22 +86,29 @@ export async function GET(request: NextRequest) {
 
         // Check if user has completed onboarding (using Neon DB, not Supabase)
         try {
-          // Import database here to avoid module loading issues
-          const { db } = await import('@/lib/database')
-          
-          console.log('🔍 Checking onboarding status for user:', data.user.id)
-          const userData = await db.getUserById(data.user.id)
-          console.log('📊 User data from Neon:', userData ? 'Found' : 'Not found')
-          
-          if (userData && userData.onboarding_complete) {
-            console.log('✅ User has completed onboarding - redirecting to dashboard')
-            redirectPath = '/dashboard'
-          } else {
-            console.log('🎯 User needs onboarding - redirecting to onboarding')
+          // Check if DATABASE_URL is configured
+          if (!process.env.DATABASE_URL) {
+            console.warn('⚠️ DATABASE_URL not configured - skipping onboarding check')
+            console.log('🎯 DATABASE_URL missing - defaulting to onboarding')
             redirectPath = '/onboarding'
+          } else {
+            // Import database here to avoid module loading issues
+            const { db } = await import('@/lib/database')
+            
+            console.log('🔍 Checking onboarding status for user:', data.user.id)
+            const userData = await db.getUserById(data.user.id)
+            console.log('📊 User data from Neon:', userData ? { onboardingComplete: userData.onboarding_complete } : 'Not found')
+            
+            if (userData && userData.onboarding_complete === true) {
+              console.log('✅ User has completed onboarding - redirecting to dashboard')
+              redirectPath = '/dashboard'
+            } else {
+              console.log('🎯 User needs onboarding or profile not found - redirecting to onboarding')
+              redirectPath = '/onboarding'
+            }
           }
         } catch (dbError) {
-          console.warn('Could not check onboarding status from Neon DB:', dbError)
+          console.error('❌ Database error checking onboarding status:', dbError)
           console.log('🎯 Defaulting to onboarding due to DB error')
           // Default to onboarding if we can't check
           redirectPath = '/onboarding'
