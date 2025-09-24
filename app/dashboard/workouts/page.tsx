@@ -1,4 +1,7 @@
+"use client"
+
 import React from 'react'
+export const dynamic = 'force-dynamic'
 import { WorkoutPlanner } from "@/components/workout-planner"
 import { ActiveWorkout } from "@/components/active-workout"
 import { WorkoutHistory } from "@/components/workout-history"
