@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userId = neonUserResult[0].id;
+    const userId = neonUserResult[0]!['id'];
 
     // Get workout statistics
     const workoutStatsResult = await sql`
