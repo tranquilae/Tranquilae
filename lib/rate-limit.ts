@@ -22,7 +22,6 @@ export async function rateLimit(
   // Get client IP or user ID for rate limiting
   const clientIP = request.headers.get('x-forwarded-for') || 
                    request.headers.get('x-real-ip') || 
-                   request.ip || 
                    'unknown';
 
   const key = `${identifier}:${clientIP}`;

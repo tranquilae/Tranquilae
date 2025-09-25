@@ -7,12 +7,12 @@ import { Resend } from 'resend';
 import { Twilio } from 'twilio';
 
 // Email configuration
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env['RESEND_API_KEY']);
 
 // SMS configuration
 const twilio = new Twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
+  process.env['TWILIO_ACCOUNT_SID'],
+  process.env['TWILIO_AUTH_TOKEN']
 );
 
 // Notification interfaces
@@ -50,7 +50,7 @@ export async function sendEmail(
   html?: string
 ): Promise<NotificationDeliveryResult> {
   try {
-    if (!process.env.RESEND_API_KEY) {
+    if (!process.env['RESEND_API_KEY']) {
       console.warn('RESEND_API_KEY not configured, skipping email alert');
       return { success: false, error: 'Email service not configured' };
     }
@@ -70,14 +70,14 @@ export async function sendEmail(
                 </p>
               </div>
               <div style="margin-top: 20px; text-align: center;">
-                <a href="${process.env.NEXT_PUBLIC_SITE_URL}/admin/security" 
+                <a href="${process.env['NEXT_PUBLIC_SITE_URL']}/admin/security" 
                    style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">
                   View Security Dashboard
                 </a>
               </div>
             </div>
             <div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 12px;">
-              <p>This is an automated security alert from ${process.env.NEXT_PUBLIC_SITE_NAME || 'Admin Panel'}</p>
+              <p>This is an automated security alert from ${process.env['NEXT_PUBLIC_SITE_NAME'] || 'Admin Panel'}</p>
               <p>Timestamp: ${new Date().toISOString()}</p>
             </div>
           </div>
@@ -86,17 +86,22 @@ export async function sendEmail(
     `;
 
     const result = await resend.emails.send({
-      from: process.env.FROM_EMAIL || 'security@yourapp.com',
+      from: process.env['FROM_EMAIL'] || 'security@yourapp.com',
       to: [to],
       subject: `[SECURITY] ${subject}`,
       html: emailHtml,
       text: body
     });
 
-    return {
-      success: true,
-      messageId: result.data?.id
+    const response: NotificationDeliveryResult = {
+      success: true
     };
+    
+    if (result.data?.id) {
+      response.messageId = result.data.id;
+    }
+    
+    return response;
   } catch (error) {
     console.error('Failed to send email alert:', error);
     return {
@@ -119,13 +124,6 @@ export async function sendWebhookAlert(
       return { success: false, error: 'Webhook URL not provided' };
     }
 
-    const defaultHeaders = {
-      'Content-Type': 'application/json',
-      'User-Agent': 'SecurityMonitor/1.0',
-      'X-Source': 'admin-security-monitor',
-      ...headers
-    };
-
     // Add timestamp and signature for verification
     const timestamp = Date.now();
     const enhancedPayload = {
@@ -135,11 +133,18 @@ export async function sendWebhookAlert(
       version: '1.0'
     };
 
+    const defaultHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'User-Agent': 'SecurityMonitor/1.0',
+      'X-Source': 'admin-security-monitor',
+      ...headers
+    };
+
     // Create signature if webhook secret is available
-    if (process.env.WEBHOOK_SECRET) {
+    if (process.env['WEBHOOK_SECRET']) {
       const crypto = require('crypto');
       const signature = crypto
-        .createHmac('sha256', process.env.WEBHOOK_SECRET)
+        .createHmac('sha256', process.env['WEBHOOK_SECRET'])
         .update(JSON.stringify(enhancedPayload))
         .digest('hex');
       defaultHeaders['X-Signature'] = `sha256=${signature}`;
@@ -178,12 +183,12 @@ export async function sendSMSAlert(
   message: string
 ): Promise<NotificationDeliveryResult> {
   try {
-    if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
+    if (!process.env['TWILIO_ACCOUNT_SID'] || !process.env['TWILIO_AUTH_TOKEN']) {
       console.warn('Twilio credentials not configured, skipping SMS alert');
       return { success: false, error: 'SMS service not configured' };
     }
 
-    if (!process.env.TWILIO_PHONE_NUMBER) {
+    if (!process.env['TWILIO_PHONE_NUMBER']) {
       console.warn('TWILIO_PHONE_NUMBER not configured, skipping SMS alert');
       return { success: false, error: 'SMS phone number not configured' };
     }
@@ -191,11 +196,11 @@ export async function sendSMSAlert(
     // Ensure phone number is in E.164 format
     const phoneNumber = to.startsWith('+') ? to : `+1${to.replace(/\D/g, '')}`;
 
-    const smsMessage = `${process.env.NEXT_PUBLIC_SITE_NAME || 'Admin Panel'} - ${message}`;
+    const smsMessage = `${process.env['NEXT_PUBLIC_SITE_NAME'] || 'Admin Panel'} - ${message}`;
 
     const result = await twilio.messages.create({
       body: smsMessage.substring(0, 1600), // SMS length limit
-      from: process.env.TWILIO_PHONE_NUMBER,
+      from: process.env['TWILIO_PHONE_NUMBER'],
       to: phoneNumber
     });
 
@@ -268,12 +273,12 @@ export async function testNotificationChannels(): Promise<{
   
   return {
     email: await sendEmail(
-      process.env.TEST_EMAIL || 'test@example.com',
+      process.env['TEST_EMAIL'] || 'test@example.com',
       'Test Email Alert',
       `This is a test email alert sent at ${testTimestamp}`
     ),
     webhook: await sendWebhookAlert(
-      process.env.TEST_WEBHOOK_URL || 'https://httpbin.org/post',
+      process.env['TEST_WEBHOOK_URL'] || 'https://httpbin.org/post',
       {
         test: true,
         message: 'Test webhook alert',
@@ -281,7 +286,7 @@ export async function testNotificationChannels(): Promise<{
       }
     ),
     sms: await sendSMSAlert(
-      process.env.TEST_PHONE_NUMBER || '+1234567890',
+      process.env['TEST_PHONE_NUMBER'] || '+1234567890',
       `Test SMS alert sent at ${testTimestamp}`
     )
   };

@@ -290,18 +290,18 @@ export const OAuthUrlBuilders = {
     // Apple Health uses a different OAuth flow - this is conceptual
     return buildOAuthUrl(
       'https://developer.apple.com/health/authorize',
-      process.env.APPLE_HEALTH_CLIENT_ID!,
+      process.env['APPLE_HEALTH_CLIENT_ID']!,
       ['healthkit.read'],
       state,
       codeChallenge,
-      `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/apple-health/callback`
+      `${process.env['NEXT_PUBLIC_APP_URL']}/api/integrations/apple-health/callback`
     );
   },
   
   'google-fit': (state: string, codeChallenge: string) => {
     return buildOAuthUrl(
       'https://accounts.google.com/o/oauth2/v2/auth',
-      process.env.GOOGLE_FIT_CLIENT_ID!,
+      process.env['GOOGLE_FIT_CLIENT_ID']!,
       [
         'https://www.googleapis.com/auth/fitness.activity.read',
         'https://www.googleapis.com/auth/fitness.body.read',
@@ -309,7 +309,7 @@ export const OAuthUrlBuilders = {
       ],
       state,
       codeChallenge,
-      `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/google-fit/callback`,
+      `${process.env['NEXT_PUBLIC_APP_URL']}/api/integrations/google-fit/callback`,
       { access_type: 'offline', prompt: 'consent' }
     );
   },
@@ -317,11 +317,11 @@ export const OAuthUrlBuilders = {
   'fitbit': (state: string, codeChallenge: string) => {
     return buildOAuthUrl(
       'https://www.fitbit.com/oauth2/authorize',
-      process.env.FITBIT_CLIENT_ID!,
+      process.env['FITBIT_CLIENT_ID']!,
       ['activity', 'heartrate', 'sleep', 'weight', 'profile'],
       state,
       codeChallenge,
-      `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/fitbit/callback`
+      `${process.env['NEXT_PUBLIC_APP_URL']}/api/integrations/fitbit/callback`
     );
   },
   
@@ -329,8 +329,8 @@ export const OAuthUrlBuilders = {
     // Samsung Health doesn't use PKCE
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: process.env.SAMSUNG_HEALTH_CLIENT_ID!,
-      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/samsung-health/callback`,
+      client_id: process.env['SAMSUNG_HEALTH_CLIENT_ID']!,
+      redirect_uri: `${process.env['NEXT_PUBLIC_APP_URL']}/api/integrations/samsung-health/callback`,
       scope: 'health:read',
       state
     });
@@ -341,7 +341,7 @@ export const OAuthUrlBuilders = {
   'garmin-connect': (state: string) => {
     // Garmin uses OAuth 1.0a - different flow
     const params = new URLSearchParams({
-      oauth_callback: `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/garmin-connect/callback`,
+      oauth_callback: `${process.env['NEXT_PUBLIC_APP_URL']}/api/integrations/garmin-connect/callback`,
       state
     });
     
@@ -353,7 +353,7 @@ export const OAuthUrlBuilders = {
  * Get callback URL for service
  */
 export function getCallbackUrl(serviceName: HealthServiceName): string {
-  return `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/${serviceName}/callback`;
+  return `${process.env['NEXT_PUBLIC_APP_URL']}/api/integrations/${serviceName}/callback`;
 }
 
 /**
@@ -377,8 +377,8 @@ export async function storeIntegrationTokens(
     service_name: serviceName,
     status: 'connected',
     access_token: encryptedAccessToken,
-    refresh_token: encryptedRefreshToken,
-    token_expires_at: expiresAt,
+    ...(encryptedRefreshToken !== undefined && { refresh_token: encryptedRefreshToken }),
+    ...(expiresAt !== undefined && { token_expires_at: expiresAt }),
     scopes,
     sync_status: 'idle',
     settings: {

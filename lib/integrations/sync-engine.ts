@@ -288,8 +288,11 @@ export class HealthDataSyncEngine {
     if (dataPoints.length === 0) return [];
 
     // Get existing data points in the time range for deduplication
-    const userId = dataPoints[0].userId;
-    const integrationId = dataPoints[0].integrationId;
+    const firstDataPoint = dataPoints[0];
+    if (!firstDataPoint) return [];
+    
+    const userId = firstDataPoint.userId;
+    const integrationId = firstDataPoint.integrationId;
     const minTimestamp = new Date(Math.min(...dataPoints.map(p => p.timestamp.getTime())));
     const maxTimestamp = new Date(Math.max(...dataPoints.map(p => p.timestamp.getTime())));
 
@@ -404,7 +407,7 @@ export class HealthDataSyncEngine {
     if (jobIndex === -1) return false;
 
     const job = this.jobQueue[jobIndex];
-    if (job.status === 'pending') {
+    if (job && job.status === 'pending') {
       this.jobQueue.splice(jobIndex, 1);
       return true;
     }
@@ -467,6 +470,10 @@ export class HealthDataSyncEngine {
       }
 
       // Process webhook with the appropriate service
+      if (!service.handleWebhook) {
+        console.warn(`Service ${serviceName} does not support webhook handling`);
+        return;
+      }
       const dataPoints = await service.handleWebhook(payload, signature || '');
       
       if (dataPoints.length > 0) {

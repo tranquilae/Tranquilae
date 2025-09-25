@@ -216,7 +216,7 @@ export class AppleHealthService implements HealthIntegrationService {
     } else if (observation.component && observation.component.length > 0) {
       // Handle multi-component observations (like blood pressure)
       const component = observation.component[0];
-      if (component.valueQuantity) {
+      if (component && component.valueQuantity) {
         value = component.valueQuantity.value || 0;
         unit = this.normalizeUnit(component.valueQuantity.unit || '', dataType);
       }
@@ -371,15 +371,29 @@ export class AppleHealthService implements HealthIntegrationService {
       const bundle: ServiceAPIs.AppleHealthFHIRBundle = await response.json();
       
       if (bundle.entry && bundle.entry.length > 0) {
-        const patient = bundle.entry[0].resource as ServiceAPIs.AppleHealthPatient;
-        
-        return {
-          id: patient.id || '',
-          name: patient.name?.[0] ? 
-            `${patient.name[0].given?.join(' ')} ${patient.name[0].family}`.trim() : 
-            undefined,
-          email: patient.telecom?.find(t => t.system === 'email')?.value
-        };
+        const entry = bundle.entry[0];
+        if (entry && entry.resource) {
+          const patient = entry.resource as ServiceAPIs.AppleHealthPatient;
+          
+          const result: { id: string; name?: string; email?: string } = {
+            id: patient.id || ''
+          };
+          
+          const nameData = patient.name?.[0];
+          if (nameData) {
+            const fullName = `${nameData.given?.join(' ') || ''} ${nameData.family || ''}`.trim();
+            if (fullName) {
+              result.name = fullName;
+            }
+          }
+          
+          const emailContact = patient.telecom?.find(t => t.system === 'email');
+          if (emailContact && emailContact.value) {
+            result.email = emailContact.value;
+          }
+          
+          return result;
+        }
       }
 
       throw new Error('No patient data found');

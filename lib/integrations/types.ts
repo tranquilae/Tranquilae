@@ -388,7 +388,7 @@ export const HEALTH_SERVICE_CONFIGS_BASE: Record<HealthServiceName, HealthServic
       tokenUrl: 'https://developer.apple.com/health/token',
       scopes: ['healthkit.read'],
       requiresPKCE: true,
-      clientId: process.env.APPLE_HEALTH_CLIENT_ID || ''
+      clientId: process.env['APPLE_HEALTH_CLIENT_ID'] || ''
     },
     api: {
       baseUrl: 'https://api.health.apple.com/v1',
@@ -420,8 +420,8 @@ export const HEALTH_SERVICE_CONFIGS_BASE: Record<HealthServiceName, HealthServic
         'https://www.googleapis.com/auth/fitness.heart_rate.read'
       ],
       requiresPKCE: true,
-      clientId: process.env.GOOGLE_FIT_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_FIT_CLIENT_SECRET || ''
+      clientId: process.env['GOOGLE_FIT_CLIENT_ID'] || '',
+      clientSecret: process.env['GOOGLE_FIT_CLIENT_SECRET'] || ''
     },
     api: {
       baseUrl: 'https://www.googleapis.com/fitness/v1',
@@ -450,8 +450,8 @@ export const HEALTH_SERVICE_CONFIGS_BASE: Record<HealthServiceName, HealthServic
       tokenUrl: 'https://api.fitbit.com/oauth2/token',
       scopes: ['activity', 'heartrate', 'sleep', 'weight', 'profile'],
       requiresPKCE: true,
-      clientId: process.env.FITBIT_CLIENT_ID || '',
-      clientSecret: process.env.FITBIT_CLIENT_SECRET || ''
+      clientId: process.env['FITBIT_CLIENT_ID'] || '',
+      clientSecret: process.env['FITBIT_CLIENT_SECRET'] || ''
     },
     api: {
       baseUrl: 'https://api.fitbit.com/1',
@@ -481,8 +481,8 @@ export const HEALTH_SERVICE_CONFIGS_BASE: Record<HealthServiceName, HealthServic
       tokenUrl: 'https://auth.samsunghealth.com/auth/token',
       scopes: ['health:read'],
       requiresPKCE: false,
-      clientId: process.env.SAMSUNG_HEALTH_CLIENT_ID || '',
-      clientSecret: process.env.SAMSUNG_HEALTH_CLIENT_SECRET || ''
+      clientId: process.env['SAMSUNG_HEALTH_CLIENT_ID'] || '',
+      clientSecret: process.env['SAMSUNG_HEALTH_CLIENT_SECRET'] || ''
     },
     api: {
       baseUrl: 'https://api.samsunghealth.com',
@@ -507,8 +507,8 @@ export const HEALTH_SERVICE_CONFIGS_BASE: Record<HealthServiceName, HealthServic
       tokenUrl: 'https://connect.garmin.com/oauth-service/oauth/request_token',
       scopes: ['read'],
       requiresPKCE: false,
-      clientId: process.env.GARMIN_CONSUMER_KEY || '',
-      clientSecret: process.env.GARMIN_CONSUMER_SECRET || ''
+      clientId: process.env['GARMIN_CONSUMER_KEY'] || '',
+      clientSecret: process.env['GARMIN_CONSUMER_SECRET'] || ''
     },
     api: {
       baseUrl: 'https://apis.garmin.com',

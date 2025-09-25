@@ -3,7 +3,7 @@
  * Comprehensive security event detection and monitoring for admin panel
  */
 
-import { createServiceClient } from './admin-middleware';
+import { createAdminSupabaseClient } from './admin-middleware';
 import { sendEmail, sendWebhookAlert, sendSMSAlert } from './notification-service';
 
 // Security Event Types
@@ -80,7 +80,11 @@ export interface SecurityMetrics {
 }
 
 export class SecurityMonitor {
-  private supabase = createServiceClient();
+  private supabasePromise = createAdminSupabaseClient();
+  
+  private async getSupabase() {
+    return await this.supabasePromise;
+  }
 
   /**
    * Log a security event and trigger alerts if necessary
@@ -88,7 +92,8 @@ export class SecurityMonitor {
   async logSecurityEvent(event: Omit<SecurityEvent, 'id' | 'createdAt'>): Promise<string> {
     try {
       // Call the database function to log the event
-      const { data, error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { data, error } = await supabase
         .rpc('log_security_event', {
           p_event_type: event.eventType,
           p_severity: event.severity,
@@ -127,7 +132,8 @@ export class SecurityMonitor {
   ): Promise<void> {
     try {
       // Call the database function to handle failed login
-      const { error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { error } = await supabase
         .rpc('handle_failed_login', {
           p_ip_address: ipAddress,
           p_user_id: userId || null,
@@ -158,15 +164,20 @@ export class SecurityMonitor {
   ): Promise<void> {
     try {
       // Log successful login
-      await this.logSecurityEvent({
+      const eventData: Omit<SecurityEvent, 'id' | 'createdAt'> = {
         eventType: SecurityEventType.SUCCESSFUL_LOGIN,
         severity: SecuritySeverity.LOW,
         userId,
         ipAddress,
-        userAgent,
         eventData: additionalData || {},
         description: `Successful admin login from IP ${ipAddress}`
-      });
+      };
+      
+      if (userAgent !== undefined) {
+        eventData.userAgent = userAgent;
+      }
+      
+      await this.logSecurityEvent(eventData);
 
       // Check for location-based anomalies
       await this.checkLocationAnomaly(userId, ipAddress);
@@ -192,17 +203,22 @@ export class SecurityMonitor {
     ipAddress?: string
   ): Promise<void> {
     if (attemptedRole !== currentRole && this.isHigherPrivilege(attemptedRole, currentRole)) {
-      await this.logSecurityEvent({
+      const eventData: Omit<SecurityEvent, 'id' | 'createdAt'> = {
         eventType: SecurityEventType.PRIVILEGE_ESCALATION,
         severity: SecuritySeverity.CRITICAL,
         userId,
-        ipAddress,
         eventData: {
           attempted_role: attemptedRole,
           current_role: currentRole
         },
         description: `Privilege escalation attempt: ${currentRole} → ${attemptedRole}`
-      });
+      };
+      
+      if (ipAddress !== undefined) {
+        eventData.ipAddress = ipAddress;
+      }
+      
+      await this.logSecurityEvent(eventData);
     }
   }
 
