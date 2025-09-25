@@ -125,12 +125,12 @@ export const NOTIFICATION_TEMPLATES: Record<string, NotificationTemplate> = {
 // Notification service class
 export class NotificationService {
   private supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+    process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
   );
 
-  private vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
-  private vapidPrivateKey = process.env.VAPID_PRIVATE_KEY!;
+  private vapidPublicKey = process.env['NEXT_PUBLIC_VAPID_PUBLIC_KEY']!;
+  private vapidPrivateKey = process.env['VAPID_PRIVATE_KEY']!;
 
   // Check if notifications are supported and get permission status
   async getPermissionStatus(): Promise<NotificationPermission> {
@@ -188,7 +188,7 @@ export class NotificationService {
       // Subscribe to push notifications
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: this.urlBase64ToUint8Array(this.vapidPublicKey)
+        applicationServerKey: this.urlBase64ToUint8Array(this.vapidPublicKey) as BufferSource
       });
 
       const pushSubscription: PushSubscription = {
@@ -243,22 +243,29 @@ export class NotificationService {
     }
 
     try {
-      const notification = new Notification(config.title, {
+      const notificationOptions: NotificationOptions = {
         body: config.body,
         icon: config.icon || '/icons/icon-192x192.png',
         badge: config.badge || '/icons/badge-72x72.png',
-        image: config.image,
-        tag: config.tag,
-        requireInteraction: config.requireInteraction,
-        silent: config.silent,
-        vibrate: config.vibrate,
         data: {
           url: config.url,
           action: config.action,
           workoutId: config.workoutId,
           ...config.customData
         }
-      });
+      };
+      
+      if (config.tag !== undefined) {
+        notificationOptions.tag = config.tag;
+      }
+      if (config.requireInteraction !== undefined) {
+        notificationOptions.requireInteraction = config.requireInteraction;
+      }
+      if (config.silent !== undefined) {
+        notificationOptions.silent = config.silent;
+      }
+      
+      const notification = new Notification(config.title, notificationOptions);
 
       // Handle notification click
       notification.onclick = (event) => {
@@ -460,18 +467,23 @@ export class NotificationService {
     achievementDescription: string,
     achievementIcon?: string
   ): Promise<boolean> {
+    const notificationConfig: any = {
+      body: `🏆 ${achievementTitle}: ${achievementDescription}`,
+      url: '/achievements',
+      customData: {
+        achievementTitle,
+        achievementDescription
+      }
+    };
+    
+    if (achievementIcon !== undefined) {
+      notificationConfig.icon = achievementIcon;
+    }
+    
     return this.sendPushNotification(
       userId,
       'achievement_unlocked',
-      {
-        body: `🏆 ${achievementTitle}: ${achievementDescription}`,
-        icon: achievementIcon,
-        url: '/achievements',
-        customData: {
-          achievementTitle,
-          achievementDescription
-        }
-      }
+      notificationConfig
     );
   }
 

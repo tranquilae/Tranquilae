@@ -5,14 +5,14 @@ import webpush from 'web-push';
 
 // Configure web-push with VAPID keys
 webpush.setVapidDetails(
-  'mailto:' + (process.env.VAPID_EMAIL || 'admin@tranquilae.com'),
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
+  'mailto:' + (process.env['VAPID_EMAIL'] || 'admin@tranquilae.com'),
+  process.env['NEXT_PUBLIC_VAPID_PUBLIC_KEY']!,
+  process.env['VAPID_PRIVATE_KEY']!
 );
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+  process.env['SUPABASE_SERVICE_ROLE_KEY']!
 );
 
 interface PushNotificationRequest {
@@ -159,14 +159,19 @@ export async function POST(request: NextRequest) {
           await webpush.sendNotification(pushSubscription, payload);
           
           // Log successful notification
-          await logNotification({
+          const logData: any = {
             userId: subscription.user_id,
             type: 'push',
             title: notification.title,
             body: notification.body,
-            status: 'sent',
-            trackingId: notification.trackingId
-          });
+            status: 'sent'
+          };
+          
+          if (notification.trackingId !== undefined) {
+            logData.trackingId = notification.trackingId;
+          }
+          
+          await logNotification(logData);
 
           return { userId: subscription.user_id, success: true };
         } catch (error: any) {
@@ -183,15 +188,20 @@ export async function POST(request: NextRequest) {
           }
 
           // Log failed notification
-          await logNotification({
+          const logData: any = {
             userId: subscription.user_id,
             type: 'push',
             title: notification.title,
             body: notification.body,
             status: 'failed',
-            error: error.message,
-            trackingId: notification.trackingId
-          });
+            error: error.message
+          };
+          
+          if (notification.trackingId !== undefined) {
+            logData.trackingId = notification.trackingId;
+          }
+          
+          await logNotification(logData);
 
           return { userId: subscription.user_id, success: false, error: error.message };
         }

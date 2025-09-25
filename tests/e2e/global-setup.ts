@@ -5,8 +5,8 @@ async function globalSetup(config: FullConfig) {
   console.log('🧪 Setting up E2E test environment...');
   
   // Set test environment variables
-  process.env.NODE_ENV = 'test';
-  process.env.NEXTAUTH_URL = process.env.BASE_URL || 'http://localhost:3000';
+  // Note: NODE_ENV is readonly, so we skip setting it here
+  process.env['NEXTAUTH_URL'] = process.env['BASE_URL'] || 'http://localhost:3000';
   
   // You can add any global setup here:
   // - Database seeding

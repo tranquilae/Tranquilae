@@ -14,7 +14,7 @@ function getSupabaseConfig(): SupabaseConfig {
   const errors: string[] = []
   
   // Get URL
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const url = process.env['NEXT_PUBLIC_SUPABASE_URL']
   if (!url) {
     errors.push('NEXT_PUBLIC_SUPABASE_URL is required')
   } else if (!url.includes('.supabase.co')) {
@@ -22,10 +22,10 @@ function getSupabaseConfig(): SupabaseConfig {
   }
   
   // Get anon key (try different environment variable names for compatibility)
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
-                   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
-                   process.env.NEXT_PUBLIC_SUPABASE_KEY ||
-                   process.env.SUPABASE_ANON_KEY
+  const anonKey = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY'] || 
+                   process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] ||
+                   process.env['NEXT_PUBLIC_SUPABASE_KEY'] ||
+                   process.env['SUPABASE_ANON_KEY']
   
   if (!anonKey) {
     errors.push('NEXT_PUBLIC_SUPABASE_ANON_KEY or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY is required')
@@ -34,11 +34,11 @@ function getSupabaseConfig(): SupabaseConfig {
   }
   
   // Get service role key (optional for client, required for admin)
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
-                        process.env.SUPABASE_SECRET_KEY
+  const serviceRoleKey = process.env['SUPABASE_SERVICE_ROLE_KEY'] || 
+                        process.env['SUPABASE_SECRET_KEY']
   
   // Log configuration status in development
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env['NODE_ENV'] === 'development') {
     console.log('🔧 Supabase Configuration:', {
       url: url ? '✅ Set' : '❌ Missing',
       anonKey: anonKey ? `✅ Set (${anonKey.substring(0, 10)}...)` : '❌ Missing',
@@ -47,24 +47,29 @@ function getSupabaseConfig(): SupabaseConfig {
     })
   }
   
-  return {
+  const result: SupabaseConfig = {
     url: url || '',
     anonKey: anonKey || '',
-    serviceRoleKey,
     isValid: errors.length === 0,
     errors
   }
+  
+  if (serviceRoleKey !== undefined) {
+    result.serviceRoleKey = serviceRoleKey
+  }
+  
+  return result
 }
 
 // Get configuration
 const config = getSupabaseConfig()
 
 // Throw error if configuration is invalid
-if (!config.isValid && process.env.NODE_ENV !== 'test') {
+if (!config.isValid && process.env['NODE_ENV'] !== 'test') {
   const errorMsg = `❌ Invalid Supabase configuration: ${config.errors.join(', ')}`
   console.error(errorMsg)
   // In development, provide helpful guidance
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env['NODE_ENV'] === 'development') {
     console.error('\n🔧 Quick Fix:')
     console.error('1. Copy .env.example to .env.local')
     console.error('2. Add your Supabase project URL and keys')
@@ -88,9 +93,7 @@ function createSupabaseClient() {
         // Detect session in URL (for email confirmations, password resets)
         detectSessionInUrl: true,
         // Flow type for PKCE (more secure)
-        flowType: 'pkce',
-        // Default redirect URL for auth flows
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')}/auth/callback`
+        flowType: 'pkce'
       },
       // Global options for better performance
       global: {
@@ -116,7 +119,7 @@ function createSupabaseAdminClient() {
   }
   
   // Allow dummy keys in development environment
-  if (process.env.NODE_ENV !== 'development' && 
+  if (process.env['NODE_ENV'] !== 'development' && 
       !config.serviceRoleKey.startsWith('eyJ') && 
       !config.serviceRoleKey.startsWith('sb_secret_')) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY should be a valid JWT token (eyJ...) or new secret key format (sb_secret_...)')
@@ -226,8 +229,8 @@ export async function checkAdminAccess(userId: string, token?: string): Promise<
     // We can focus on role-based access control
 
     // Check if user ID is in the allowed admin list from environment
-    const allowedAdmins = process.env.ADMIN_USER_IDS?.split(',').map(id => id.trim()) || []
-    const superAdmins = process.env.SUPER_ADMIN_USER_IDS?.split(',').map(id => id.trim()) || []
+    const allowedAdmins = process.env['ADMIN_USER_IDS']?.split(',').map(id => id.trim()) || []
+    const superAdmins = process.env['SUPER_ADMIN_USER_IDS']?.split(',').map(id => id.trim()) || []
     
     if (allowedAdmins.includes(userId) || superAdmins.includes(userId)) {
       return true

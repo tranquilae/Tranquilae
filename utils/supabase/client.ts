@@ -2,16 +2,16 @@ import { createBrowserClient } from "@supabase/ssr";
 
 // Get and validate environment variables
 function getSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-                  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
-                  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+  const url = process.env['NEXT_PUBLIC_SUPABASE_URL']
+  const anonKey = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY'] ||
+                  process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] ||
+                  process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY']
 
   if (!url || !anonKey) {
     console.error('❌ Supabase Client Configuration Missing:', {
       url: !!url,
       anonKey: !!anonKey,
-      env: process.env.NODE_ENV
+      env: process.env['NODE_ENV']
     })
     throw new Error('Missing Supabase configuration for browser client')
   }
@@ -29,7 +29,7 @@ function getSupabaseConfig() {
   }
 
   // Log success in development
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env['NODE_ENV'] === 'development') {
     console.log('✅ Supabase browser client configured successfully')
   }
 
@@ -74,7 +74,7 @@ export const createClient = () => {
     )
 
     // Log successful creation in development
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env['NODE_ENV'] === 'development') {
       console.log('✅ Supabase browser client created successfully')
     }
 

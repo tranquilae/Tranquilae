@@ -9,22 +9,22 @@ export function createClient() {
     auth: {
       storage: {
         getItem: async (key: string) => {
-          const cookieStore = cookies();
+          const cookieStore = await cookies();
           const cookie = cookieStore.get(key);
           return cookie?.value || null;
         },
         setItem: async (key: string, value: string) => {
-          const cookieStore = cookies();
+          const cookieStore = await cookies();
           cookieStore.set(key, value, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: process.env['NODE_ENV'] === 'production',
             sameSite: 'lax',
             path: '/',
             maxAge: 60 * 60 * 24 * 7 // 7 days
           });
         },
         removeItem: async (key: string) => {
-          const cookieStore = cookies();
+          const cookieStore = await cookies();
           cookieStore.delete(key);
         }
       }
