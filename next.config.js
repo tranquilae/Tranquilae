@@ -1,7 +1,4 @@
 /** @type {import('next').NextConfig} */
-// Load polyfills early
-require('./polyfill-globals');
-
 const { withSentryConfig } = require('@sentry/nextjs');
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
@@ -86,54 +83,17 @@ const nextConfig = {
     maxInactiveAge: 25 * 1000,
     pagesBufferLength: 2,
   },
-  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
-    config.optimization.splitChunks = {
-      chunks: 'all',
-      cacheGroups: {
-        vendor: {
-          test: /[\\\\//]node_modules[\\\\//]/,
-          name: 'vendors',
-          priority: 10,
-          reuseExistingChunk: true,
-        },
-        common: {
-          name: 'commons',
-          minChunks: 2,
-          priority: 5,
-          reuseExistingChunk: true,
-        },
-      },
-    };
-
-    // Optimize imports
-    config.optimization.providedExports = true;
-    config.optimization.usedExports = true;
-    config.optimization.sideEffects = false;
-
-    // Handle browser globals for server-side rendering
+  // Minimal webpack config - no custom optimizations that could cause runtime errors
+  webpack: (config, { isServer }) => {
+    // Only add essential server-side fallbacks
     if (isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
         net: false,
-        dns: false,
         tls: false,
-        assert: false,
-        path: false,
-        url: false,
-        util: false,
       };
-      
-      // Only disable problematic webpack optimizations for server bundles
-      if (!config.isServer) {
-        // Client-side is fine
-      } else {
-        // Server-side: disable runtime chunk to avoid webpack runtime issues
-        config.optimization = config.optimization || {};
-        config.optimization.runtimeChunk = false;
-      }
     }
-
     return config;
   },
   headers: async () => [
