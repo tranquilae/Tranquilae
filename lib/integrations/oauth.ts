@@ -51,8 +51,8 @@ export async function createOAuthState(
     service_name: serviceName,
     state,
     code_verifier: codeVerifier,
-    redirect_url: redirectUrl,
-    expires_at: expiresAt
+    ...(redirectUrl !== undefined && { redirect_url: redirectUrl }),
+    expires_at: expiresAt,
   });
   
   return {
@@ -61,7 +61,7 @@ export async function createOAuthState(
     state,
     codeVerifier,
     codeChallengeMethod,
-    redirectUrl,
+    ...(redirectUrl !== undefined && { redirectUrl }),
     scopes,
     expiresAt
   };
@@ -86,9 +86,9 @@ export async function validateOAuthState(state: string): Promise<OAuthFlowState 
     userId: oauthState.user_id,
     serviceName: oauthState.service_name as HealthServiceName,
     state: oauthState.state,
-    codeVerifier: oauthState.code_verifier,
+    codeVerifier: oauthState.code_verifier || '',
     codeChallengeMethod: 'S256',
-    redirectUrl: oauthState.redirect_url || undefined,
+    ...(oauthState.redirect_url && { redirectUrl: oauthState.redirect_url }),
     scopes: [], // Will be populated by service-specific logic
     expiresAt: oauthState.expires_at
   };
@@ -105,10 +105,10 @@ export async function cleanupOAuthState(state: string): Promise<void> {
  * Token encryption/decryption utilities
  */
 function getEncryptionKey(): string {
-  const key = process.env.INTEGRATION_TOKEN_ENCRYPTION_KEY;
+  const key = process.env['INTEGRATION_TOKEN_ENCRYPTION_KEY'];
   if (!key) {
     // Only throw error at runtime, not during build
-    if (process.env.NODE_ENV !== 'development' && process.env.NEXT_PHASE !== 'phase-production-build') {
+    if (process.env['NODE_ENV'] !== 'development' && process.env['NEXT_PHASE'] !== 'phase-production-build') {
       throw new Error('INTEGRATION_TOKEN_ENCRYPTION_KEY environment variable is required');
     }
     // Return a dummy key for build time
