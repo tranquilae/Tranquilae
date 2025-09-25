@@ -186,12 +186,12 @@ export const emailTemplates: Record<string, EmailTemplate> = {
               <li>✓ Priority support</li>
             </ul>
             
-            <p>Your card ending in ****${data.cardLast4 || 'XXXX'} is saved for when your trial ends. You can manage your billing anytime.</p>
+            <p>Your card ending in ****${data['cardLast4'] || 'XXXX'} is saved for when your trial ends. You can manage your billing anytime.</p>
             
             <div style="text-align: center;">
-              <a href="${data.dashboardUrl}" class="button">Explore Pathfinder</a>
+              <a href="${data['dashboardUrl']}" class="button">Explore Pathfinder</a>
               <br><br>
-              <a href="${data.billingPortalUrl}" style="color: #6b7280; text-decoration: none; font-size: 14px;">Manage Billing</a>
+              <a href="${data['billingPortalUrl']}" style="color: #6b7280; text-decoration: none; font-size: 14px;">Manage Billing</a>
             </div>
             
             <p>Make the most of your trial and discover how Pathfinder can transform your wellness routine!</p>
@@ -200,17 +200,17 @@ export const emailTemplates: Record<string, EmailTemplate> = {
           </div>
           <div class="footer">
             <p>© 2024 Tranquilae. All rights reserved.</p>
-            <p>Trial ends ${data.trialEndDate} • Cancel anytime</p>
+            <p>Trial ends ${data['trialEndDate']} • Cancel anytime</p>
           </div>
         </div>
       </body>
       </html>
     `,
     text: (data) => `
-      Welcome to Pathfinder, ${data.name}!
+      Welcome to Pathfinder, ${data['name']}!
       
       🎉 Your 7-day Pathfinder trial has started!
-      Trial ends: ${data.trialEndDate}
+      Trial ends: ${data['trialEndDate']}
       
       You now have full access to all Pathfinder features:
       - Personalized AI coaching
@@ -219,8 +219,8 @@ export const emailTemplates: Record<string, EmailTemplate> = {
       - Premium content and programs
       - Priority support
       
-      Explore Pathfinder: ${data.dashboardUrl}
-      Manage Billing: ${data.billingPortalUrl}
+      Explore Pathfinder: ${data['dashboardUrl']}
+      Manage Billing: ${data['billingPortalUrl']}
       
       Make the most of your trial and discover how Pathfinder can transform your wellness routine!
       
@@ -244,10 +244,10 @@ export const emailTemplates: Record<string, EmailTemplate> = {
             <h1>Payment Successful! 💳</h1>
           </div>
           <div class="content">
-            <p>Hi ${data.name},</p>
+            <p>Hi ${data['name']},</p>
             
             <div class="success">
-              <strong>✅ Payment of ${data.currency} ${data.amount} processed successfully</strong><br>
+              <strong>✅ Payment of ${data['currency']} ${data['amount']} processed successfully</strong><br>
               Your Pathfinder subscription is now active!
             </div>
             
@@ -260,10 +260,10 @@ export const emailTemplates: Record<string, EmailTemplate> = {
               <li>💬 Priority support</li>
             </ul>
             
-            <p><strong>Next billing date:</strong> ${data.nextBillingDate}</p>
+            <p><strong>Next billing date:</strong> ${data['nextBillingDate']}</p>
             
             <div style="text-align: center;">
-              <a href="${data.dashboardUrl}" class="button">Go to Dashboard</a>
+              <a href="${data['dashboardUrl']}" class="button">Go to Dashboard</a>
             </div>
             
             <p>Your wellness journey continues with full Pathfinder benefits. Let's achieve your goals together!</p>
@@ -272,7 +272,7 @@ export const emailTemplates: Record<string, EmailTemplate> = {
           </div>
           <div class="footer">
             <p>© 2024 Tranquilae. All rights reserved.</p>
-            <p>Next billing: ${data.nextBillingDate}</p>
+            <p>Next billing: ${data['nextBillingDate']}</p>
           </div>
         </div>
       </body>
@@ -281,9 +281,9 @@ export const emailTemplates: Record<string, EmailTemplate> = {
     text: (data) => `
       Payment Successful!
       
-      Hi ${data.name},
+      Hi ${data['name']},
       
-      ✅ Payment of ${data.currency} ${data.amount} processed successfully
+      ✅ Payment of ${data['currency']} ${data['amount']} processed successfully
       Your Pathfinder subscription is now active!
       
       Thank you for choosing Pathfinder! Here's what's included:
@@ -293,9 +293,9 @@ export const emailTemplates: Record<string, EmailTemplate> = {
       - Premium wellness programs
       - Priority support
       
-      Next billing date: ${data.nextBillingDate}
+      Next billing date: ${data['nextBillingDate']}
       
-      Go to Dashboard: ${data.dashboardUrl}
+      Go to Dashboard: ${data['dashboardUrl']}
       
       Your wellness journey continues with full Pathfinder benefits. Let's achieve your goals together!
       
@@ -319,11 +319,11 @@ export const emailTemplates: Record<string, EmailTemplate> = {
             <h1>Payment Issue - Switched to Explorer</h1>
           </div>
           <div class="content">
-            <p>Hi ${data.name},</p>
+            <p>Hi ${data['name']},</p>
             
             <div class="warning">
               <strong>⚠️ Payment Issue</strong><br>
-              ${data.reason}. Don't worry - we've automatically switched you to our Explorer plan so you can continue your wellness journey uninterrupted.
+              ${data['reason']}. Don't worry - we've automatically switched you to our Explorer plan so you can continue your wellness journey uninterrupted.
             </div>
             
             <p><strong>What happened?</strong><br>
