@@ -1,4 +1,7 @@
 /** @type {import('next').NextConfig} */
+// Load polyfills early
+require('./polyfill-globals');
+
 const { withSentryConfig } = require('@sentry/nextjs');
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
@@ -120,6 +123,15 @@ const nextConfig = {
         url: false,
         util: false,
       };
+      
+      // Only disable problematic webpack optimizations for server bundles
+      if (!config.isServer) {
+        // Client-side is fine
+      } else {
+        // Server-side: disable runtime chunk to avoid webpack runtime issues
+        config.optimization = config.optimization || {};
+        config.optimization.runtimeChunk = false;
+      }
     }
 
     return config;

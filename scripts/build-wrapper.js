@@ -24,13 +24,13 @@ const path = require('path');
 
 // Use the actual Next.js CLI entry point instead of the shell wrapper
 const nextCli = path.resolve(__dirname, '../node_modules/next/dist/bin/next');
-const build = spawn('node', [nextCli, 'build'], {
+const build = spawn('node', ['--max-old-space-size=4096', nextCli, 'build'], {
   stdio: 'inherit',
   cwd: process.cwd(),
   env: {
     ...process.env,
     // Ensure self is available in child processes
-    NODE_OPTIONS: '--require ' + path.resolve(__dirname, '../lib/startup-polyfill.js')
+    NODE_OPTIONS: '--max-old-space-size=4096 --require ' + path.resolve(__dirname, '../lib/startup-polyfill.js')
   }
 });
 

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "cross-env NODE_OPTIONS=\"--require ./.node-require.js\" next build",
+    "build": "node scripts/build-wrapper.js",
     "dev": "next dev",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
