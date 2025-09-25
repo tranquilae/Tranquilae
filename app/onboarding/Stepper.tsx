@@ -215,6 +215,11 @@ export default function OnboardingStepper() {
   }
 
   const currentStep = steps[step];
+  
+  if (!currentStep) {
+    return null; // or redirect to error page
+  }
+  
   const StepComponent = currentStep.component;
   const progressPercentage = ((step) / (steps.length - 1)) * 100;
   
@@ -237,7 +242,7 @@ export default function OnboardingStepper() {
               Step {step + 1} of {steps.length}
             </div>
             <div className="text-sm text-gray-600">
-              {currentStep.title}
+              {currentStep?.title}
             </div>
           </div>
           <Progress value={progressPercentage} className="h-2" />

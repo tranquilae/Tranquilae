@@ -30,6 +30,7 @@ export function AchievementNotification({ achievements, onDismiss }: Achievement
 
       return () => clearTimeout(timeout);
     }
+    return undefined;
   }, [achievements]);
 
   useEffect(() => {
@@ -45,6 +46,7 @@ export function AchievementNotification({ achievements, onDismiss }: Achievement
 
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [achievements.length]);
 
   const handleDismiss = useCallback(() => {
@@ -57,6 +59,10 @@ export function AchievementNotification({ achievements, onDismiss }: Achievement
   }
 
   const currentAchievement = achievements[currentIndex];
+
+  if (!currentAchievement) {
+    return null;
+  }
 
   return (
     <>

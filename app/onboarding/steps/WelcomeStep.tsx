@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,6 @@ interface WelcomeStepProps {
 }
 
 const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext, isLoading }) => {
-  const [lottieError, setLottieError] = useState(false);
 
   return (
     <div className="flex flex-col items-center text-center space-y-8">
@@ -36,17 +35,12 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext, isLoading }) => {
         transition={{ duration: 0.6, type: "spring" }}
         className="relative"
       >
-        {!lottieError ? (
-          <LottiePlayer
-            autoplay
-            loop
-            src="https://lottie.host/4d5a5c8e-8c2a-4f5e-b8a3-9e1f2d3c4b5a/bK9qJ8uXrR.json" // Optimized welcome animation
-            style={{ height: '200px', width: '200px' }}
-            onError={() => setLottieError(true)}
-          />
-        ) : (
-          <WelcomeSVG />
-        )}
+        <LottiePlayer
+          autoplay
+          loop
+          src="https://lottie.host/4d5a5c8e-8c2a-4f5e-b8a3-9e1f2d3c4b5a/bK9qJ8uXrR.json" // Optimized welcome animation
+          style={{ height: '200px', width: '200px' }}
+        />
         
         {/* Floating elements */}
         <motion.div

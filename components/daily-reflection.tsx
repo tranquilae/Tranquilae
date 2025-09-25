@@ -66,8 +66,8 @@ export function DailyReflection() {
     if (selectedMood === null && selectedEnergy === null) return
     try {
       setSaving(true)
-      const mood = selectedMood !== null ? moods[selectedMood].label : null
-      const energy = selectedEnergy !== null ? energyLevels[selectedEnergy].level : null
+      const mood = selectedMood !== null && moods[selectedMood] ? moods[selectedMood].label : null
+      const energy = selectedEnergy !== null && energyLevels[selectedEnergy] ? energyLevels[selectedEnergy].level : null
       await fetchWithAuth('/api/dashboard/checkins', {
         method: 'POST',
         body: JSON.stringify({ mood, energy })

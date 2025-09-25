@@ -434,6 +434,11 @@ export async function testSecuritySystem(): Promise<{
 
   } catch (error) {
     console.error('Security system test failed:', error);
-    return { success: false, results: { error: error.message } };
+    return { 
+      success: false, 
+      results: { 
+        error: error instanceof Error ? error.message : String(error) 
+      } 
+    };
   }
 }

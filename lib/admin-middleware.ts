@@ -25,14 +25,15 @@ export interface AdminContext {
 /**
  * Create Supabase client with service role for admin operations (Updated JWT)
  */
-export function createAdminSupabaseClient() {
+export async function createAdminSupabaseClient() {
+  const cookieStore = await cookies();
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+    process.env['SUPABASE_SECRET_KEY'] || process.env['SUPABASE_SERVICE_ROLE_KEY']!,
     {
       cookies: {
         get(name: string) {
-          return cookies().get(name)?.value;
+          return cookieStore.get(name)?.value;
         },
       },
       auth: {
@@ -53,14 +54,15 @@ export function createAdminSupabaseClient() {
 /**
  * Create Supabase client for authenticated admin user (Updated JWT)
  */
-export function createAuthenticatedSupabaseClient() {
+export async function createAuthenticatedSupabaseClient() {
+  const cookieStore = await cookies();
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+    process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
     {
       cookies: {
         get(name: string) {
-          return cookies().get(name)?.value;
+          return cookieStore.get(name)?.value;
         },
       },
       auth: {
@@ -166,7 +168,7 @@ export function withAdminAuth(
 ) {
   return async (request: NextRequest): Promise<NextResponse> => {
     try {
-      const supabase = createAuthenticatedSupabaseClient();
+      const supabase = await createAuthenticatedSupabaseClient();
       const user = await getCurrentUser(supabase);
 
       if (!user) {
@@ -191,7 +193,7 @@ export function withAdminAuth(
           attempted_route: request.nextUrl.pathname,
           user_role: user.role,
           required_role: options.requireSuperAdmin ? 'super_admin' : 'admin',
-          ip_address: request.ip || request.headers.get('x-forwarded-for'),
+          ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
         });
 
         return NextResponse.json(
@@ -204,7 +206,7 @@ export function withAdminAuth(
       await logSecurityEvent(supabase, 'admin_access_granted', user.id, {
         route: request.nextUrl.pathname,
         user_role: user.role,
-        ip_address: request.ip || request.headers.get('x-forwarded-for'),
+        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
       });
 
       const context: AdminContext = { user, supabase };
@@ -233,7 +235,7 @@ async function logSecurityEvent(
       event_type: eventType,
       admin_id: userId,
       event_data: details,
-      ip_address: details.ip_address,
+      ip_address: details['ip_address'],
       created_at: new Date().toISOString(),
     });
   } catch (error) {
@@ -262,7 +264,7 @@ export async function logAdminAction(
         timestamp: new Date().toISOString(),
         user_agent: request?.headers.get('user-agent'),
       },
-      ip_address: request?.ip || request?.headers.get('x-forwarded-for'),
+      ip_address: request?.headers.get('x-forwarded-for') || request?.headers.get('x-real-ip'),
       created_at: new Date().toISOString(),
     };
 
@@ -325,7 +327,7 @@ export async function recordFailedLogin(
   ip: string
 ) {
   try {
-    const adminSupabase = createAdminSupabaseClient();
+    const adminSupabase = await createAdminSupabaseClient();
     
     // Call the increment_failed_attempts function
     await adminSupabase.rpc('increment_failed_attempts', {
@@ -350,7 +352,7 @@ export async function resetFailedAttempts(
   userId: string
 ) {
   try {
-    const adminSupabase = createAdminSupabaseClient();
+    const adminSupabase = await createAdminSupabaseClient();
     
     // Call the reset_failed_attempts function
     await adminSupabase.rpc('reset_failed_attempts', {

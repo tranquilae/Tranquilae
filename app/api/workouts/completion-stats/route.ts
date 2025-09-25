@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
       WHERE user_id = ${userId} AND completed_at IS NOT NULL
     `;
 
-    const totalWorkouts = totalWorkoutsResult[0].total_workouts;
+    const totalWorkouts = totalWorkoutsResult[0]?.['total_workouts'] || 0;
 
     // Get recent achievements (earned within the last 24 hours)
     const recentAchievementsResult = await sql`
@@ -128,29 +128,29 @@ export async function GET(request: NextRequest) {
         )::int as current_streak
     `;
 
-    const currentStreak = streakResult[0]?.current_streak || 0;
+    const currentStreak = streakResult[0]?.['current_streak'] || 0;
 
     return NextResponse.json({
       success: true,
       data: {
         workout: {
-          id: workoutDetails.workout_id,
-          title: workoutDetails.workout_title,
-          difficulty: workoutDetails.workout_difficulty
+          id: workoutDetails?.['workout_id'],
+          title: workoutDetails?.['workout_title'],
+          difficulty: workoutDetails?.['workout_difficulty']
         },
         completion: {
-          completedAt: workoutDetails.completed_at,
-          durationMinutes: workoutDetails.duration_minutes,
-          notes: workoutDetails.notes
+          completedAt: workoutDetails?.['completed_at'],
+          durationMinutes: workoutDetails?.['duration_minutes'],
+          notes: workoutDetails?.['notes']
         },
         totalWorkouts,
         currentStreak,
         newAchievements: recentAchievementsResult.map(achievement => ({
-          id: achievement.id,
-          name: achievement.name,
-          description: achievement.description,
-          icon: achievement.icon || '🏆',
-          earnedAt: achievement.earned_at
+          id: achievement?.['id'],
+          name: achievement?.['name'],
+          description: achievement?.['description'],
+          icon: achievement?.['icon'] || '🏆',
+          earnedAt: achievement?.['earned_at']
         }))
       }
     });

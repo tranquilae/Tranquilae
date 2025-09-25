@@ -105,7 +105,7 @@ export function WeeklyPlan() {
             </div>
 
             <div className="space-y-2">
-              {day.activities.map((activity, actIndex) => {
+              {day.activities.map((activity: any, actIndex: number) => {
                 const Icon = getActivityIcon(activity.type)
                 return (
                   <div

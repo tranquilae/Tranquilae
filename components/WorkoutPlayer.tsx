@@ -136,6 +136,12 @@ export function WorkoutPlayer({
   const handleExerciseComplete = async () => {
     const exercise = currentExercise;
     
+    // Safety check - exit if no current exercise
+    if (!exercise) {
+      console.error('No current exercise to complete');
+      return;
+    }
+    
     try {
       const response = await fetch('/api/workouts/progress', {
         method: 'POST',
@@ -281,6 +287,27 @@ export function WorkoutPlayer({
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Safety check - if currentExercise is undefined, show loading or error state
+  if (!currentExercise) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+        <div className="glass-card p-8 text-center">
+          <div className="text-gray-500 dark:text-gray-400 mb-4">
+            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            Loading Exercise...
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            Please wait while we prepare your workout.
+          </p>
         </div>
       </div>
     );
@@ -522,7 +549,7 @@ export function WorkoutPlayer({
                   <div className="flex justify-center space-x-2 mb-4">
                     {timeRemaining === 0 ? (
                       <button
-                        onClick={() => handleStartTimer(currentExercise.duration_seconds)}
+                        onClick={() => handleStartTimer(currentExercise.duration_seconds!)}
                         className="accent-button px-6 py-3 font-medium"
                       >
                         Start Timer

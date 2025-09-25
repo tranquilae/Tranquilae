@@ -10,16 +10,16 @@ interface StripePaymentStepProps {
 
 const plans = [
   {
-    key: 'monthly',
+    key: 'monthly' as const,
     label: 'Monthly',
     price: '£10 GBP / $13 USD',
   },
   {
-    key: 'yearly',
+    key: 'yearly' as const,
     label: 'Yearly',
     price: '£100 GBP / $130 USD',
   },
-];
+] as const;
 
 const StripePaymentStep: React.FC<StripePaymentStepProps> = ({ onSuccess, onFailure, onBack }) => {
   const [loading, setLoading] = useState<string | null>(null);

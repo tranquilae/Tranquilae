@@ -52,16 +52,16 @@ export default function AchievementsPage() {
 
       setAchievements(allAchievements as Achievement[]);
       setUserAchievements(earned.map(item => ({
-        id: item.id,
-        achievement_id: item.achievement_id,
-        awarded_at: item.awarded_at,
+        id: item?.['id'],
+        achievement_id: item?.['achievement_id'],
+        awarded_at: item?.['awarded_at'],
         achievement: {
-          id: item.achievement_id,
-          key: item.key,
-          title: item.title,
-          description: item.description,
-          criteria: item.criteria,
-          created_at: item.created_at
+          id: item?.['achievement_id'],
+          key: item?.['key'],
+          title: item?.['title'],
+          description: item?.['description'],
+          criteria: item?.['criteria'],
+          created_at: item?.['created_at']
         }
       })) as UserAchievement[]);
     } catch (err) {

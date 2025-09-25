@@ -115,10 +115,13 @@ export default function SettingsPage() {
 
   const updatePreferences = (section: keyof UserPreferences, updates: any) => {
     if (preferences) {
+      const currentSection = preferences[section];
+      const sectionData = (typeof currentSection === 'object' && currentSection !== null) ? currentSection : {};
+      
       setPreferences({
         ...preferences,
         [section]: {
-          ...preferences[section],
+          ...sectionData,
           ...updates
         }
       });

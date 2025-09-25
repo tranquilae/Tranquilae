@@ -40,7 +40,6 @@ import {
   LineChart as LineChartIcon,
   Download,
   Filter,
-  DateRange,
   Share2,
 } from 'lucide-react';
 
@@ -115,12 +114,6 @@ export function AdvancedAnalyticsDashboard() {
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['workouts', 'duration', 'calories']);
   const [comparisonMode, setComparisonMode] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      loadAnalyticsData();
-    }
-  }, [user, timeRange, loadAnalyticsData]);
-
   const loadAnalyticsData = useCallback(async () => {
     setLoading(true);
     try {
@@ -135,6 +128,12 @@ export function AdvancedAnalyticsDashboard() {
       setLoading(false);
     }
   }, [timeRange]);
+
+  useEffect(() => {
+    if (user) {
+      loadAnalyticsData();
+    }
+  }, [user, timeRange, loadAnalyticsData]);
 
   const chartData = useMemo(() => {
     if (!data?.progressData) return [];

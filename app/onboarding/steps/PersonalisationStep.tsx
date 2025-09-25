@@ -56,7 +56,6 @@ const PersonalisationStep: React.FC<PersonalisationStepProps> = ({
     height: initialData?.height?.toString() || '',
   });
   const [touched, setTouched] = useState<{ [k: string]: boolean }>({});
-  const [lottieError, setLottieError] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -84,11 +83,12 @@ const PersonalisationStep: React.FC<PersonalisationStepProps> = ({
     
     const personalData: PersonalData = {
       name: form.name.trim(),
-      dateOfBirth: form.dateOfBirth || undefined,
-      sex: form.sex as 'male' | 'female' | 'other' || undefined,
-      weight: form.weight ? Number(form.weight) : undefined,
-      height: form.height ? Number(form.height) : undefined,
     };
+    
+    if (form.dateOfBirth) personalData.dateOfBirth = form.dateOfBirth;
+    if (form.sex) personalData.sex = form.sex as 'male' | 'female' | 'other';
+    if (form.weight) personalData.weight = Number(form.weight);
+    if (form.height) personalData.height = Number(form.height);
     
     onNext(personalData);
   };
@@ -102,17 +102,12 @@ const PersonalisationStep: React.FC<PersonalisationStepProps> = ({
         transition={{ duration: 0.5, type: "spring" }}
       >
         <Suspense fallback={<PersonaliseSVG />}>
-          {!lottieError ? (
-            <LottiePlayer
-              autoplay
-              loop
-              src="https://lottie.host/personalise-animation/data.json"
-              style={{ height: '160px', width: '160px' }}
-              onError={() => setLottieError(true)}
-            />
-          ) : (
-            <PersonaliseSVG />
-          )}
+          <LottiePlayer
+            autoplay
+            loop
+            src="https://lottie.host/personalise-animation/data.json"
+            style={{ height: '160px', width: '160px' }}
+          />
         </Suspense>
       </motion.div>
 
@@ -155,10 +150,10 @@ const PersonalisationStep: React.FC<PersonalisationStepProps> = ({
                   onChange={handleInputChange}
                   onBlur={handleBlur}
                   className="bg-white/90 border-gray-200 focus:border-[#6ba368] focus:ring-[#6ba368]"
-                  aria-describedby={touched.name && !isValidName ? "name-error" : undefined}
+                  aria-describedby={touched['name'] && !isValidName ? "name-error" : undefined}
                   required
                 />
-                {touched.name && !isValidName && (
+                {touched['name'] && !isValidName && (
                   <p id="name-error" className="text-red-500 text-xs" role="alert">
                     Please enter at least 2 characters for your name.
                   </p>
@@ -181,7 +176,7 @@ const PersonalisationStep: React.FC<PersonalisationStepProps> = ({
                   className="bg-white/90 border-gray-200 focus:border-[#6ba368] focus:ring-[#6ba368]"
                   max={new Date().toISOString().split('T')[0]}
                 />
-                {touched.dateOfBirth && !isValidDateOfBirth && (
+                {touched['dateOfBirth'] && !isValidDateOfBirth && (
                   <p className="text-red-500 text-xs" role="alert">
                     Please enter a valid date of birth.
                   </p>
@@ -229,7 +224,7 @@ const PersonalisationStep: React.FC<PersonalisationStepProps> = ({
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">cm</span>
                   </div>
-                  {touched.height && !isValidHeight && (
+                  {touched['height'] && !isValidHeight && (
                     <p className="text-red-500 text-xs" role="alert">
                       Enter height between 30-250 cm.
                     </p>
@@ -256,7 +251,7 @@ const PersonalisationStep: React.FC<PersonalisationStepProps> = ({
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">kg</span>
                   </div>
-                  {touched.weight && !isValidWeight && (
+                  {touched['weight'] && !isValidWeight && (
                     <p className="text-red-500 text-xs" role="alert">
                       Enter weight between 1-500 kg.
                     </p>

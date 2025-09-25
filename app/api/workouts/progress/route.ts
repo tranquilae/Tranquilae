@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
           SELECT a.id, a.name, a.description, a.category_filter
           FROM achievements a
           LEFT JOIN user_achievements ua ON a.id = ua.achievement_id AND ua.user_id = ${userId}
-          WHERE a.category_filter = ${exercise.category} 
+          WHERE a.category_filter = ${exercise?.['category']} 
             AND ua.id IS NULL
             AND a.trigger_type = 'exercise_completion'
         `;
@@ -119,11 +119,11 @@ export async function POST(request: NextRequest) {
           try {
             await sql`
               INSERT INTO user_achievements (user_id, achievement_id, earned_at)
-              VALUES (${userId}, ${achievement.id}, CURRENT_TIMESTAMP)
+              VALUES (${userId}, ${achievement?.['id']}, CURRENT_TIMESTAMP)
               ON CONFLICT (user_id, achievement_id) DO NOTHING
             `;
           } catch (err) {
-            console.warn(`Failed to award achievement ${achievement.id}:`, err);
+            console.warn(`Failed to award achievement ${achievement?.['id']}:`, err);
           }
         }
       }
@@ -132,9 +132,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        progressId: progress.id,
-        completedAt: progress.completed_at,
-        isCompleted: !!progress.completed_at
+        progressId: progress?.['id'],
+        completedAt: progress?.['completed_at'],
+        isCompleted: !!progress?.['completed_at']
       }
     });
 

@@ -34,12 +34,6 @@ export default function WorkoutPage({ params }: WorkoutPageProps) {
 
   const workoutId = parseInt(params.id);
 
-  useEffect(() => {
-    if (user && neonUser && !authLoading) {
-      loadWorkoutDetails();
-    }
-  }, [user, neonUser, authLoading, workoutId, loadWorkoutDetails]);
-
   const loadWorkoutDetails = useCallback(async () => {
     try {
       const response = await fetch(`/api/workouts/${workoutId}`);
@@ -57,6 +51,12 @@ export default function WorkoutPage({ params }: WorkoutPageProps) {
       setLoading(false);
     }
   }, [workoutId]);
+
+  useEffect(() => {
+    if (user && neonUser && !authLoading) {
+      loadWorkoutDetails();
+    }
+  }, [user, neonUser, authLoading, workoutId, loadWorkoutDetails]);
 
   const handleStartWorkout = async () => {
     try {

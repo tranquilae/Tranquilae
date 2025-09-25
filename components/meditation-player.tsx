@@ -35,7 +35,7 @@ export function MeditationPlayer() {
 
   React.useEffect(() => {
     const a = audioRef.current
-    if (!a) return
+    if (!a || !current) return
     const onTime = () => setCurrentTime(a.currentTime)
     const onLoaded = () => setDuration(a.duration || 0)
     const onEnd = () => next()
@@ -51,6 +51,20 @@ export function MeditationPlayer() {
   }, [selected])
 
   React.useEffect(() => { if (audioRef.current) audioRef.current.volume = volume }, [volume])
+
+  // Early return if no current track is selected
+  if (!current) {
+    return (
+      <Card className="glass-card">
+        <CardHeader>
+          <CardTitle>Guided Meditations</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-center text-muted-foreground">No meditation tracks available.</p>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card className="glass-card">

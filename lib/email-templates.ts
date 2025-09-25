@@ -100,11 +100,11 @@ export const emailTemplates: Record<string, EmailTemplate> = {
             <h1>Welcome to your wellness journey!</h1>
           </div>
           <div class="content">
-            <p>Hi ${data.name},</p>
+            <p>Hi ${data['name']},</p>
             
-            <p>Welcome to Tranquilae! We're excited to help you on your wellness journey with our ${data.plan === 'pathfinder' ? 'Pathfinder' : 'Explorer'} plan.</p>
+            <p>Welcome to Tranquilae! We're excited to help you on your wellness journey with our ${data['plan'] === 'pathfinder' ? 'Pathfinder' : 'Explorer'} plan.</p>
             
-            ${data.plan === 'explorer' ? `
+            ${data['plan'] === 'explorer' ? `
               <div class="success">
                 <strong>🎉 Your Explorer plan is now active!</strong><br>
                 Start tracking your wellness with our essential features. You can upgrade to Pathfinder anytime for advanced coaching and analytics.
@@ -120,7 +120,7 @@ export const emailTemplates: Record<string, EmailTemplate> = {
             </ul>
             
             <div style="text-align: center;">
-              <a href="${data.dashboardUrl}" class="button">Go to Dashboard</a>
+              <a href="${data['dashboardUrl']}" class="button">Go to Dashboard</a>
             </div>
             
             <p>If you have any questions, our support team is here to help!</p>
@@ -136,9 +136,9 @@ export const emailTemplates: Record<string, EmailTemplate> = {
       </html>
     `,
     text: (data) => `
-      Welcome to Tranquilae, ${data.name}!
+      Welcome to Tranquilae, ${data['name']}!
       
-      We're excited to help you on your wellness journey with our ${data.plan === 'pathfinder' ? 'Pathfinder' : 'Explorer'} plan.
+      We're excited to help you on your wellness journey with our ${data['plan'] === 'pathfinder' ? 'Pathfinder' : 'Explorer'} plan.
       
       Here's what you can do next:
       - Complete your profile in the dashboard
@@ -146,7 +146,7 @@ export const emailTemplates: Record<string, EmailTemplate> = {
       - Connect your favorite apps and devices
       - Explore our AI-powered insights
       
-      Go to Dashboard: ${data.dashboardUrl}
+      Go to Dashboard: ${data['dashboardUrl']}
       
       If you have any questions, our support team is here to help!
       
@@ -170,11 +170,11 @@ export const emailTemplates: Record<string, EmailTemplate> = {
             <h1>Welcome to Pathfinder! 🚀</h1>
           </div>
           <div class="content">
-            <p>Hi ${data.name},</p>
+            <p>Hi ${data['name']},</p>
             
             <div class="success">
               <strong>🎉 Your 7-day Pathfinder trial has started!</strong><br>
-              Trial ends: ${data.trialEndDate}
+              Trial ends: ${data['trialEndDate']}
             </div>
             
             <p>You now have full access to all Pathfinder features:</p>

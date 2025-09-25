@@ -165,11 +165,13 @@ export default function HealthIntegrations({ selectedServices = [] }: HealthInte
       // await fetch(`/api/user/integrations/${integrationId}`, { method: 'DELETE' });
       
       setIntegrations(prev => 
-        prev.map(integration => 
-          integration.id === integrationId 
-            ? { ...integration, status: 'disconnected' as const, lastSync: undefined }
-            : integration
-        )
+        prev.map(integration => {
+          if (integration.id === integrationId) {
+            const { lastSync, ...integrationWithoutLastSync } = integration;
+            return { ...integrationWithoutLastSync, status: 'disconnected' as const };
+          }
+          return integration;
+        })
       );
       
       console.log(`Disconnected ${integrationId}`);
