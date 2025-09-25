@@ -134,6 +134,10 @@ export class NotificationService {
 
   // Check if notifications are supported and get permission status
   async getPermissionStatus(): Promise<NotificationPermission> {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      return 'denied'; // Server-side or non-browser environment
+    }
+    
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
       return 'denied';
     }
@@ -143,6 +147,11 @@ export class NotificationService {
 
   // Request notification permission from user
   async requestPermission(): Promise<boolean> {
+    if (typeof window === 'undefined') {
+      console.warn('🚫 Server-side environment, notifications not available');
+      return false;
+    }
+    
     if (!('Notification' in window)) {
       console.warn('🚫 Notifications not supported in this browser');
       return false;
@@ -178,6 +187,11 @@ export class NotificationService {
   // Subscribe to push notifications
   async subscribeToNotifications(userId?: string): Promise<PushSubscription | null> {
     try {
+      if (typeof navigator === 'undefined' || typeof window === 'undefined') {
+        console.warn('🚫 Server-side environment, push notifications not available');
+        return null;
+      }
+      
       // Get service worker registration
       const registration = await navigator.serviceWorker.getRegistration();
       if (!registration) {
@@ -214,6 +228,11 @@ export class NotificationService {
   // Unsubscribe from push notifications
   async unsubscribeFromNotifications(userId?: string): Promise<boolean> {
     try {
+      if (typeof navigator === 'undefined') {
+        console.warn('🚫 Server-side environment, unsubscribe not available');
+        return false;
+      }
+      
       const registration = await navigator.serviceWorker.getRegistration();
       if (!registration) return false;
 
@@ -236,6 +255,11 @@ export class NotificationService {
 
   // Show local notification (immediate)
   async showLocalNotification(config: NotificationConfig): Promise<boolean> {
+    if (typeof window === 'undefined') {
+      console.warn('🚫 Server-side environment, local notifications not available');
+      return false;
+    }
+    
     const permission = await this.getPermissionStatus();
     if (permission !== 'granted') {
       console.warn('🚫 Cannot show notification - permission not granted');
@@ -509,6 +533,11 @@ export class NotificationService {
 
   // Utility functions
   private urlBase64ToUint8Array(base64String: string): Uint8Array {
+    if (typeof window === 'undefined') {
+      // Server-side fallback - create empty array
+      return new Uint8Array(0);
+    }
+    
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
     const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
     const rawData = window.atob(base64);
@@ -571,7 +600,7 @@ export class NotificationService {
   }
 
   private trackNotificationEvent(trackingId?: string, action: string = 'unknown'): void {
-    if (!trackingId) return;
+    if (!trackingId || typeof fetch === 'undefined') return;
 
     fetch('/api/notifications/track', {
       method: 'POST',
@@ -600,7 +629,7 @@ export function useNotifications() {
     notificationService.getPermissionStatus().then(setPermission);
     
     // Check if already subscribed
-    if ('serviceWorker' in navigator) {
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistration().then(registration => {
         if (registration) {
           registration.pushManager.getSubscription().then(subscription => {
@@ -653,13 +682,18 @@ export function useServiceWorker() {
   const [needsUpdate, setNeedsUpdate] = useState(false);
 
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
       registerServiceWorker();
     }
   }, []);
 
   const registerServiceWorker = async () => {
     try {
+      if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) {
+        console.warn('🚫 Service worker not available');
+        return;
+      }
+      
       const registration = await navigator.serviceWorker.register('/sw.js');
       setIsRegistered(true);
       
@@ -684,7 +718,7 @@ export function useServiceWorker() {
   };
 
   const updateServiceWorker = () => {
-    if (navigator.serviceWorker.controller) {
+    if (typeof navigator !== 'undefined' && typeof window !== 'undefined' && navigator.serviceWorker.controller) {
       navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
       window.location.reload();
     }

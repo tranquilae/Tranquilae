@@ -88,7 +88,7 @@ const nextConfig = {
       chunks: 'all',
       cacheGroups: {
         vendor: {
-          test: /[\\/]node_modules[\\/]/,
+          test: /[\\\\//]node_modules[\\\\//]/,
           name: 'vendors',
           priority: 10,
           reuseExistingChunk: true,
@@ -106,6 +106,35 @@ const nextConfig = {
     config.optimization.providedExports = true;
     config.optimization.usedExports = true;
     config.optimization.sideEffects = false;
+
+    // Handle browser globals for server-side rendering
+    if (isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        dns: false,
+        tls: false,
+        assert: false,
+        path: false,
+        url: false,
+        util: false,
+      };
+    }
+
+    // Server-side polyfill for the 'self' global
+    if (isServer) {
+      const originalEntry = config.entry;
+      config.entry = async () => {
+        const entries = await originalEntry();
+        Object.keys(entries).forEach((key) => {
+          if (Array.isArray(entries[key])) {
+            entries[key].unshift(require.resolve('./lib/startup-polyfill.js'));
+          }
+        });
+        return entries;
+      };
+    }
 
     return config;
   },

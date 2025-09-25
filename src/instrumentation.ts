@@ -1,6 +1,23 @@
 // Instrumentation file for Sentry and other monitoring tools
 import { captureRequestError } from '@sentry/nextjs';
 
+// Load polyfills as early as possible
+if (typeof window === 'undefined' && typeof global !== 'undefined') {
+  // Server-side polyfills for browser globals
+  if (typeof (global as any).self === 'undefined') {
+    (global as any).self = global;
+  }
+  if (typeof (global as any).window === 'undefined') {
+    (global as any).window = undefined;
+  }
+  if (typeof (global as any).navigator === 'undefined') {
+    (global as any).navigator = undefined;
+  }
+  if (typeof (global as any).document === 'undefined') {
+    (global as any).document = undefined;
+  }
+}
+
 export async function register() {
   if (process.env['NEXT_RUNTIME'] === 'nodejs') {
     const dsn = process.env['SENTRY_DSN'];
