@@ -122,20 +122,6 @@ const nextConfig = {
       };
     }
 
-    // Server-side polyfill for the 'self' global
-    if (isServer) {
-      const originalEntry = config.entry;
-      config.entry = async () => {
-        const entries = await originalEntry();
-        Object.keys(entries).forEach((key) => {
-          if (Array.isArray(entries[key])) {
-            entries[key].unshift(require.resolve('./lib/startup-polyfill.js'));
-          }
-        });
-        return entries;
-      };
-    }
-
     return config;
   },
   headers: async () => [

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build",
+    "build": "cross-env NODE_OPTIONS=\"--require ./.node-require.js\" next build",
     "dev": "next dev",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
@@ -123,6 +123,7 @@
     "@typescript-eslint/eslint-plugin": "^8.44.1",
     "@typescript-eslint/parser": "^8.44.1",
     "babel-jest": "^29.7.0",
+    "cross-env": "^10.0.0",
     "eslint": "^9.36.0",
     "eslint-config-next": "^15.5.3",
     "glob": "^11.0.0",
