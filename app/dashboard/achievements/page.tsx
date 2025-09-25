@@ -1,4 +1,6 @@
 'use client';
+// Prevent prerendering of dashboard pages
+export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';

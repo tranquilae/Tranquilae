@@ -1,4 +1,9 @@
+'use client';
+
 import { AuthForm } from "@/components/auth-form"
+
+// Prevent prerendering of auth pages
+export const dynamic = 'force-dynamic';
 
 export default function VerifyEmailPage() {
   return (

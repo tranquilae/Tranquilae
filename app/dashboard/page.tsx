@@ -4,6 +4,9 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
 
+// Prevent prerendering of dashboard pages
+export const dynamic = 'force-dynamic';
+
 interface DashboardStats {
   user: {
     id: number;

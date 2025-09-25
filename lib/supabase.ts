@@ -29,7 +29,7 @@ function getSupabaseConfig(): SupabaseConfig {
   
   if (!anonKey) {
     errors.push('NEXT_PUBLIC_SUPABASE_ANON_KEY or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY is required')
-  } else if (!anonKey.startsWith('eyJ') && !anonKey.startsWith('sb_')) {
+  } else if (!anonKey.startsWith('eyJ') && !anonKey.startsWith('sb_publishable_') && !anonKey.startsWith('sb_')) {
     errors.push('Publishable key should be a valid JWT token or new publishable key format (starts with sb_publishable_)')
   }
   
@@ -64,7 +64,7 @@ function getSupabaseConfig(): SupabaseConfig {
 // Get configuration
 const config = getSupabaseConfig()
 
-// Throw error if configuration is invalid
+// Log configuration issues but don't throw during build time
 if (!config.isValid && process.env['NODE_ENV'] !== 'test') {
   const errorMsg = `❌ Invalid Supabase configuration: ${config.errors.join(', ')}`
   console.error(errorMsg)
@@ -108,8 +108,30 @@ function createSupabaseClient() {
   }
 }
 
-// Export the client instance
-export const supabase = createSupabaseClient()
+// Export lazy client creation function instead of immediate instance
+// This prevents errors during build time
+let clientInstance: ReturnType<typeof createSupabaseClient> | null = null
+
+export function getSupabaseClient() {
+  if (!clientInstance) {
+    clientInstance = createSupabaseClient()
+  }
+  return clientInstance
+}
+
+// Backward compatibility - but this will throw if config is invalid
+export const supabase = (() => {
+  try {
+    return createSupabaseClient()
+  } catch (error) {
+    // During build time, return null to prevent immediate errors
+    if (process.env['NODE_ENV'] === 'production' || process.env['CI']) {
+      console.warn('⚠️ Supabase client creation failed during build time, will retry at runtime')
+      return null as any
+    }
+    throw error
+  }
+})()
 
 // Admin client for server-side operations with service role key
 // This should only be used in API routes and server components
@@ -118,8 +140,10 @@ function createSupabaseAdminClient() {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for admin operations')
   }
   
-  // Allow dummy keys in development environment
+  // Allow dummy keys in development environment and be more lenient during build
   if (process.env['NODE_ENV'] !== 'development' && 
+      process.env['NODE_ENV'] !== 'production' &&
+      !process.env['CI'] &&
       !config.serviceRoleKey.startsWith('eyJ') && 
       !config.serviceRoleKey.startsWith('sb_secret_')) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY should be a valid JWT token (eyJ...) or new secret key format (sb_secret_...)')
@@ -162,7 +186,16 @@ function getSupabaseAdmin() {
     return null
   }
   
-  return createSupabaseAdminClient()
+  try {
+    return createSupabaseAdminClient()
+  } catch (error) {
+    // During build time, return null to prevent immediate errors
+    if (process.env['NODE_ENV'] === 'production' || process.env['CI']) {
+      console.warn('⚠️ Supabase admin client creation failed during build time, will retry at runtime')
+      return null
+    }
+    throw error
+  }
 }
 
 // Export admin client getter

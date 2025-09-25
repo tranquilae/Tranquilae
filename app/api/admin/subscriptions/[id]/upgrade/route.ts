@@ -1,5 +1,6 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@/utils/supabase/server'
 import { supabaseAdmin, checkAdminAccess } from '@/lib/supabase'
 import { logPaymentEvent, logDatabaseEvent } from '@/lib/supabase-logger'
 import Stripe from 'stripe'
@@ -11,17 +12,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createServerClient(
-      process.env['NEXT_PUBLIC_SUPABASE_URL']!,
-      process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
-      {
-        cookies: {
-          get(name: string) {
-            return request.cookies.get(name)?.value
-          },
-        },
-      }
-    )
+    const supabase = await createClient()
 
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 

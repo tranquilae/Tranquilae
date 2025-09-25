@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 // Initialize Supabase client with new API keys (non-legacy)
 export const supabase = createClient(
   process.env['NEXT_PUBLIC_SUPABASE_URL']!,
-  process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY']!
+  process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
 );
 
 // Auth helper functions using new API methods

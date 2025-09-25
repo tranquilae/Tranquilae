@@ -315,7 +315,7 @@ export class HealthDataSyncEngine {
 
     // Create a set of existing data point keys for fast lookup
     const existingKeys = new Set(
-      (existingPoints || []).map(point => 
+      (existingPoints || []).map((point: any) => 
         `${point.data_type}_${point.value}_${new Date(point.timestamp).getTime()}`
       )
     );
