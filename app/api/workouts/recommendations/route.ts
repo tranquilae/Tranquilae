@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userData = neonUserResult[0];
-    const userId = userData.id;
+    const userId = userData?.['id'];
 
     // Get user's workout history for better recommendations
     const userHistoryResult = await sql`
@@ -74,14 +74,14 @@ export async function GET(request: NextRequest) {
         AND uw.completed_at >= NOW() - INTERVAL '7 days'
     `;
 
-    const recentWorkoutIds = recentWorkoutsResult.map(row => row.id);
+    const recentWorkoutIds = recentWorkoutsResult.map(row => row?.['id']).filter(Boolean);
 
     // Determine user's preferred difficulty based on history and settings
-    let preferredDifficulty = difficulty || userData.fitness_level || 'intermediate';
+    let preferredDifficulty = difficulty || userData?.['fitness_level'] || 'intermediate';
     
     // If user has history, analyze progression
     if (userHistoryResult.length > 0) {
-      const completedDifficulties = userHistoryResult.map(h => h.difficulty);
+      const completedDifficulties = userHistoryResult.map(h => h?.['difficulty']).filter(Boolean);
       const advancedCount = completedDifficulties.filter(d => d === 'advanced').length;
       const intermediateCount = completedDifficulties.filter(d => d === 'intermediate').length;
       const beginnerCount = completedDifficulties.filter(d => d === 'beginner').length;
@@ -97,18 +97,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Determine preferred duration
-    let preferredDuration = duration ? parseInt(duration) : (userData.preferred_workout_duration || 30);
+    let preferredDuration = duration ? parseInt(duration) : (userData?.['preferred_workout_duration'] || 30);
     
     // Adjust based on user's actual completion times
     if (userHistoryResult.length > 0) {
-      const avgActualDuration = userHistoryResult.reduce((sum, h) => sum + (h.avg_actual_duration || h.estimated_duration_minutes), 0) / userHistoryResult.length;
+      const avgActualDuration = userHistoryResult.reduce((sum, h) => sum + (h?.['avg_actual_duration'] || h?.['estimated_duration_minutes'] || 0), 0) / userHistoryResult.length;
       preferredDuration = Math.round(avgActualDuration);
     }
 
     // Get popular categories from user history
     const popularCategories = userHistoryResult
       .reduce((acc: {[key: string]: number}, curr) => {
-        acc[curr.category] = (acc[curr.category] || 0) + curr.completion_count;
+        acc[curr?.['category']] = (acc[curr?.['category']] || 0) + (curr?.['completion_count'] || 0);
         return acc;
       }, {});
 
@@ -118,8 +118,8 @@ export async function GET(request: NextRequest) {
       .slice(0, 3);
 
     // Build the recommendation query
-    let whereConditions = [];
-    let queryParams: any = {};
+    const whereConditions = [];
+    const queryParams: any = {};
 
     // Exclude recently completed workouts
     if (recentWorkoutIds.length > 0) {
@@ -206,7 +206,7 @@ export async function GET(request: NextRequest) {
     `;
 
     // Get exercise details for each recommended workout
-    const workoutIds = recommendedWorkoutsResult.map(w => w.id);
+    const workoutIds = recommendedWorkoutsResult.map(w => w?.['id']).filter(Boolean);
     let workoutExercises: any[] = [];
 
     if (workoutIds.length > 0) {
@@ -226,33 +226,33 @@ export async function GET(request: NextRequest) {
     // Create exercise map for quick lookup
     const exerciseMap = new Map();
     workoutExercises.forEach(ex => {
-      exerciseMap.set(ex.workout_id, {
-        exerciseCount: ex.exercise_count,
-        exerciseCategories: ex.exercise_categories.flat(),
-        equipmentNeeded: ex.equipment_needed.flat().filter(Boolean)
+      exerciseMap.set(ex?.['workout_id'], {
+        exerciseCount: ex?.['exercise_count'] || 0,
+        exerciseCategories: ex?.['exercise_categories']?.flat() || [],
+        equipmentNeeded: ex?.['equipment_needed']?.flat().filter(Boolean) || []
       });
     });
 
     // Enhance recommendations with additional data
     const enhancedRecommendations = recommendedWorkoutsResult.map(workout => {
-      const exerciseData = exerciseMap.get(workout.id) || {
+      const exerciseData = exerciseMap.get(workout?.['id']) || {
         exerciseCount: 0,
         exerciseCategories: [],
         equipmentNeeded: []
       };
 
       return {
-        id: workout.id,
-        title: workout.title,
-        description: workout.description,
-        difficulty: workout.difficulty,
-        category: workout.category,
-        estimatedDuration: workout.estimated_duration_minutes,
-        equipmentNeeded: workout.equipment_needed || [],
+        id: workout?.['id'],
+        title: workout?.['title'],
+        description: workout?.['description'],
+        difficulty: workout?.['difficulty'],
+        category: workout?.['category'],
+        estimatedDuration: workout?.['estimated_duration_minutes'],
+        equipmentNeeded: workout?.['equipment_needed'] || [],
         exerciseCount: exerciseData.exerciseCount,
         exerciseCategories: exerciseData.exerciseCategories,
-        createdAt: workout.created_at,
-        recommendationScore: workout.total_score,
+        createdAt: workout?.['created_at'],
+        recommendationScore: workout?.['total_score'],
         reasons: getRecommendationReasons(workout, userData, userHistoryResult)
       };
     });
@@ -266,16 +266,16 @@ export async function GET(request: NextRequest) {
         AND completed_at >= DATE_TRUNC('week', NOW())
     `;
 
-    const weeklyProgress = weeklyProgressResult[0]?.workouts_this_week || 0;
-    const weeklyGoal = userData.weekly_workout_goal || 3;
+    const weeklyProgress = weeklyProgressResult[0]?.['workouts_this_week'] || 0;
+    const weeklyGoal = userData?.['weekly_workout_goal'] || 3;
 
     return NextResponse.json({
       success: true,
       data: {
         recommendations: enhancedRecommendations,
         context: {
-          userFitnessLevel: userData.fitness_level || 'intermediate',
-          preferredDuration: userData.preferred_workout_duration || 30,
+          userFitnessLevel: userData?.['fitness_level'] || 'intermediate',
+          preferredDuration: userData?.['preferred_workout_duration'] || 30,
           weeklyProgress: {
             completed: weeklyProgress,
             goal: weeklyGoal,
@@ -294,7 +294,7 @@ export async function GET(request: NextRequest) {
         success: false, 
         error: { 
           code: 'server_error', 
-          message: process.env.NODE_ENV === 'production' 
+          message: process.env['NODE_ENV'] === 'production' 
             ? 'Internal server error' 
             : error instanceof Error ? error.message : 'Unknown error'
         } 
@@ -343,3 +343,4 @@ function getRecommendationReasons(workout: any, userData: any, userHistory: any[
 
   return reasons.slice(0, 2); // Limit to top 2 reasons
 }
+

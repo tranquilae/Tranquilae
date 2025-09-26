@@ -1,6 +1,8 @@
 'use client';
+// Prevent prerendering of dashboard pages
+export const dynamic = 'force-dynamic';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { getNeonClient } from '@/lib/neonClient';
 
@@ -27,13 +29,7 @@ export default function AchievementsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      loadAchievements();
-    }
-  }, [user]);
-
-  const loadAchievements = async () => {
+  const loadAchievements = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -58,16 +54,16 @@ export default function AchievementsPage() {
 
       setAchievements(allAchievements as Achievement[]);
       setUserAchievements(earned.map(item => ({
-        id: item.id,
-        achievement_id: item.achievement_id,
-        awarded_at: item.awarded_at,
+        id: item?.['id'],
+        achievement_id: item?.['achievement_id'],
+        awarded_at: item?.['awarded_at'],
         achievement: {
-          id: item.achievement_id,
-          key: item.key,
-          title: item.title,
-          description: item.description,
-          criteria: item.criteria,
-          created_at: item.created_at
+          id: item?.['achievement_id'],
+          key: item?.['key'],
+          title: item?.['title'],
+          description: item?.['description'],
+          criteria: item?.['criteria'],
+          created_at: item?.['created_at']
         }
       })) as UserAchievement[]);
     } catch (err) {
@@ -76,7 +72,14 @@ export default function AchievementsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadAchievements();
+    }
+  }, [user, loadAchievements]);
+
 
   const isEarned = (achievementId: number) => {
     return userAchievements.some(ua => ua.achievement_id === achievementId);

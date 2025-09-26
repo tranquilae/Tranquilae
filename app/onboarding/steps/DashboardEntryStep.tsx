@@ -1,5 +1,18 @@
 import React from 'react';
-import { Player } from '@lottiefiles/react-lottie-player';
+import dynamic from 'next/dynamic';
+
+// Dynamic import to prevent SSR issues
+const Player = dynamic(
+  () => import('@lottiefiles/react-lottie-player').then(module => module.Player),
+  { 
+    ssr: false, 
+    loading: () => (
+      <div className="w-45 h-45 flex items-center justify-center bg-gradient-to-br from-purple-100 to-pink-100 rounded-full">
+        <div className="text-6xl">👤</div>
+      </div>
+    )
+  }
+);
 
 interface DashboardEntryStepProps {
   plan: 'explorer' | 'pathfinder';

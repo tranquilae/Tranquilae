@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/components/AuthProvider';
+import { useAuth } from '@/components/auth-provider';
 import { getNeonClient } from '@/lib/neonClient';
+
+// Prevent prerendering of admin pages
+export const dynamic = 'force-dynamic';
 
 interface MediaOverride {
   id: number;
@@ -16,14 +19,14 @@ interface MediaOverride {
 }
 
 export default function AdminMediaPage() {
-  const { user, neonUser } = useAuth();
+  const { user } = useAuth();
   const [mediaOverrides, setMediaOverrides] = useState<MediaOverride[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
   // Check if user has admin privileges
-  const isAdmin = neonUser?.email?.includes('admin') || false;
+  const isAdmin = user?.email?.includes('admin') || false;
 
   useEffect(() => {
     if (user && isAdmin) {

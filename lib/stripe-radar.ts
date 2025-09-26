@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
 import { logPaymentEvent, logSecurityEvent } from './supabase-logger';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripe = new Stripe(process.env['STRIPE_SECRET_KEY']!);
 
 export interface RadarRiskAssessment {
   risk_level: 'low' | 'medium' | 'high' | 'very_high';
@@ -44,16 +44,17 @@ class StripeRadarService {
     try {
       const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
         expand: ['charges.data.outcome']
-      });
+      }) as any; // Type assertion needed for expanded properties
 
-      const charge = paymentIntent.charges.data[0];
+      const charges = paymentIntent.charges as Stripe.ApiList<Stripe.Charge>;
+      const charge = charges?.data?.[0];
       const outcome = charge?.outcome;
 
       // Extract Stripe Radar risk assessment
       const riskAssessment: RadarRiskAssessment = {
         risk_level: this.mapRadarRiskLevel(outcome?.risk_level),
         risk_score: outcome?.risk_score || 0,
-        radar_outcome: this.mapRadarOutcome(outcome?.seller_message),
+        radar_outcome: this.mapRadarOutcome(outcome?.seller_message || undefined),
         reasons: this.extractRiskReasons(outcome),
         recommendations: this.generateRecommendations(outcome)
       };
@@ -69,14 +70,16 @@ class StripeRadarService {
           reason: outcome?.reason,
           seller_message: outcome?.seller_message,
           type: outcome?.type
-        },
-        additional_checks: additionalChecks
+        }
       };
+      
+      if (additionalChecks !== undefined) {
+        result.additional_checks = additionalChecks;
+      }
 
       // Log fraud check results
-      await logSecurityEvent({
+      const securityEvent: any = {
         event_type: 'SUSPICIOUS_ACTIVITY',
-        user_id: userId,
         success: result.passed,
         error: result.passed ? undefined : 'Fraud check failed',
         metadata: {
@@ -85,33 +88,49 @@ class StripeRadarService {
           risk_score: riskAssessment.risk_score,
           reasons: riskAssessment.reasons
         }
-      });
+      };
+      
+      if (userId !== undefined) {
+        securityEvent.user_id = userId;
+      }
+      
+      await logSecurityEvent(securityEvent);
 
       // Alert on high-risk transactions
       if (riskAssessment.risk_level === 'high' || riskAssessment.risk_level === 'very_high') {
-        Sentry.captureMessage('High-risk payment detected', {
+        const sentryOptions: any = {
           level: 'warning',
           tags: {
             component: 'fraud-prevention',
             risk_level: riskAssessment.risk_level
           },
-          user: { id: userId },
           extra: {
             payment_intent_id: paymentIntentId,
             risk_assessment: riskAssessment,
             additional_checks: additionalChecks
           }
-        });
+        };
+        
+        if (userId !== undefined) {
+          sentryOptions.user = { id: userId };
+        }
+        
+        Sentry.captureMessage('High-risk payment detected', sentryOptions);
       }
 
       return result;
     } catch (error) {
       console.error('Error assessing payment risk:', error);
-      Sentry.captureException(error, {
+      const sentryOptions: any = {
         tags: { component: 'stripe-radar', operation: 'assess-risk' },
-        user: { id: userId },
         extra: { payment_intent_id: paymentIntentId }
-      });
+      };
+      
+      if (userId !== undefined) {
+        sentryOptions.user = { id: userId };
+      }
+      
+      Sentry.captureException(error, sentryOptions);
 
       // Return conservative assessment on error
       return {
@@ -199,16 +218,21 @@ class StripeRadarService {
       const velocityExceeded = recentAttempts > 3; // Allow max 3 attempts per hour
       
       if (velocityExceeded) {
-        await logSecurityEvent({
+        const securityEvent: any = {
           event_type: 'RATE_LIMIT_EXCEEDED',
           user_id: userId,
-          ip_address: ipAddress,
           success: false,
           metadata: {
             attempts_count: recentAttempts,
             time_window_minutes: timeWindowMinutes
           }
-        });
+        };
+        
+        if (ipAddress !== undefined) {
+          securityEvent.ip_address = ipAddress;
+        }
+        
+        await logSecurityEvent(securityEvent);
       }
 
       return {

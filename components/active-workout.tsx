@@ -55,11 +55,9 @@ export function ActiveWorkout() {
     ],
   }
 
-  const progress = ((currentExercise + 1) / workout.exercises.length) * 100
+  // All hooks must be called before any early returns
   const overrides = useExerciseMediaOverrides()
-  const currentName = workout.exercises[currentExercise].name
-  const videoSrc = overrides[currentName] || DEMO_VIDEOS[currentName] || 'https://www.youtube.com/embed/dQw4w9WgXcQ'
-
+  
   // Rest timer
   useEffect(() => {
     if (restRemaining === null) return
@@ -68,17 +66,31 @@ export function ActiveWorkout() {
     return () => clearTimeout(t)
   }, [restRemaining])
 
+  const currentExerciseData = workout.exercises[currentExercise]
+  if (!currentExerciseData) {
+    return null // Safety check in case currentExercise is out of bounds
+  }
+
+  const progress = ((currentExercise + 1) / workout.exercises.length) * 100
+  const currentName = currentExerciseData.name
+  const videoSrc = overrides[currentName] || DEMO_VIDEOS[currentName] || 'https://www.youtube.com/embed/dQw4w9WgXcQ'
+
   const startNextSet = () => {
     const ex = workout.exercises[currentExercise]
+    if (!ex) return // Safety check
+    
     if (currentSet < ex.sets) {
       setCurrentSet(currentSet + 1)
       setRestRemaining(ex.rest)
     } else {
       // next exercise
       if (currentExercise < workout.exercises.length - 1) {
-        setCurrentExercise(currentExercise + 1)
-        setCurrentSet(1)
-        setRestRemaining(workout.exercises[currentExercise + 1].rest)
+        const nextExercise = workout.exercises[currentExercise + 1]
+        if (nextExercise) {
+          setCurrentExercise(currentExercise + 1)
+          setCurrentSet(1)
+          setRestRemaining(nextExercise.rest)
+        }
       }
     }
   }
@@ -98,9 +110,12 @@ export function ActiveWorkout() {
             </Button>
             <Button size="sm" variant="outline" className="gap-2 bg-transparent" onClick={() => {
               if (currentExercise < workout.exercises.length - 1) {
-                setCurrentExercise(currentExercise + 1)
-                setCurrentSet(1)
-                setRestRemaining(workout.exercises[currentExercise + 1].rest)
+                const nextExercise = workout.exercises[currentExercise + 1]
+                if (nextExercise) {
+                  setCurrentExercise(currentExercise + 1)
+                  setCurrentSet(1)
+                  setRestRemaining(nextExercise.rest)
+                }
               }
             }}>
               <SkipForward className="h-4 w-4" />
@@ -138,18 +153,18 @@ export function ActiveWorkout() {
 
         {/* Current Exercise */}
         <div className="text-center space-y-4 p-6 rounded-lg bg-accent/20">
-          <h2 className="text-2xl font-bold text-primary">{workout.exercises[currentExercise].name}</h2>
+          <h2 className="text-2xl font-bold text-primary">{currentExerciseData.name}</h2>
           <div className="flex justify-center gap-8 text-lg">
             <div className="text-center">
-              <div className="font-bold text-foreground">{currentSet} / {workout.exercises[currentExercise].sets}</div>
+              <div className="font-bold text-foreground">{currentSet} / {currentExerciseData.sets}</div>
               <div className="text-sm text-muted-foreground">Set</div>
             </div>
             <div className="text-center">
-              <div className="font-bold text-foreground">{workout.exercises[currentExercise].reps}</div>
+              <div className="font-bold text-foreground">{currentExerciseData.reps}</div>
               <div className="text-sm text-muted-foreground">Reps</div>
             </div>
             <div className="text-center">
-              <div className="font-bold text-foreground">{restRemaining !== null ? restRemaining : workout.exercises[currentExercise].rest}s</div>
+              <div className="font-bold text-foreground">{restRemaining !== null ? restRemaining : currentExerciseData.rest}s</div>
               <div className="text-sm text-muted-foreground">Rest</div>
             </div>
           </div>
@@ -162,7 +177,7 @@ export function ActiveWorkout() {
         {/* Demo Video */}
         <div className="rounded-lg overflow-hidden border">
           <iframe
-            key={workout.exercises[currentExercise].name}
+            key={currentExerciseData.name}
             width="100%"
             height="315"
             src={videoSrc}

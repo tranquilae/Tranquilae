@@ -3,16 +3,16 @@ import { cookies } from "next/headers";
 
 // Get environment variables with proper fallbacks
 function getSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-                  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
-                  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+  const url = process.env['NEXT_PUBLIC_SUPABASE_URL']
+  const anonKey = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY'] ||
+                  process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] ||
+                  process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY']
 
   if (!url || !anonKey) {
     console.error('❌ Supabase Server Configuration Missing:', {
       url: !!url,
       anonKey: !!anonKey,
-      env: process.env.NODE_ENV
+      env: process.env['NODE_ENV']
     })
     throw new Error('Missing Supabase configuration for server client')
   }
@@ -92,8 +92,8 @@ export const createClientWithRequest = (request: Request) => {
           
           return cookieHeader.split(';').map(cookie => {
             const [name, value] = cookie.trim().split('=')
-            return { name, value: decodeURIComponent(value || '') }
-          })
+            return { name: name || '', value: decodeURIComponent(value || '') }
+          }).filter(cookie => cookie.name !== '')
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {

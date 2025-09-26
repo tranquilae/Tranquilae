@@ -40,18 +40,26 @@ export async function GET(request: NextRequest) {
     }
 
     const neonUser = userResult[0];
-    const needsOnboarding = !neonUser.onboarding_completed;
+    if (!neonUser) {
+      return NextResponse.json({
+        success: true,
+        needsOnboarding: true,
+        userExists: false
+      });
+    }
+    
+    const needsOnboarding = !neonUser['onboarding_completed'];
 
     return NextResponse.json({
       success: true,
       needsOnboarding,
       userExists: true,
       user: {
-        id: neonUser.id,
-        email: neonUser.email,
-        fullName: neonUser.full_name,
-        plan: neonUser.plan,
-        createdAt: neonUser.created_at
+        id: neonUser['id'],
+        email: neonUser['email'],
+        fullName: neonUser['full_name'],
+        plan: neonUser['plan'],
+        createdAt: neonUser['created_at']
       }
     });
 
@@ -62,7 +70,7 @@ export async function GET(request: NextRequest) {
         success: false, 
         error: { 
           code: 'server_error', 
-          message: process.env.NODE_ENV === 'production' 
+          message: process.env['NODE_ENV'] === 'production' 
             ? 'Internal server error' 
             : error instanceof Error ? error.message : 'Unknown error'
         } 
@@ -71,3 +79,4 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+

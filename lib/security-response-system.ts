@@ -4,9 +4,9 @@
  * account lockouts, and escalation procedures for critical security events
  */
 
-import { securityMonitor, SecurityEventType, SecuritySeverity } from './security-monitor';
+import { securityMonitor, SecurityEventType, SecuritySeverity, SecurityEvent } from './security-monitor';
 import { sendMultiChannelAlert, formatSecurityEventForNotification } from './notification-service';
-import { createServiceClient } from './admin-middleware';
+import { createAdminSupabaseClient } from './admin-middleware';
 
 export interface ResponseRule {
   id: string;
@@ -49,11 +49,15 @@ export interface EscalationLevel {
 }
 
 export class SecurityResponseSystem {
-  private supabase = createServiceClient();
+  private supabasePromise = createAdminSupabaseClient();
   private responseRules: ResponseRule[] = [];
   private escalationLevels: EscalationLevel[] = [];
   private actionExecutionCount: Map<string, number> = new Map();
   private lastExecutionTime: Map<string, number> = new Map();
+  
+  private async getSupabase() {
+    return await this.supabasePromise;
+  }
 
   constructor() {
     this.initializeDefaultRules();
@@ -94,11 +98,12 @@ export class SecurityResponseSystem {
       console.error('Error processing security event:', error);
       
       // Log the error as a security event
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await securityMonitor.logSecurityEvent({
         eventType: SecurityEventType.SYSTEM_MANIPULATION,
         severity: SecuritySeverity.HIGH,
-        description: `Security response system error: ${error.message}`,
-        eventData: { error: error.message, originalEvent: event }
+        description: `Security response system error: ${errorMessage}`,
+        eventData: { error: errorMessage, originalEvent: event }
       });
     }
   }
@@ -114,19 +119,29 @@ export class SecurityResponseSystem {
     ipAddress?: string,
     additionalData?: Record<string, any>
   ): Promise<void> {
-    const emergencyEvent = {
-      id: `emergency-${Date.now()}`,
+    const emergencyEventData: Omit<SecurityEvent, 'id' | 'createdAt'> = {
       eventType,
       severity,
       description: `EMERGENCY: ${description}`,
-      userId,
-      ipAddress,
       userAgent: 'Security Response System',
       eventData: { ...additionalData, emergency: true, triggeredAt: new Date().toISOString() }
     };
+    
+    if (userId !== undefined) {
+      emergencyEventData.userId = userId;
+    }
+    
+    if (ipAddress !== undefined) {
+      emergencyEventData.ipAddress = ipAddress;
+    }
+    
+    const emergencyEvent = {
+      id: `emergency-${Date.now()}`,
+      ...emergencyEventData
+    };
 
     // Log the emergency event
-    await securityMonitor.logSecurityEvent(emergencyEvent);
+    await securityMonitor.logSecurityEvent(emergencyEventData);
 
     // Process with highest priority
     await this.processSecurityEvent(emergencyEvent);
@@ -169,7 +184,8 @@ export class SecurityResponseSystem {
   ): Promise<void> {
     try {
       // Suspend the user account
-      const { error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { error } = await supabase
         .from('users')
         .update({ 
           status: 'suspended',
@@ -249,7 +265,8 @@ export class SecurityResponseSystem {
     };
 
     // Store incident in database
-    const { error } = await this.supabase
+    const supabase = await this.getSupabase();
+    const { error } = await supabase
       .from('security_incidents')
       .insert(incident);
 
@@ -278,7 +295,7 @@ export class SecurityResponseSystem {
   private evaluateCondition(condition: ResponseCondition, event: any): boolean {
     switch (condition.type) {
       case 'severity':
-        const severityLevels = { 'low': 1, 'medium': 2, 'high': 3, 'critical': 4 };
+        const severityLevels: Record<string, number> = { 'low': 1, 'medium': 2, 'high': 3, 'critical': 4 };
         const eventLevel = severityLevels[event.severity] || 0;
         const conditionLevel = severityLevels[condition.value] || 0;
         
@@ -345,7 +362,7 @@ export class SecurityResponseSystem {
     // Execute actions
     for (const action of rule.actions) {
       try {
-        if (action.requireApproval && !event.eventData.emergency) {
+        if (action.requireApproval && !event.eventData['emergency']) {
           // Queue for approval instead of executing immediately
           await this.queueForApproval(action, event, rule);
           continue;
@@ -364,9 +381,9 @@ export class SecurityResponseSystem {
         if (event.ipAddress) {
           await this.executeIPBlock(
             event.ipAddress,
-            action.parameters.reason || `Automated block due to: ${event.description}`,
-            action.parameters.duration || 60,
-            action.parameters.blockType || 'temporary'
+            action.parameters['reason'] || `Automated block due to: ${event.description}`,
+            action.parameters['duration'] || 60,
+            action.parameters['blockType'] || 'temporary'
           );
         }
         break;
@@ -375,18 +392,18 @@ export class SecurityResponseSystem {
         if (event.userId) {
           await this.executeAccountLock(
             event.userId,
-            action.parameters.reason || `Automated lock due to: ${event.description}`,
-            action.parameters.duration
+            action.parameters['reason'] || `Automated lock due to: ${event.description}`,
+            action.parameters['duration']
           );
         }
         break;
 
       case 'isolate_session':
-        if (event.userId && event.eventData.sessionId) {
+        if (event.userId && event.eventData['sessionId']) {
           await this.executeSessionIsolation(
             event.userId,
-            event.eventData.sessionId,
-            action.parameters.reason || `Session isolation due to: ${event.description}`
+            event.eventData['sessionId'],
+            action.parameters['reason'] || `Session isolation due to: ${event.description}`
           );
         }
         break;
@@ -396,7 +413,7 @@ export class SecurityResponseSystem {
         break;
 
       case 'escalate':
-        await this.escalateToLevel(action.parameters.level || 1, event);
+        await this.escalateToLevel(action.parameters['level'] || 1, event);
         break;
 
       case 'log_incident':
@@ -417,6 +434,8 @@ export class SecurityResponseSystem {
   private async checkEscalationTriggers(event: any): Promise<void> {
     for (let i = 0; i < this.escalationLevels.length; i++) {
       const level = this.escalationLevels[i];
+      
+      if (!level) continue;
       
       const shouldEscalate = level.triggerConditions.some(condition => {
         // Evaluate escalation conditions
@@ -439,7 +458,7 @@ export class SecurityResponseSystem {
       case 'data_breach_attempt':
         return event.eventType === SecurityEventType.DATA_BREACH_ATTEMPT;
       case 'multiple_admin_failures':
-        return event.eventType === SecurityEventType.FAILED_LOGIN && event.eventData.attempt_count > 3;
+        return event.eventType === SecurityEventType.FAILED_LOGIN && event.eventData['attempt_count'] > 3;
       case 'sql_injection':
         return event.eventType === SecurityEventType.SQL_INJECTION_ATTEMPT;
       default:
@@ -453,6 +472,11 @@ export class SecurityResponseSystem {
     }
 
     const level = this.escalationLevels[levelIndex];
+    
+    if (!level) {
+      console.error('Escalation level not found:', levelIndex);
+      return;
+    }
     
     console.log(`Escalating to level ${level.level}: ${level.name}`);
 
@@ -478,7 +502,7 @@ export class SecurityResponseSystem {
 
     if (level.notifications.channels.includes('webhook')) {
       channels.webhook = {
-        url: process.env.ESCALATION_WEBHOOK_URL,
+        url: process.env['ESCALATION_WEBHOOK_URL'],
         payload: {
           ...notification.webhookPayload,
           escalation_level: level.level,
@@ -593,7 +617,7 @@ export class SecurityResponseSystem {
         triggerConditions: ['multiple_admin_failures', 'suspicious_activity'],
         notifications: {
           channels: ['email'],
-          recipients: [process.env.SECURITY_TEAM_EMAIL || 'security@yourapp.com'],
+          recipients: [process.env['SECURITY_TEAM_EMAIL'] || 'security@yourapp.com'],
           template: 'security_alert'
         },
         autoActions: [],
@@ -607,8 +631,8 @@ export class SecurityResponseSystem {
         notifications: {
           channels: ['email', 'webhook', 'sms'],
           recipients: [
-            process.env.SECURITY_TEAM_EMAIL || 'security@yourapp.com',
-            process.env.ADMIN_PHONE || '+1234567890'
+            process.env['SECURITY_TEAM_EMAIL'] || 'security@yourapp.com',
+            process.env['ADMIN_PHONE'] || '+1234567890'
           ],
           template: 'critical_incident'
         },
@@ -630,9 +654,9 @@ export class SecurityResponseSystem {
         notifications: {
           channels: ['email', 'webhook', 'sms'],
           recipients: [
-            process.env.SECURITY_TEAM_EMAIL || 'security@yourapp.com',
-            process.env.ADMIN_PHONE || '+1234567890',
-            process.env.EMERGENCY_CONTACT || 'emergency@yourapp.com'
+            process.env['SECURITY_TEAM_EMAIL'] || 'security@yourapp.com',
+            process.env['ADMIN_PHONE'] || '+1234567890',
+            process.env['EMERGENCY_CONTACT'] || 'emergency@yourapp.com'
           ],
           template: 'emergency_response'
         },

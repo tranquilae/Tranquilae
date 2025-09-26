@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import {
   Plus,
@@ -19,7 +19,7 @@ import {
   Copy,
   Trash2,
   Edit,
-  DragHandleDots2Icon as DragHandle,
+  GripVertical as DragHandle,
   ChevronDown,
   ChevronUp,
   CheckCircle,
@@ -114,7 +114,7 @@ export function CustomWorkoutBuilder() {
     }
   };
 
-  const calculateWorkoutMetrics = () => {
+  const calculateWorkoutMetrics = useCallback(() => {
     const totalDuration = workout.exercises.reduce((sum, exercise) => {
       const exerciseDuration = exercise.duration || 
         (exercise.sets && exercise.reps ? exercise.sets * 2 : 5); // Estimate 2 min per set
@@ -133,7 +133,7 @@ export function CustomWorkoutBuilder() {
       estimatedDuration: Math.round(totalDuration),
       targetCalories: Math.round(totalCalories),
     }));
-  };
+  }, [workout.exercises]);
 
   const filteredExercises = availableExercises.filter(exercise => {
     const matchesSearch = exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -147,12 +147,20 @@ export function CustomWorkoutBuilder() {
   const addExerciseToWorkout = (exercise: Exercise) => {
     const workoutExercise: WorkoutExercise = {
       ...exercise,
-      duration: exercise.defaultDuration,
-      reps: exercise.defaultReps,
-      sets: exercise.defaultSets,
       restTime: 60, // Default 60 seconds rest
       order: workout.exercises.length,
     };
+
+    // Conditionally add properties only if they have values
+    if (exercise.defaultDuration !== undefined) {
+      workoutExercise.duration = exercise.defaultDuration;
+    }
+    if (exercise.defaultReps !== undefined) {
+      workoutExercise.reps = exercise.defaultReps;
+    }
+    if (exercise.defaultSets !== undefined) {
+      workoutExercise.sets = exercise.defaultSets;
+    }
 
     setWorkout(prev => ({
       ...prev,
@@ -181,6 +189,10 @@ export function CustomWorkoutBuilder() {
     setWorkout(prev => {
       const exercises = [...prev.exercises];
       const [movedExercise] = exercises.splice(fromIndex, 1);
+      
+      // Safety check in case the index is out of bounds
+      if (!movedExercise) return prev;
+      
       exercises.splice(toIndex, 0, movedExercise);
       
       return {
@@ -210,19 +222,19 @@ export function CustomWorkoutBuilder() {
     const newErrors: Record<string, string> = {};
 
     if (!workout.title.trim()) {
-      newErrors.title = 'Workout title is required';
+      newErrors['title'] = 'Workout title is required';
     }
 
     if (!workout.description.trim()) {
-      newErrors.description = 'Workout description is required';
+      newErrors['description'] = 'Workout description is required';
     }
 
     if (workout.exercises.length === 0) {
-      newErrors.exercises = 'At least one exercise is required';
+      newErrors['exercises'] = 'At least one exercise is required';
     }
 
     if (workout.exercises.length > 20) {
-      newErrors.exercises = 'Maximum 20 exercises allowed';
+      newErrors['exercises'] = 'Maximum 20 exercises allowed';
     }
 
     setErrors(newErrors);
@@ -277,13 +289,13 @@ export function CustomWorkoutBuilder() {
   };
 
   const duplicateWorkout = () => {
-    setWorkout(prev => ({
-      ...prev,
-      id: undefined,
-      title: `${prev.title} (Copy)`,
-      createdAt: undefined,
-      updatedAt: undefined,
-    }));
+    setWorkout(prev => {
+      const { id, createdAt, updatedAt, ...workoutWithoutIds } = prev;
+      return {
+        ...workoutWithoutIds,
+        title: `${prev.title} (Copy)`,
+      };
+    });
   };
 
   const resetWorkout = () => {
@@ -453,11 +465,11 @@ export function CustomWorkoutBuilder() {
                   onChange={(e) => setWorkout(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="Enter workout title..."
                   className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${
-                    errors.title ? 'border-red-300 dark:border-red-600' : 'border-gray-200 dark:border-gray-600'
+                    errors['title'] ? 'border-red-300 dark:border-red-600' : 'border-gray-200 dark:border-gray-600'
                   }`}
                 />
-                {errors.title && (
-                  <p className="text-red-500 text-xs mt-1">{errors.title}</p>
+                {errors['title'] && (
+                  <p className="text-red-500 text-xs mt-1">{errors['title']}</p>
                 )}
               </div>
               
@@ -490,11 +502,11 @@ export function CustomWorkoutBuilder() {
                 placeholder="Describe your workout..."
                 rows={3}
                 className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${
-                  errors.description ? 'border-red-300 dark:border-red-600' : 'border-gray-200 dark:border-gray-600'
+                  errors['description'] ? 'border-red-300 dark:border-red-600' : 'border-gray-200 dark:border-gray-600'
                 }`}
               />
-              {errors.description && (
-                <p className="text-red-500 text-xs mt-1">{errors.description}</p>
+              {errors['description'] && (
+                <p className="text-red-500 text-xs mt-1">{errors['description']}</p>
               )}
             </div>
             
@@ -573,12 +585,12 @@ export function CustomWorkoutBuilder() {
               )}
             </div>
             
-            {errors.exercises && (
-              <p className="text-red-500 text-sm mb-4">{errors.exercises}</p>
+            {errors['exercises'] && (
+              <p className="text-red-500 text-sm mb-4">{errors['exercises']}</p>
             )}
             
-            {errors.general && (
-              <p className="text-red-500 text-sm mb-4">{errors.general}</p>
+            {errors['general'] && (
+              <p className="text-red-500 text-sm mb-4">{errors['general']}</p>
             )}
             
             {workout.exercises.length === 0 ? (
@@ -634,9 +646,14 @@ export function CustomWorkoutBuilder() {
                               <input
                                 type="number"
                                 value={exercise.sets || ''}
-                                onChange={(e) => updateExerciseInWorkout(index, { 
-                                  sets: parseInt(e.target.value) || undefined 
-                                })}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value);
+                                  const updates: Partial<WorkoutExercise> = {};
+                                  if (value && !isNaN(value)) {
+                                    updates.sets = value;
+                                  }
+                                  updateExerciseInWorkout(index, updates);
+                                }}
                                 className="w-full px-2 py-1 text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                               />
                             </div>
@@ -650,9 +667,14 @@ export function CustomWorkoutBuilder() {
                               <input
                                 type="number"
                                 value={exercise.reps || ''}
-                                onChange={(e) => updateExerciseInWorkout(index, { 
-                                  reps: parseInt(e.target.value) || undefined 
-                                })}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value);
+                                  const updates: Partial<WorkoutExercise> = {};
+                                  if (value && !isNaN(value)) {
+                                    updates.reps = value;
+                                  }
+                                  updateExerciseInWorkout(index, updates);
+                                }}
                                 className="w-full px-2 py-1 text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                               />
                             </div>
@@ -666,9 +688,14 @@ export function CustomWorkoutBuilder() {
                               <input
                                 type="number"
                                 value={exercise.duration || ''}
-                                onChange={(e) => updateExerciseInWorkout(index, { 
-                                  duration: parseInt(e.target.value) || undefined 
-                                })}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value);
+                                  const updates: Partial<WorkoutExercise> = {};
+                                  if (value && !isNaN(value)) {
+                                    updates.duration = value;
+                                  }
+                                  updateExerciseInWorkout(index, updates);
+                                }}
                                 className="w-full px-2 py-1 text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                               />
                             </div>
@@ -681,9 +708,14 @@ export function CustomWorkoutBuilder() {
                             <input
                               type="number"
                               value={exercise.restTime || ''}
-                              onChange={(e) => updateExerciseInWorkout(index, { 
-                                restTime: parseInt(e.target.value) || undefined 
-                              })}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value);
+                                const updates: Partial<WorkoutExercise> = {};
+                                if (value && !isNaN(value)) {
+                                  updates.restTime = value;
+                                }
+                                updateExerciseInWorkout(index, updates);
+                              }}
                               className="w-full px-2 py-1 text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                             />
                           </div>

@@ -1,6 +1,9 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 
+// Prevent prerendering
+export const dynamic = 'force-dynamic'
+
 export default async function ExampleSupabasePage() {
   // Create Supabase client
   const supabase = await createClient()

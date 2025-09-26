@@ -7,8 +7,8 @@ import { logSecurityEvent, logDatabaseEvent } from '@/lib/supabase-logger'
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+      process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
       {
         cookies: {
           get(name: string) {
@@ -35,6 +35,12 @@ export async function GET(request: NextRequest) {
         metadata: { endpoint: '/api/admin/users' }
       })
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+
+    // Check if admin client is available
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client not available')
+      return NextResponse.json({ error: 'Admin operations not configured' }, { status: 503 })
     }
 
     // Get query parameters for filtering
@@ -126,4 +132,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
 

@@ -9,8 +9,8 @@ export async function POST(
 ) {
   try {
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+      process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
       {
         cookies: {
           get(name: string) {
@@ -31,6 +31,12 @@ export async function POST(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
+    // Check if admin client is available
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client not available')
+      return NextResponse.json({ error: 'Admin operations not configured' }, { status: 503 })
+    }
+
     // Get target user data
     const { data: targetUser } = await supabaseAdmin
       .from('users')
@@ -47,7 +53,7 @@ export async function POST(
       type: 'recovery',
       email: targetUser.email,
       options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password`
+        redirectTo: `${process.env['NEXT_PUBLIC_APP_URL']}/auth/reset-password`
       }
     })
 

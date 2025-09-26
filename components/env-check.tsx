@@ -10,9 +10,9 @@ export function EnvCheck() {
   }>({ url: false, key: false, keyValue: '' })
 
   useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const url = process.env['NEXT_PUBLIC_SUPABASE_URL']
     // Check for Next.js framework standard naming first, then fallbacks
-    const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const key = process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']
     
     setEnvStatus({
       url: !!url,
@@ -22,7 +22,7 @@ export function EnvCheck() {
   }, [])
 
   // Only show in development or if there are issues
-  if (process.env.NODE_ENV === 'production' && envStatus.url && envStatus.key) {
+  if (process.env['NODE_ENV'] === 'production' && envStatus.url && envStatus.key) {
     return null
   }
 

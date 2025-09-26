@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
     if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const url = new URL(request.url)
-    const date = url.searchParams.get('date') || new Date().toISOString().split('T')[0]
+    const dateParam = url.searchParams.get('date')
+    const date = (dateParam || new Date().toISOString().split('T')[0]) as string
 
     const { db } = await import('@/lib/database')
     const meals = await db.listMealsByDate(user.id, date)
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     // Also record calories into health_data_points for daily stats
     try {
       const { neon } = await import('@neondatabase/serverless')
-      const sql = neon(process.env.DATABASE_URL!)
+      const sql = neon(process.env['DATABASE_URL']!)
       await sql`INSERT INTO health_data_points (user_id, integration_id, data_type, value, unit, timestamp, metadata)
         VALUES (${user.id}, ${null}, ${'calories'}, ${calories}, ${'kcal'}, ${new Date().toISOString()}, ${JSON.stringify({ source: 'meal' })})`
     } catch (dpErr) {
@@ -65,4 +66,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: e?.message || 'Internal error' }, { status: 500 })
   }
 }
+
 

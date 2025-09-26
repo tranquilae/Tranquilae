@@ -1,5 +1,18 @@
 import React, { useState } from 'react';
-import { Player } from '@lottiefiles/react-lottie-player';
+import dynamic from 'next/dynamic';
+
+// Dynamic import to prevent SSR issues
+const Player = dynamic(
+  () => import('@lottiefiles/react-lottie-player').then(module => module.Player),
+  { 
+    ssr: false, 
+    loading: () => (
+      <div className="w-45 h-45 flex items-center justify-center bg-gradient-to-br from-blue-100 to-green-100 rounded-full">
+        <div className="text-6xl">💳</div>
+      </div>
+    )
+  }
+);
 import { paymentAPI, handleAPIError } from '@/lib/api';
 
 interface StripePaymentStepProps {
@@ -10,16 +23,16 @@ interface StripePaymentStepProps {
 
 const plans = [
   {
-    key: 'monthly',
+    key: 'monthly' as const,
     label: 'Monthly',
     price: '£10 GBP / $13 USD',
   },
   {
-    key: 'yearly',
+    key: 'yearly' as const,
     label: 'Yearly',
     price: '£100 GBP / $130 USD',
   },
-];
+] as const;
 
 const StripePaymentStep: React.FC<StripePaymentStepProps> = ({ onSuccess, onFailure, onBack }) => {
   const [loading, setLoading] = useState<string | null>(null);

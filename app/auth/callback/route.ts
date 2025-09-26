@@ -15,13 +15,19 @@ export async function GET(request: NextRequest) {
       console.error('Auth callback error:', error, errorDescription)
       
         try {
-          await supabaseLogger.logSecurityEvent({
-            event_type: 'AUTH_CALLBACK',
+          const logEvent: any = {
+            event_type: 'LOGIN',
             success: false,
-            error: `${error}: ${errorDescription}`,
-            ip_address: request.ip,
-            user_agent: request.headers.get('user-agent') || undefined
-          })
+            error: `${error}: ${errorDescription}`
+          };
+          
+          const ipAddress = request.headers.get('x-forwarded-for');
+          if (ipAddress) logEvent.ip_address = ipAddress;
+          
+          const userAgent = request.headers.get('user-agent');
+          if (userAgent) logEvent.user_agent = userAgent;
+          
+          await supabaseLogger.logSecurityEvent(logEvent);
         } catch (logError) {
           console.warn('Failed to log auth callback error:', logError)
         }
@@ -35,8 +41,8 @@ export async function GET(request: NextRequest) {
     // Handle successful authentication
     if (code) {
       const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+        process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
       )
 
       // Exchange code for session
@@ -46,13 +52,19 @@ export async function GET(request: NextRequest) {
         console.error('Code exchange error:', exchangeError)
         
         try {
-          await supabaseLogger.logSecurityEvent({
-            event_type: 'AUTH_CALLBACK',
+          const logEvent: any = {
+            event_type: 'LOGIN',
             success: false,
-            error: exchangeError.message,
-            ip_address: request.ip,
-            user_agent: request.headers.get('user-agent') || undefined
-          })
+            error: exchangeError.message
+          };
+          
+          const ipAddress = request.headers.get('x-forwarded-for');
+          if (ipAddress) logEvent.ip_address = ipAddress;
+          
+          const userAgent = request.headers.get('user-agent');
+          if (userAgent) logEvent.user_agent = userAgent;
+          
+          await supabaseLogger.logSecurityEvent(logEvent);
         } catch (logError) {
           console.warn('Failed to log code exchange error:', logError)
         }
@@ -65,18 +77,24 @@ export async function GET(request: NextRequest) {
       if (data.user) {
         // Log successful authentication
         try {
-          await supabaseLogger.logSecurityEvent({
-            event_type: 'AUTH_CALLBACK',
+          const logEvent: any = {
+            event_type: 'LOGIN',
             user_id: data.user.id,
             success: true,
-            ip_address: request.ip,
-            user_agent: request.headers.get('user-agent') || undefined,
             metadata: {
               email: data.user.email,
               email_confirmed: data.user.email_confirmed_at !== null,
               redirect_to: redirectTo
             }
-          })
+          };
+          
+          const ipAddress = request.headers.get('x-forwarded-for');
+          if (ipAddress) logEvent.ip_address = ipAddress;
+          
+          const userAgent = request.headers.get('user-agent');
+          if (userAgent) logEvent.user_agent = userAgent;
+          
+          await supabaseLogger.logSecurityEvent(logEvent);
         } catch (logError) {
           console.warn('Failed to log successful auth callback:', logError)
         }
@@ -87,7 +105,7 @@ export async function GET(request: NextRequest) {
         // Check if user has completed onboarding (using Neon DB, not Supabase)
         try {
           // Check if DATABASE_URL is configured
-          if (!process.env.DATABASE_URL) {
+          if (!process.env['DATABASE_URL']) {
             console.warn('⚠️ DATABASE_URL not configured - skipping onboarding check')
             console.log('🎯 DATABASE_URL missing - defaulting to onboarding')
             redirectPath = '/onboarding'
@@ -102,7 +120,10 @@ export async function GET(request: NextRequest) {
             if (!userData) {
               // Auto-create minimal profile to prevent loops
               try {
-                userData = await db.createUser({ id: data.user.id, email: data.user.email || '', name: data.user.email?.split('@')[0] || null, onboarding_complete: false })
+                const userCreateData: any = { id: data.user.id, email: data.user.email || '', onboarding_complete: false };
+                const userName = data.user.email?.split('@')[0];
+                if (userName) userCreateData.name = userName;
+                userData = await db.createUser(userCreateData);
                 console.log('🆕 Created minimal profile during auth callback')
               } catch (createErr) {
                 console.warn('Could not auto-create profile:', createErr)
@@ -148,13 +169,19 @@ export async function GET(request: NextRequest) {
     console.error('Auth callback error:', error)
     
     try {
-      await supabaseLogger.logSecurityEvent({
-        event_type: 'AUTH_CALLBACK',
+      const logEvent: any = {
+        event_type: 'LOGIN',
         success: false,
-        error: error.message,
-        ip_address: request.ip,
-        user_agent: request.headers.get('user-agent') || undefined
-      })
+        error: error.message
+      };
+      
+      const ipAddress = request.headers.get('x-forwarded-for');
+      if (ipAddress) logEvent.ip_address = ipAddress;
+      
+      const userAgent = request.headers.get('user-agent');
+      if (userAgent) logEvent.user_agent = userAgent;
+      
+      await supabaseLogger.logSecurityEvent(logEvent);
     } catch (logError) {
       console.warn('Failed to log general auth callback error:', logError)
     }
@@ -164,3 +191,4 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+

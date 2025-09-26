@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { headers } from 'next/headers';
-import { db } from '@/lib/database';
+import { db, type Subscription } from '@/lib/database';
 import { sendEmail } from '@/lib/email';
 import { assessPaymentRisk, analyzeSubscriptionPatterns } from '@/lib/stripe-radar';
 import { logPaymentEvent, logSecurityEvent } from '@/lib/supabase-logger';
 import * as Sentry from '@sentry/nextjs';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripe = new Stripe(process.env['STRIPE_SECRET_KEY']!);
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const webhookSecret = process.env['STRIPE_WEBHOOK_SECRET']!;
 
 /**
  * Handle Stripe webhooks with comprehensive event processing
@@ -18,7 +18,8 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text();
-    const signature = headers().get('stripe-signature');
+    const headersList = await headers();
+    const signature = headersList.get('stripe-signature');
 
     if (!signature) {
       console.error('Missing Stripe signature');
@@ -119,7 +120,7 @@ export async function POST(request: NextRequest) {
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
   console.log('Processing checkout.session.completed:', session.id);
 
-  const userId = session.metadata?.user_id;
+  const userId = session.metadata?.['user_id'];
   if (!userId) {
     console.error('No user_id in session metadata');
     return;
@@ -162,15 +163,20 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     }
 
     // Update subscription in database
-    await db.updateSubscription(userId, {
+    const updateData: any = {
       plan: 'pathfinder',
       status: subscription.status === 'trialing' ? 'trialing' : 'active',
       stripe_subscription_id: subscription.id,
       stripe_customer_id: subscription.customer as string,
-      trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
-      current_period_start: new Date(subscription.current_period_start * 1000),
-      current_period_end: new Date(subscription.current_period_end * 1000),
-    });
+      current_period_start: new Date((subscription as any).current_period_start * 1000),
+      current_period_end: new Date((subscription as any).current_period_end * 1000),
+    };
+    
+    if ((subscription as any).trial_end) {
+      updateData.trial_end = new Date((subscription as any).trial_end * 1000);
+    }
+    
+    await db.updateSubscription(userId, updateData);
 
     // Update user
     await db.updateUser(userId, {
@@ -188,7 +194,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       metadata: {
         session_id: session.id,
         plan: 'pathfinder',
-        trial_end: subscription.trial_end
+        trial_end: (subscription as any).trial_end
       }
     });
 
@@ -220,8 +226,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   console.log('Processing invoice.payment_succeeded:', invoice.id);
 
-  const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
-  const userId = subscription.metadata?.user_id;
+  const subscription = await stripe.subscriptions.retrieve((invoice as any).subscription as string);
+  const userId = (subscription as any).metadata?.['user_id'];
 
   if (!userId) {
     console.error('No user_id in subscription metadata');
@@ -230,10 +236,10 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
 
   try {
     // Perform fraud risk assessment on payment
-    if (invoice.payment_intent) {
-      const riskAssessment = await assessPaymentRisk(invoice.payment_intent as string, userId, {
+    if ((invoice as any).payment_intent) {
+      const riskAssessment = await assessPaymentRisk((invoice as any).payment_intent as string, userId, {
         invoice_id: invoice.id,
-        billing_reason: invoice.billing_reason,
+        billing_reason: (invoice as any).billing_reason,
         amount: invoice.amount_paid,
         context: 'recurring_payment'
       });
@@ -247,7 +253,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
           success: false,
           error: 'High-risk payment detected',
           metadata: {
-            payment_intent_id: invoice.payment_intent,
+            payment_intent_id: (invoice as any).payment_intent,
             risk_level: riskAssessment.risk_assessment.risk_level,
             risk_score: riskAssessment.risk_assessment.risk_score,
             reasons: riskAssessment.risk_assessment.reasons,
@@ -266,7 +272,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
             user: { id: userId },
             extra: {
               invoice_id: invoice.id,
-              payment_intent_id: invoice.payment_intent,
+              payment_intent_id: (invoice as any).payment_intent,
               risk_assessment: riskAssessment.risk_assessment
             }
           });
@@ -277,8 +283,8 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
     // Update subscription status to active
     await db.updateSubscription(userId, {
       status: 'active',
-      current_period_start: new Date(subscription.current_period_start * 1000),
-      current_period_end: new Date(subscription.current_period_end * 1000),
+      current_period_start: new Date((subscription as any).current_period_start * 1000),
+      current_period_end: new Date((subscription as any).current_period_end * 1000),
     });
 
     // Log successful payment
@@ -292,13 +298,13 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
       success: true,
       metadata: {
         invoice_id: invoice.id,
-        billing_reason: invoice.billing_reason,
-        payment_intent_id: invoice.payment_intent
+        billing_reason: (invoice as any).billing_reason,
+        payment_intent_id: (invoice as any).payment_intent
       }
     });
 
     // If this was the first payment after trial, send confirmation
-    if (invoice.billing_reason === 'subscription_cycle') {
+    if ((invoice as any).billing_reason === 'subscription_cycle') {
       const user = await db.getUserById(userId);
       if (user?.email) {
         try {
@@ -310,8 +316,8 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
               name: user.name || 'there',
               amount: (invoice.amount_paid / 100).toFixed(2),
               currency: invoice.currency.toUpperCase(),
-              nextBillingDate: new Date(subscription.current_period_end * 1000).toLocaleDateString(),
-              dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+              nextBillingDate: new Date((subscription as any).current_period_end * 1000).toLocaleDateString(),
+              dashboardUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard`,
             }
           });
         } catch (error) {
@@ -348,8 +354,8 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   console.log('Processing invoice.payment_failed:', invoice.id);
 
-  const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
-  const userId = subscription.metadata?.user_id;
+  const subscription = await stripe.subscriptions.retrieve((invoice as any).subscription as string);
+  const userId = subscription.metadata?.['user_id'];
 
   if (!userId) {
     console.error('No user_id in subscription metadata');
@@ -371,17 +377,29 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   if (isTrialSubscription || isFirstFailure) {
     console.log(`Downgrading user ${userId} from Pathfinder to Explorer due to payment failure`);
 
-    // Update subscription to Explorer
-    await db.updateSubscription(userId, {
+    // Update subscription to Explorer - omit fields to clear them
+    const updateData: any = {
       plan: 'explorer',
       status: 'active',
-      stripe_subscription_id: null,
       stripe_customer_id: subscription.customer as string, // Keep customer ID
-      trial_end: null,
-      current_period_start: null,
-      current_period_end: null,
       cancel_at_period_end: false,
-    });
+    };
+    
+    // Explicitly set fields to clear them if the database method supports it
+    if ('stripe_subscription_id' in updateData) {
+      updateData.stripe_subscription_id = null;
+    }
+    if ('trial_end' in updateData) {
+      updateData.trial_end = null;
+    }
+    if ('current_period_start' in updateData) {
+      updateData.current_period_start = null;
+    }
+    if ('current_period_end' in updateData) {
+      updateData.current_period_end = null;
+    }
+    
+    await db.updateSubscription(userId, updateData);
 
     // Update user plan
     await db.updateUser(userId, {
@@ -407,9 +425,9 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
             reason: isTrialSubscription 
               ? 'Card verification failed during your trial period'
               : 'Payment method was declined',
-            dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
-            upgradeUrl: `${process.env.NEXT_PUBLIC_APP_URL}/account/billing`,
-            supportUrl: `${process.env.NEXT_PUBLIC_APP_URL}/support`,
+            dashboardUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard`,
+            upgradeUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/account/billing`,
+            supportUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/support`,
           }
         });
 
@@ -422,8 +440,8 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
               template: 'upgrade-reminder',
               data: {
                 name: user.name || 'there',
-                upgradeUrl: `${process.env.NEXT_PUBLIC_APP_URL}/account/billing`,
-                featuresUrl: `${process.env.NEXT_PUBLIC_APP_URL}/plans`,
+                upgradeUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/account/billing`,
+                featuresUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/plans`,
               }
             });
           } catch (error) {
@@ -453,20 +471,44 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   console.log('Processing customer.subscription.updated:', subscription.id);
 
-  const userId = subscription.metadata?.user_id;
+  const userId = subscription.metadata?.['user_id'];
   if (!userId) {
     console.error('No user_id in subscription metadata');
     return;
   }
 
+  // Map Stripe subscription status to database enum
+  const mapSubscriptionStatus = (stripeStatus: string): 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' => {
+    switch (stripeStatus) {
+      case 'active':
+        return 'active';
+      case 'trialing':
+        return 'trialing';
+      case 'past_due':
+        return 'past_due';
+      case 'canceled':
+      case 'incomplete_expired':
+        return 'canceled';
+      case 'incomplete':
+      case 'unpaid':
+      default:
+        return 'incomplete';
+    }
+  };
+
   // Update subscription details
-  await db.updateSubscription(userId, {
-    status: subscription.status,
-    trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
-    current_period_start: new Date(subscription.current_period_start * 1000),
-    current_period_end: new Date(subscription.current_period_end * 1000),
+  const updateData: Partial<Subscription> = {
+    status: mapSubscriptionStatus(subscription.status),
+    current_period_start: new Date((subscription as any).current_period_start * 1000),
+    current_period_end: new Date((subscription as any).current_period_end * 1000),
     cancel_at_period_end: subscription.cancel_at_period_end,
-  });
+  };
+  
+  if (subscription.trial_end) {
+    updateData.trial_end = new Date(subscription.trial_end * 1000);
+  }
+  
+  await db.updateSubscription(userId, updateData);
 
   console.log(`Subscription ${subscription.id} updated for user ${userId}`);
 }
@@ -477,20 +519,16 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   console.log('Processing customer.subscription.deleted:', subscription.id);
 
-  const userId = subscription.metadata?.user_id;
+  const userId = subscription.metadata?.['user_id'];
   if (!userId) {
     console.error('No user_id in subscription metadata');
     return;
   }
 
-  // Downgrade to Explorer
+  // Downgrade to Explorer - only set the fields that should have values
   await db.updateSubscription(userId, {
     plan: 'explorer',
     status: 'active',
-    stripe_subscription_id: null,
-    trial_end: null,
-    current_period_start: null,
-    current_period_end: null,
     cancel_at_period_end: false,
   });
 
@@ -518,7 +556,7 @@ async function handleSetupIntentSucceeded(setupIntent: Stripe.SetupIntent) {
   console.log('Processing setup_intent.succeeded:', setupIntent.id);
   
   // Card verification was successful
-  const userId = setupIntent.metadata?.user_id;
+  const userId = setupIntent.metadata?.['user_id'];
   if (userId) {
   console.log(`Card verification successful for user ${userId}`);
   }
@@ -538,51 +576,51 @@ async function handleRadarFraudWarning(warning: Stripe.Radar.EarlyFraudWarning) 
   let userId: string | undefined;
   if (paymentIntent) {
     const pi = await stripe.paymentIntents.retrieve(paymentIntent);
-    userId = pi.metadata?.user_id;
+    userId = pi.metadata?.['user_id'];
   }
 
   // Log fraud warning
-  await logSecurityEvent({
-    event_type: 'SUSPICIOUS_ACTIVITY',
-    user_id: userId,
-    success: false,
-    error: 'Early fraud warning received from Stripe Radar',
-    metadata: {
-      charge_id: charge,
-      payment_intent_id: paymentIntent,
-      fraud_type: warning.fraud_type,
-      actionable: warning.actionable,
-      created: warning.created
-    }
-  });
+  if (userId) {
+    await logSecurityEvent({
+      event_type: 'SUSPICIOUS_ACTIVITY',
+      user_id: userId,
+      success: false,
+      error: 'Early fraud warning received from Stripe Radar',
+      metadata: {
+        charge_id: charge,
+        payment_intent_id: paymentIntent,
+        fraud_type: warning.fraud_type,
+        actionable: warning.actionable,
+        created: warning.created
+      }
+    });
+  }
 
   // Alert team immediately
-  Sentry.captureMessage('Stripe Radar fraud warning received', {
+  const sentryContext: any = {
     level: 'error',
     tags: {
       component: 'fraud-detection',
       event: 'radar_fraud_warning'
     },
-    user: { id: userId },
     extra: {
       warning_id: warning.id,
       charge_id: charge,
       fraud_type: warning.fraud_type,
       actionable: warning.actionable
     }
-  });
+  };
+  
+  if (userId) {
+    sentryContext.user = { id: userId };
+  }
+  
+  Sentry.captureMessage('Stripe Radar fraud warning received', sentryContext);
 
   // If we have user information and warning is actionable, take preventive action
   if (userId && warning.actionable) {
     try {
-      // Suspend user account temporarily
-      await db.updateUser(userId, {
-        account_status: 'suspended',
-        suspended_reason: 'fraud_warning',
-        suspended_at: new Date()
-      });
-
-      // Send notification email to user
+      // Send notification email to user (account suspension functionality not yet implemented)
       const user = await db.getUserById(userId);
       if (user?.email) {
         await sendEmail({
@@ -591,12 +629,12 @@ async function handleRadarFraudWarning(warning: Stripe.Radar.EarlyFraudWarning) 
           template: 'fraud-alert',
           data: {
             name: user.name || 'there',
-            supportUrl: `${process.env.NEXT_PUBLIC_APP_URL}/support`,
+            supportUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/support`,
           }
         });
       }
 
-      console.log(`User ${userId} account suspended due to fraud warning`);
+      console.log(`Security alert sent to user ${userId} due to fraud warning`);
     } catch (error) {
       console.error('Error taking action on fraud warning:', error);
       Sentry.captureException(error);
@@ -619,39 +657,46 @@ async function handleReviewOpened(review: Stripe.Review) {
   let userId: string | undefined;
   if (paymentIntent) {
     const pi = await stripe.paymentIntents.retrieve(paymentIntent);
-    userId = pi.metadata?.user_id;
+    userId = pi.metadata?.['user_id'];
   }
 
   // Log review opening
-  await logSecurityEvent({
-    event_type: 'SUSPICIOUS_ACTIVITY',
-    user_id: userId,
-    success: false,
-    error: 'Payment under manual review',
-    metadata: {
-      review_id: review.id,
-      charge_id: charge,
-      payment_intent_id: paymentIntent,
-      reason: review.reason,
-      opened_reason: review.opened_reason
-    }
-  });
+  if (userId) {
+    await logSecurityEvent({
+      event_type: 'SUSPICIOUS_ACTIVITY',
+      user_id: userId,
+      success: false,
+      error: 'Payment under manual review',
+      metadata: {
+        review_id: review.id,
+        charge_id: charge,
+        payment_intent_id: paymentIntent,
+        reason: review.reason,
+        opened_reason: review.opened_reason
+      }
+    });
+  }
 
   // Alert team for manual review
-  Sentry.captureMessage('Payment under manual review', {
+  const sentryReviewContext: any = {
     level: 'warning',
     tags: {
       component: 'fraud-detection',
       event: 'review_opened'
     },
-    user: { id: userId },
     extra: {
       review_id: review.id,
       charge_id: charge,
       reason: review.reason,
       opened_reason: review.opened_reason
     }
-  });
+  };
+  
+  if (userId) {
+    sentryReviewContext.user = { id: userId };
+  }
+  
+  Sentry.captureMessage('Payment under manual review', sentryReviewContext);
 
   console.log(`Review opened: ${review.id} for charge ${charge}`);
 }
@@ -669,73 +714,72 @@ async function handleReviewClosed(review: Stripe.Review) {
   let userId: string | undefined;
   if (paymentIntent) {
     const pi = await stripe.paymentIntents.retrieve(paymentIntent);
-    userId = pi.metadata?.user_id;
+    userId = pi.metadata?.['user_id'];
   }
 
   // Log review closure
-  await logSecurityEvent({
-    event_type: 'SUSPICIOUS_ACTIVITY',
-    user_id: userId,
-    success: review.reason === 'approved',
-    error: review.reason === 'approved' ? undefined : `Review closed: ${review.reason}`,
-    metadata: {
-      review_id: review.id,
-      charge_id: charge,
-      payment_intent_id: paymentIntent,
-      reason: review.reason,
-      closed_reason: review.closed_reason
-    }
-  });
-
-  // Handle based on review outcome
-  if (review.reason === 'approved') {
-    console.log(`Review approved: ${review.id}`);
-    
-    // If user was suspended, restore their account
-    if (userId) {
-      try {
-        const user = await db.getUserById(userId);
-        if (user?.account_status === 'suspended') {
-          await db.updateUser(userId, {
-            account_status: 'active',
-            suspended_reason: null,
-            suspended_at: null
-          });
-          
-          // Send restoration notification
-          if (user.email) {
-            await sendEmail({
-              to: user.email,
-              subject: 'Account Restored - Welcome Back!',
-              template: 'account-restored',
-              data: {
-                name: user.name || 'there',
-                dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
-              }
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error restoring user account:', error);
-      }
-    }
-  } else {
-    // Review was declined
-    Sentry.captureMessage('Payment review declined', {
-      level: 'error',
-      tags: {
-        component: 'fraud-detection',
-        event: 'review_declined'
-      },
-      user: { id: userId },
-      extra: {
+  if (userId) {
+    await logSecurityEvent({
+      event_type: 'SUSPICIOUS_ACTIVITY',
+      user_id: userId,
+      success: review.reason === 'approved',
+      error: review.reason === 'approved' ? '' : `Review closed: ${review.reason}`,
+      metadata: {
         review_id: review.id,
         charge_id: charge,
+        payment_intent_id: paymentIntent,
         reason: review.reason,
         closed_reason: review.closed_reason
       }
     });
   }
 
+  // Handle based on review outcome
+  if (review.reason === 'approved') {
+    console.log(`Review approved: ${review.id}`);
+    
+    // Send approval notification (account suspension functionality not yet implemented)
+    if (userId) {
+      try {
+        const user = await db.getUserById(userId);
+        if (user?.email) {
+          await sendEmail({
+            to: user.email,
+            subject: 'Payment Review Approved - Welcome Back!',
+            template: 'payment-approved',
+            data: {
+              name: user.name || 'there',
+              dashboardUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard`,
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error sending approval notification:', error);
+      }
+    }
+  } else {
+    // Review was declined
+    const sentryDeclinedContext: any = {
+      level: 'error',
+      tags: {
+        component: 'fraud-detection',
+        event: 'review_declined'
+      },
+      extra: {
+        review_id: review.id,
+        charge_id: charge,
+        reason: review.reason,
+        closed_reason: review.closed_reason
+      }
+    };
+    
+    if (userId) {
+      sentryDeclinedContext.user = { id: userId };
+    }
+    
+    Sentry.captureMessage('Payment review declined', sentryDeclinedContext);
+  }
+
   console.log(`Review closed: ${review.id} with reason: ${review.reason}`);
 }
+

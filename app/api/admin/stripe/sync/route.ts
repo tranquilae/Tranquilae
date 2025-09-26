@@ -4,13 +4,13 @@ import { supabaseAdmin, checkAdminAccess } from '@/lib/supabase'
 import { logPaymentEvent } from '@/lib/supabase-logger'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+const stripe = new Stripe(process.env['STRIPE_SECRET_KEY']!)
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+      process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
       {
         cookies: {
           get(name: string) {
@@ -29,6 +29,12 @@ export async function POST(request: NextRequest) {
     const isAdmin = await checkAdminAccess(user.id)
     if (!isAdmin) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+
+    // Check if admin client is available
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client not available')
+      return NextResponse.json({ error: 'Admin operations not configured' }, { status: 503 })
     }
 
     let syncedCount = 0
@@ -110,8 +116,8 @@ export async function POST(request: NextRequest) {
           const planFromPrice = stripeSubscription.items.data[0]?.price?.id
           let userPlan = subscription.plan
 
-          if (planFromPrice === process.env.STRIPE_PRICE_ID_PATHFINDER_MONTHLY ||
-              planFromPrice === process.env.STRIPE_PRICE_ID_PATHFINDER_YEARLY) {
+          if (planFromPrice === process.env['STRIPE_PRICE_ID_PATHFINDER_MONTHLY'] ||
+              planFromPrice === process.env['STRIPE_PRICE_ID_PATHFINDER_YEARLY']) {
             userPlan = 'pathfinder'
           } else {
             userPlan = 'explorer'
@@ -136,18 +142,23 @@ export async function POST(request: NextRequest) {
       }
 
       // Log the sync action
-      await logPaymentEvent({
+      const logData: any = {
         event_type: 'WEBHOOK_RECEIVED', // Using closest available type
         user_id: user.id,
         success: errorCount === 0,
-        error: errorCount > 0 ? `${errorCount} sync errors` : undefined,
         metadata: {
           admin_action: 'stripe_sync',
           synced_count: syncedCount,
           error_count: errorCount,
           total_processed: subscriptions.length
         }
-      })
+      }
+      
+      if (errorCount > 0) {
+        logData.error = `${errorCount} sync errors`
+      }
+      
+      await logPaymentEvent(logData)
 
       return NextResponse.json({
         success: true,
@@ -179,4 +190,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
 

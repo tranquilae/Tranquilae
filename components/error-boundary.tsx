@@ -22,11 +22,11 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error }
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Error caught by boundary:', error, errorInfo)
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return this.props.fallback || (
         <div className="min-h-screen flex items-center justify-center bg-background">
@@ -52,7 +52,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
             
             <button
-              onClick={() => this.setState({ hasError: false, error: undefined })}
+              onClick={() => this.setState({ hasError: false })}
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md transition-colors mb-4"
             >
               Try again

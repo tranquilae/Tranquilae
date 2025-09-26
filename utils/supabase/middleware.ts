@@ -3,16 +3,16 @@ import { type NextRequest, NextResponse } from "next/server";
 
 // Get and validate environment variables
 function getSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-                  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
-                  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+  const url = process.env['NEXT_PUBLIC_SUPABASE_URL']
+  const anonKey = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY'] ||
+                  process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] ||
+                  process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY']
 
   if (!url || !anonKey) {
     console.error('❌ Supabase Middleware Configuration Missing:', {
       url: !!url,
       anonKey: !!anonKey,
-      env: process.env.NODE_ENV
+      env: process.env['NODE_ENV']
     })
     throw new Error('Missing Supabase configuration for middleware client')
   }
@@ -69,7 +69,7 @@ export const updateSession = async (request: NextRequest) => {
   const { data: { user }, error } = await supabase.auth.getUser()
 
   // Log authentication status in development
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env['NODE_ENV'] === 'development') {
     console.log('🔐 Middleware Auth Check:', {
       hasUser: !!user,
       error: error?.message,

@@ -1,27 +1,18 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@/utils/supabase/server'
 import { supabaseAdmin, checkAdminAccess } from '@/lib/supabase'
 import { logPaymentEvent, logDatabaseEvent } from '@/lib/supabase-logger'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+const stripe = new Stripe(process.env['STRIPE_SECRET_KEY']!)
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return request.cookies.get(name)?.value
-          },
-        },
-      }
-    )
+    const supabase = await createClient()
 
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -39,6 +30,12 @@ export async function POST(
 
     if (!newPlan || !['explorer', 'pathfinder'].includes(newPlan)) {
       return NextResponse.json({ error: 'Invalid plan specified' }, { status: 400 })
+    }
+
+    // Check if admin client is available
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client not available')
+      return NextResponse.json({ error: 'Admin operations not configured' }, { status: 503 })
     }
 
     // Get subscription details
@@ -76,7 +73,7 @@ export async function POST(
       if (subscription.stripe_subscription_id) {
         if (newPlan === 'pathfinder') {
           // Upgrade to Pathfinder - modify Stripe subscription
-          const priceId = process.env.STRIPE_PRICE_ID_PATHFINDER_MONTHLY
+          const priceId = process.env['STRIPE_PRICE_ID_PATHFINDER_MONTHLY']
 
           if (!priceId) {
             return NextResponse.json({ 
@@ -84,12 +81,22 @@ export async function POST(
             }, { status: 500 })
           }
 
+          // Get current subscription first
+          const currentSubscription = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id)
+          const currentItemId = currentSubscription.items.data[0]?.id
+          
+          if (!currentItemId) {
+            return NextResponse.json({ 
+              error: 'Unable to find current subscription item to upgrade' 
+            }, { status: 500 })
+          }
+          
           stripeSubscription = await stripe.subscriptions.update(
             subscription.stripe_subscription_id,
             {
               items: [
                 {
-                  id: (await stripe.subscriptions.retrieve(subscription.stripe_subscription_id)).items.data[0]?.id,
+                  id: currentItemId,
                   price: priceId,
                 }
               ],
@@ -144,9 +151,10 @@ export async function POST(
       }
 
       if (stripeSubscription) {
-        subscriptionUpdate.current_period_start = new Date(stripeSubscription.current_period_start * 1000).toISOString()
-        subscriptionUpdate.current_period_end = new Date(stripeSubscription.current_period_end * 1000).toISOString()
-        subscriptionUpdate.cancel_at_period_end = stripeSubscription.cancel_at_period_end
+        const sub = stripeSubscription as any
+        subscriptionUpdate.current_period_start = new Date(sub.current_period_start * 1000).toISOString()
+        subscriptionUpdate.current_period_end = new Date(sub.current_period_end * 1000).toISOString()
+        subscriptionUpdate.cancel_at_period_end = sub.cancel_at_period_end
       }
 
       const { error: updateSubError } = await supabaseAdmin

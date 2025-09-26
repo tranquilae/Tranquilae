@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface Achievement {
   id: number;
@@ -30,6 +30,7 @@ export function AchievementNotification({ achievements, onDismiss }: Achievement
 
       return () => clearTimeout(timeout);
     }
+    return undefined;
   }, [achievements]);
 
   useEffect(() => {
@@ -45,18 +46,23 @@ export function AchievementNotification({ achievements, onDismiss }: Achievement
 
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [achievements.length]);
 
-  const handleDismiss = () => {
+  const handleDismiss = useCallback(() => {
     setIsVisible(false);
     setTimeout(onDismiss, 300); // Wait for animation to complete
-  };
+  }, [onDismiss]);
 
   if (!achievements.length || !isVisible) {
     return null;
   }
 
   const currentAchievement = achievements[currentIndex];
+
+  if (!currentAchievement) {
+    return null;
+  }
 
   return (
     <>

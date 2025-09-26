@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userId = neonUserResult[0].id;
+    const userId = neonUserResult[0]!['id'];
 
     // Get workout statistics
     const workoutStatsResult = await sql`
@@ -312,60 +312,60 @@ export async function GET(request: NextRequest) {
     `;
 
     const socialStats = socialStatsResult[0] || {
-      friends_count: 0,
-      shares_count: 0,
-      likes_received: 0,
-      user_rank: 1,
-      leaderboard: []
+      'friends_count': 0,
+      'shares_count': 0,
+      'likes_received': 0,
+      'user_rank': 1,
+      'leaderboard': []
     };
 
     const analyticsData = {
       workoutStats: {
-        totalWorkouts: parseInt(workoutStats.total_workouts) || 0,
-        totalDuration: parseInt(workoutStats.total_duration) || 0,
-        caloriesBurned: parseInt(workoutStats.calories_burned) || 0,
-        avgHeartRate: Math.round(parseFloat(workoutStats.avg_heart_rate)) || 0,
-        streak: parseInt(workoutStats.streak_days) || 0,
-        weeklyGoal: parseInt(workoutStats.weekly_workout_goal) || 4,
-        weeklyProgress: parseInt(workoutStats.weekly_progress) || 0,
+        totalWorkouts: parseInt(workoutStats['total_workouts']) || 0,
+        totalDuration: parseInt(workoutStats['total_duration']) || 0,
+        caloriesBurned: parseInt(workoutStats['calories_burned']) || 0,
+        avgHeartRate: Math.round(parseFloat(workoutStats['avg_heart_rate'])) || 0,
+        streak: parseInt(workoutStats['streak_days']) || 0,
+        weeklyGoal: parseInt(workoutStats['weekly_workout_goal']) || 4,
+        weeklyProgress: parseInt(workoutStats['weekly_progress']) || 0,
       },
       progressData: progressDataResult.map(row => ({
-        date: row.date,
-        workouts: parseInt(row.workouts) || 0,
-        duration: parseInt(row.duration) || 0,
-        calories: parseInt(row.calories) || 0,
-        weight: row.weight ? parseFloat(row.weight) : undefined,
-        mood: row.mood ? parseFloat(row.mood) : undefined,
+        date: row['date'],
+        workouts: parseInt(row['workouts']) || 0,
+        duration: parseInt(row['duration']) || 0,
+        calories: parseInt(row['calories']) || 0,
+        weight: row['weight'] ? parseFloat(row['weight']) : undefined,
+        mood: row['mood'] ? parseFloat(row['mood']) : undefined,
       })),
       workoutDistribution: workoutDistributionResult.map(row => ({
-        category: row.category,
-        count: parseInt(row.count) || 0,
-        duration: parseInt(row.duration) || 0,
-        calories: parseInt(row.calories) || 0,
-        color: row.color,
+        category: row['category'],
+        count: parseInt(row['count']) || 0,
+        duration: parseInt(row['duration']) || 0,
+        calories: parseInt(row['calories']) || 0,
+        color: row['color'],
       })),
       performanceMetrics: performanceMetricsResult.map(row => ({
-        metric: row.metric,
-        current: parseFloat(row.current) || 0,
-        previous: parseFloat(row.previous) || 0,
-        target: parseFloat(row.target) || 0,
-        trend: parseFloat(row.current) > parseFloat(row.previous) ? 'up' : 
-               parseFloat(row.current) < parseFloat(row.previous) ? 'down' : 'stable',
+        metric: row['metric'],
+        current: parseFloat(row['current']) || 0,
+        previous: parseFloat(row['previous']) || 0,
+        target: parseFloat(row['target']) || 0,
+        trend: parseFloat(row['current']) > parseFloat(row['previous']) ? 'up' : 
+               parseFloat(row['current']) < parseFloat(row['previous']) ? 'down' : 'stable',
       })),
       achievements: achievementsResult.map(row => ({
-        id: row.id,
-        title: row.title,
-        description: row.description,
-        unlockedAt: row.unlocked_at,
-        category: row.category,
-        icon: row.icon,
+        id: row['id'],
+        title: row['title'],
+        description: row['description'],
+        unlockedAt: row['unlocked_at'],
+        category: row['category'],
+        icon: row['icon'],
       })),
       socialStats: {
-        friendsCount: parseInt(socialStats.friends_count) || 0,
-        sharesCount: parseInt(socialStats.shares_count) || 0,
-        likesReceived: parseInt(socialStats.likes_received) || 0,
-        rank: parseInt(socialStats.user_rank) || 1,
-        leaderboard: socialStats.leaderboard || [],
+        friendsCount: parseInt(socialStats['friends_count']) || 0,
+        sharesCount: parseInt(socialStats['shares_count']) || 0,
+        likesReceived: parseInt(socialStats['likes_received']) || 0,
+        rank: parseInt(socialStats['user_rank']) || 1,
+        leaderboard: socialStats['leaderboard'] || [],
       },
     };
 
@@ -390,3 +390,4 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+

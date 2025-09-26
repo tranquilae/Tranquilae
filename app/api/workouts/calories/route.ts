@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 // GET /api/workouts/calories?activity=running&duration=30&weight=70
 export async function GET(req: Request) {
   try {
-    const key = process.env.APININJAS_API_KEY
+    const key = process.env['APININJAS_API_KEY']
     if (!key) return NextResponse.json({ error: 'API Ninjas not configured' }, { status: 500 })
 
     const { searchParams } = new URL(req.url)
@@ -36,4 +36,5 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: e?.message || 'Internal error' }, { status: 500 })
   }
 }
+
 

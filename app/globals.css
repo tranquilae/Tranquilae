@@ -5,76 +5,76 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Updated to Tranquilae color palette */
-  --background: #fdfbf7; /* Soft Cream */
-  --foreground: #2d3748;
-  --card: rgba(255, 255, 255, 0.8); /* Glass transparency effect */
-  --card-foreground: #2d3748;
-  --popover: rgba(255, 255, 255, 0.95);
-  --popover-foreground: #2d3748;
-  --primary: #6ba368; /* Nature Green */
+  /* Liquid Glass Design System - iOS 26 Inspired */
+  
+  /* Brand Colors */
+  --bg-cream: #FDFBF7;
+  --nature-green: #6DA06E;
+  --soft-blue: #7FB6E3;
+  --text-900: #0F1724;
+  --muted-600: #6B7280;
+  
+  /* Glass Surface Tokens */
+  --glass-tint: rgba(255,255,255,0.22);
+  --glass-border: rgba(255,255,255,0.35);
+  --glass-elevation-shadow: 0 6px 20px rgba(10, 12, 20, 0.06);
+  --glass-blur: 14px;
+  
+  /* Glass Gradients */
+  --glass-bg-primary: linear-gradient(180deg, rgba(255,255,255,0.48), rgba(255,255,255,0.36));
+  --glass-bg-secondary: linear-gradient(180deg, rgba(255,255,255,0.38), rgba(255,255,255,0.26));
+  
+  /* Legacy compatibility */
+  --background: var(--bg-cream);
+  --foreground: var(--text-900);
+  --card: var(--glass-tint);
+  --card-foreground: var(--text-900);
+  --primary: var(--nature-green);
   --primary-foreground: #ffffff;
-  --secondary: #a7c7e7; /* Soft Blue */
-  --secondary-foreground: #2d3748;
+  --secondary: var(--soft-blue);
+  --secondary-foreground: var(--text-900);
   --muted: rgba(253, 251, 247, 0.6);
-  --muted-foreground: #718096;
-  --accent: #a7c7e7; /* Soft Blue */
-  --accent-foreground: #2d3748;
+  --muted-foreground: var(--muted-600);
+  --accent: var(--soft-blue);
+  --accent-foreground: var(--text-900);
   --destructive: #e53e3e;
   --destructive-foreground: #ffffff;
-  --border: rgba(107, 163, 104, 0.2);
-  --input: rgba(255, 255, 255, 0.8);
-  --ring: #6ba368;
-  --chart-1: #6ba368;
-  --chart-2: #a7c7e7;
-  --chart-3: #81c784;
-  --chart-4: #90caf9;
-  --chart-5: #c8e6c9;
---radius: 1.25rem;
-  --sidebar: rgba(253, 251, 247, 0.95);
-  --sidebar-foreground: #2d3748;
-  --sidebar-primary: #6ba368;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #a7c7e7;
-  --sidebar-accent-foreground: #2d3748;
-  --sidebar-border: rgba(107, 163, 104, 0.2);
-  --sidebar-ring: #6ba368;
+  --border: var(--glass-border);
+  --input: var(--glass-tint);
+  --ring: var(--nature-green);
+  --radius: 0.875rem; /* 14px - iOS 26 standard */
 }
 
 .dark {
-  /* Dark mode variants maintaining the calm aesthetic */
-  --background: #1a202c;
-  --foreground: #fdfbf7;
-  --card: rgba(45, 55, 72, 0.8);
-  --card-foreground: #fdfbf7;
-  --popover: rgba(45, 55, 72, 0.95);
-  --popover-foreground: #fdfbf7;
-  --primary: #6ba368;
+  /* Dark Mode - Liquid Glass Design System */
+  
+  /* Dark Glass Surface Tokens */
+  --glass-tint: rgba(16,16,16,0.22);
+  --glass-border: rgba(255,255,255,0.15);
+  --glass-elevation-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  
+  /* Dark Glass Gradients */
+  --glass-bg-primary: linear-gradient(180deg, rgba(16,16,16,0.72), rgba(16,16,16,0.56));
+  --glass-bg-secondary: linear-gradient(180deg, rgba(16,16,16,0.62), rgba(16,16,16,0.46));
+  
+  /* Legacy compatibility */
+  --background: #0F0F0F;
+  --foreground: #FDFBF7;
+  --card: var(--glass-tint);
+  --card-foreground: #FDFBF7;
+  --primary: var(--nature-green);
   --primary-foreground: #ffffff;
-  --secondary: #a7c7e7;
-  --secondary-foreground: #1a202c;
-  --muted: rgba(26, 32, 44, 0.6);
-  --muted-foreground: #a0aec0;
-  --accent: #a7c7e7;
-  --accent-foreground: #1a202c;
+  --secondary: var(--soft-blue);
+  --secondary-foreground: #0F0F0F;
+  --muted: rgba(15, 15, 15, 0.6);
+  --muted-foreground: #9CA3AF;
+  --accent: var(--soft-blue);
+  --accent-foreground: #0F0F0F;
   --destructive: #fc8181;
-  --destructive-foreground: #1a202c;
-  --border: rgba(107, 163, 104, 0.3);
-  --input: rgba(45, 55, 72, 0.8);
-  --ring: #6ba368;
-  --chart-1: #6ba368;
-  --chart-2: #a7c7e7;
-  --chart-3: #81c784;
-  --chart-4: #90caf9;
-  --chart-5: #c8e6c9;
-  --sidebar: rgba(26, 32, 44, 0.95);
-  --sidebar-foreground: #fdfbf7;
-  --sidebar-primary: #6ba368;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #a7c7e7;
-  --sidebar-accent-foreground: #1a202c;
-  --sidebar-border: rgba(107, 163, 104, 0.3);
-  --sidebar-ring: #6ba368;
+  --destructive-foreground: #0F0F0F;
+  --border: var(--glass-border);
+  --input: var(--glass-tint);
+  --ring: var(--nature-green);
 }
 
 @theme inline {
@@ -132,34 +132,136 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", var(--font-sans), sans-serif;
   }
 
-  /* Added frosted glass utility classes */
-  .glass {
-    backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+  /* Liquid Glass Components - iOS 26 Inspired */
+  
+  /* Base Glass Card - Primary Surface */
+  .glass-card {
+    position: relative;
+    background: var(--glass-bg-primary);
+    backdrop-filter: blur(var(--glass-blur)) saturate(1.05);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.05);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-elevation-shadow);
+    border-radius: 14px;
+    transition: all 150ms ease;
+    overflow: hidden;
   }
-
-.glass-card {
-    backdrop-filter: saturate(180%) blur(20px);
-    background: rgba(255, 255, 255, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
-    border-radius: 1.5rem;
-    transition: transform 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+  
+  /* Glass Tint Overlay Effect */
+  .glass-tint::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(109,160,110,0.06), rgba(127,182,227,0.04));
+    pointer-events: none;
+    border-radius: inherit;
+    mix-blend-mode: overlay;
   }
+  
+  /* Hover Effects */
   .glass-card:hover {
-    background: rgba(255, 255, 255, 0.6);
-    transform: translateY(-1px);
-    box-shadow: 0 12px 44px rgba(0,0,0,0.14);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(10, 12, 20, 0.08);
+  }
+  
+  .glass-card:hover .glass-tint::before {
+    background: linear-gradient(135deg, rgba(109,160,110,0.08), rgba(127,182,227,0.06));
+  }
+  
+  /* Secondary Glass Surface */
+  .glass-card-secondary {
+    background: var(--glass-bg-secondary);
+  }
+  
+  /* Glass Button */
+  .glass-button {
+    background: var(--glass-bg-primary);
+    backdrop-filter: blur(var(--glass-blur)) saturate(1.05);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    transition: all 150ms ease;
+    font-weight: 500;
+  }
+  
+  .glass-button:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 16px rgba(10, 12, 20, 0.08);
+  }
+  
+  .glass-button:active {
+    transform: scale(0.98);
+  }
+  
+  /* Fallback for older browsers */
+  .glass-card {
+    background: rgba(255,255,255,0.92); /* fallback */
+  }
+  
+  @supports (backdrop-filter: blur(0)) {
+    .glass-card {
+      background: var(--glass-bg-primary);
+    }
+  }
+  
+  /* Input Glass Styling */
+  .glass-input {
+    background: var(--glass-bg-secondary);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    transition: all 150ms ease;
+  }
+  
+  .glass-input:focus {
+    border-color: var(--nature-green);
+    box-shadow: 0 0 0 3px rgba(109, 160, 110, 0.1);
+  }
+  
+  /* Accessibility: Reduce transparency mode */
+  .reduce-transparency .glass-card {
+    background: rgba(255,255,255,0.95) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(0,0,0,0.1) !important;
+    color: #0F1724 !important;
   }
 
-  .dark .glass-card {
-    background: rgba(45, 55, 72, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+  .reduce-transparency .dark .glass-card {
+    background: rgba(16,16,16,0.95) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    color: #FDFBF7 !important;
   }
 
-  .dark .glass-card {
-    background: rgba(45, 55, 72, 0.8);
-    border: 1px solid rgba(107, 163, 104, 0.3);
+  .reduce-transparency .glass-button {
+    background: rgba(255,255,255,0.95) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .reduce-transparency .glass-input {
+    background: rgba(255,255,255,0.95) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* High contrast focus indicators */
+  .reduce-transparency *:focus-visible {
+    outline: 3px solid #6DA06E !important;
+    outline-offset: 2px !important;
+  }
+
+  /* Screen reader only utility */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 }

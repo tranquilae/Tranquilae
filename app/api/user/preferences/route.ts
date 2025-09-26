@@ -54,40 +54,46 @@ export async function GET(request: NextRequest) {
     }
 
     const userData = userResult[0];
+    if (!userData) {
+      return NextResponse.json(
+        { success: false, error: { code: 'user_not_found', message: 'User data not found' } },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
       data: {
         user: {
-          id: userData.id,
-          email: userData.email,
-          fullName: userData.full_name,
-          plan: userData.plan,
-          timezone: userData.timezone,
-          unitsPreference: userData.units_preference,
-          createdAt: userData.created_at
+          id: userData['id'],
+          email: userData['email'],
+          fullName: userData['full_name'],
+          plan: userData['plan'],
+          timezone: userData['timezone'],
+          unitsPreference: userData['units_preference'],
+          createdAt: userData['created_at']
         },
         preferences: {
           notifications: {
-            workouts: userData.notification_workouts ?? true,
-            achievements: userData.notification_achievements ?? true,
-            reminders: userData.notification_reminders ?? true,
-            email: userData.notification_email ?? true,
-            push: userData.notification_push ?? true
+            workouts: userData['notification_workouts'] ?? true,
+            achievements: userData['notification_achievements'] ?? true,
+            reminders: userData['notification_reminders'] ?? true,
+            email: userData['notification_email'] ?? true,
+            push: userData['notification_push'] ?? true
           },
           privacy: {
-            profilePublic: userData.privacy_profile_public ?? false,
-            workoutHistoryPublic: userData.privacy_workout_history_public ?? false,
-            achievementsPublic: userData.privacy_achievements_public ?? true
+            profilePublic: userData['privacy_profile_public'] ?? false,
+            workoutHistoryPublic: userData['privacy_workout_history_public'] ?? false,
+            achievementsPublic: userData['privacy_achievements_public'] ?? true
           },
           fitness: {
-            weeklyWorkoutGoal: userData.weekly_workout_goal ?? 3,
-            preferredWorkoutTime: userData.preferred_workout_time,
-            preferredWorkoutDuration: userData.preferred_workout_duration ?? 30,
-            fitnessLevel: userData.fitness_level ?? 'intermediate',
-            workoutReminders: userData.workout_reminders ?? true
+            weeklyWorkoutGoal: userData['weekly_workout_goal'] ?? 3,
+            preferredWorkoutTime: userData['preferred_workout_time'],
+            preferredWorkoutDuration: userData['preferred_workout_duration'] ?? 30,
+            fitnessLevel: userData['fitness_level'] ?? 'intermediate',
+            workoutReminders: userData['workout_reminders'] ?? true
           },
-          lastUpdated: userData.preferences_updated_at
+          lastUpdated: userData['preferences_updated_at']
         }
       }
     });
@@ -99,7 +105,7 @@ export async function GET(request: NextRequest) {
         success: false, 
         error: { 
           code: 'server_error', 
-          message: process.env.NODE_ENV === 'production' 
+          message: process.env['NODE_ENV'] === 'production' 
             ? 'Internal server error' 
             : error instanceof Error ? error.message : 'Unknown error'
         } 
@@ -141,7 +147,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = neonUserResult[0].id;
+    const neonUser = neonUserResult[0];
+    if (!neonUser) {
+      return NextResponse.json(
+        { success: false, error: { code: 'user_not_found', message: 'Neon user not found' } },
+        { status: 404 }
+      );
+    }
+    const userId = neonUser['id'];
 
     // Update user basic info if provided
     if (userUpdates) {
@@ -224,7 +237,7 @@ export async function POST(request: NextRequest) {
         success: false, 
         error: { 
           code: 'server_error', 
-          message: process.env.NODE_ENV === 'production' 
+          message: process.env['NODE_ENV'] === 'production' 
             ? 'Internal server error' 
             : error instanceof Error ? error.message : 'Unknown error'
         } 
@@ -233,3 +246,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+

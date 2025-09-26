@@ -7,8 +7,8 @@ import { logSecurityEvent } from '@/lib/supabase-logger'
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+      process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
       {
         cookies: {
           get(name: string) {
@@ -38,6 +38,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Get recent audit logs
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Admin client not available' }, { status: 503 })
+    }
+    
     const { data: activityData, error: activityError } = await supabaseAdmin
       .from('audit_logs')
       .select('id, event_type, user_id, event_data, created_at')
@@ -56,4 +60,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
 

@@ -19,8 +19,8 @@ export function Diagnostics() {
     }
     
     // Check environment variables
-    results.push(`Site URL: ${process.env.NEXT_PUBLIC_SITE_URL || 'Not set'}`)
-    results.push(`Supabase URL: ${process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Not set'}`)
+    results.push(`Site URL: ${process.env['NEXT_PUBLIC_SITE_URL'] || 'Not set'}`)
+    results.push(`Supabase URL: ${process.env['NEXT_PUBLIC_SUPABASE_URL'] ? 'Set' : 'Not set'}`)
     
     // Check if images load
     if (typeof window !== 'undefined') {
@@ -38,7 +38,7 @@ export function Diagnostics() {
   }, [])
 
   // Only show in development
-  if (process.env.NODE_ENV !== 'development') {
+  if (process.env['NODE_ENV'] !== 'development') {
     return null
   }
 

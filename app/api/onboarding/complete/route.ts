@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
         user = await db.createUser({
           id: userId,
           email: supabaseUser.email || '',
-          name: supabaseUser.user_metadata?.name || supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || '',
+          name: supabaseUser.user_metadata?.['name'] || supabaseUser.user_metadata?.['full_name'] || supabaseUser.email?.split('@')[0] || '',
           onboarding_complete: false,
           plan: 'explorer'
         });
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
             data: {
               name: user.name || 'there',
               plan: plan,
-              dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+              dashboardUrl: `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard`
             }
           });
         } catch (emailError) {
@@ -296,3 +296,4 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+

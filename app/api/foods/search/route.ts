@@ -8,8 +8,8 @@ export async function GET(req: Request) {
     const query = (searchParams.get('query') || '').trim()
     if (!query) return NextResponse.json({ error: 'query is required' }, { status: 400 })
 
-    const appId = process.env.EDAMAM_FOOD_APP_ID
-    const appKey = process.env.EDAMAM_FOOD_APP_KEY
+    const appId = process.env['EDAMAM_FOOD_APP_ID']
+    const appKey = process.env['EDAMAM_FOOD_APP_KEY']
     if (!appId || !appKey) {
       return NextResponse.json({ error: 'Edamam Food API not configured' }, { status: 500 })
     }
@@ -31,4 +31,5 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: e?.message || 'Internal error' }, { status: 500 })
   }
 }
+
 

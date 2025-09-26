@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
         const serverClient = await createClient()
         const { data: { user } } = await serverClient.auth.getUser()
         if (!user) throw new Error('No user in session')
-        const created = await db.createUser({ id: user.id, email: user.email || '', name: user.email?.split('@')[0] || null, onboarding_complete: false })
+        const created = await db.createUser({ id: user.id, email: user.email || '', name: user.email?.split('@')[0] || '', onboarding_complete: false })
         const res = NextResponse.json(created)
         // Ensure cookie reflects incomplete onboarding
         res.cookies.set('onb', '0', { httpOnly: true, sameSite: 'lax', path: '/' })
@@ -108,3 +108,4 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: error?.message || 'Internal server error' }, { status: 500 })
   }
 }
+

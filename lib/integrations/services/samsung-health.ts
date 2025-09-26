@@ -40,10 +40,7 @@ export class SamsungHealthService implements HealthIntegrationService {
   async initiateOAuth(userId: string, scopes: string[]): Promise<{ authUrl: string; state: string }> {
     const oauthState = await createOAuthState(userId, this.serviceName, scopes);
     
-    const { generatePKCE } = await import('../oauth');
-    const { codeChallenge } = generatePKCE();
-    
-    const authUrl = OAuthUrlBuilders['samsung-health'](oauthState.state, codeChallenge);
+    const authUrl = OAuthUrlBuilders['samsung-health'](oauthState.state);
     
     return {
       authUrl,

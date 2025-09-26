@@ -40,10 +40,7 @@ export class GarminConnectService implements HealthIntegrationService {
   async initiateOAuth(userId: string, scopes: string[]): Promise<{ authUrl: string; state: string }> {
     const oauthState = await createOAuthState(userId, this.serviceName, scopes);
     
-    const { generatePKCE } = await import('../oauth');
-    const { codeChallenge } = generatePKCE();
-    
-    const authUrl = OAuthUrlBuilders['garmin-connect'](oauthState.state, codeChallenge);
+    const authUrl = OAuthUrlBuilders['garmin-connect'](oauthState.state);
     
     return {
       authUrl,
@@ -577,8 +574,9 @@ export class GarminConnectService implements HealthIntegrationService {
                 activityEvent.activityId
               );
               if (activityData) {
-                const transformed = this.transformExerciseData([activityData], []);
-                dataPoints.push(...transformed);
+                const tempDataPoints: HealthDataPoint[] = [];
+                this.transformExerciseData([activityData], tempDataPoints);
+                dataPoints.push(...tempDataPoints);
               }
             } catch (error) {
               console.error('Error fetching Garmin activity details:', error);
@@ -600,9 +598,11 @@ export class GarminConnectService implements HealthIntegrationService {
               );
               if (wellnessData) {
                 // Transform steps and calories from wellness data
-                const stepsData = this.transformStepsData([wellnessData], []);
-                const caloriesData = this.transformCaloriesData([wellnessData], []);
-                dataPoints.push(...stepsData, ...caloriesData);
+                const stepsDataPoints: HealthDataPoint[] = [];
+                const caloriesDataPoints: HealthDataPoint[] = [];
+                this.transformStepsData([wellnessData], stepsDataPoints);
+                this.transformCaloriesData([wellnessData], caloriesDataPoints);
+                dataPoints.push(...stepsDataPoints, ...caloriesDataPoints);
               }
             } catch (error) {
               console.error('Error fetching Garmin daily wellness data:', error);

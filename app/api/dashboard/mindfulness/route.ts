@@ -59,7 +59,11 @@ export async function POST(request: Request) {
     const { started_at = undefined, duration_minutes = 0, type = 'meditation', notes = null } = body || {}
 
     const { db } = await import('@/lib/database')
-    const created = await db.createMindfulnessSession(user.id, { started_at: started_at ? new Date(started_at) : undefined, duration_minutes, type, notes })
+    const sessionData: any = { duration_minutes, type, notes }
+    if (started_at) {
+      sessionData.started_at = new Date(started_at)
+    }
+    const created = await db.createMindfulnessSession(user.id, sessionData)
     return NextResponse.json(created)
   } catch (error: any) {
     console.error('Mindfulness API POST error:', error)
@@ -93,4 +97,5 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: error?.message || 'Unknown error' }, { status: 500 })
   }
 }
+
 

@@ -23,11 +23,15 @@ function Slider({
     [value, defaultValue, min, max],
   )
 
+  // Conditionally pass value and defaultValue only when they have values
+  const valueProps = value !== undefined ? { value } : {}
+  const defaultValueProps = defaultValue !== undefined ? { defaultValue } : {}
+
   return (
     <SliderPrimitive.Root
       data-slot="slider"
-      defaultValue={defaultValue}
-      value={value}
+      {...defaultValueProps}
+      {...valueProps}
       min={min}
       max={max}
       className={cn(

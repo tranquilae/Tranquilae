@@ -4,8 +4,8 @@ import { supabaseLogger } from '@/lib/supabase-logger'
 
 // Create server-side Supabase client
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+  process.env['SUPABASE_SECRET_KEY'] || process.env['SUPABASE_SERVICE_ROLE_KEY']!
 )
 
 export async function POST(request: NextRequest) {
@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
         event_type: 'LOGIN',
         success: false,
         error: 'Missing email or password',
-        ip_address: request.ip,
-        user_agent: request.headers.get('user-agent') || undefined
+        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+        user_agent: request.headers.get('user-agent') || 'unknown'
       })
 
       return NextResponse.json(
@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
         event_type: 'LOGIN',
         success: false,
         error: authError.message,
-        ip_address: request.ip,
-        user_agent: request.headers.get('user-agent') || undefined,
+        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+        user_agent: request.headers.get('user-agent') || 'unknown',
         metadata: {
           email: email
         }
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       
       try {
         // Check if DATABASE_URL is configured
-        if (!process.env.DATABASE_URL) {
+        if (!process.env['DATABASE_URL']) {
           console.warn('⚠️ DATABASE_URL not configured - skipping onboarding check')
           console.log('🎯 DATABASE_URL missing - defaulting to onboarding')
           redirectTo = '/onboarding'
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
           
           if (!userData) {
             try {
-              userData = await db.createUser({ id: authData.user.id, email: authData.user.email || '', name: authData.user.email?.split('@')[0] || null, onboarding_complete: false })
+              userData = await db.createUser({ id: authData.user.id, email: authData.user.email || '', name: authData.user.email?.split('@')[0] || '', onboarding_complete: false })
               console.log('🆕 Created minimal profile during login')
             } catch (createErr) {
               console.warn('Could not auto-create profile during login:', createErr)
@@ -121,8 +121,8 @@ export async function POST(request: NextRequest) {
           event_type: 'LOGIN',
           user_id: authData.user.id,
           success: true,
-          ip_address: request.ip,
-          user_agent: request.headers.get('user-agent') || undefined,
+          ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+          user_agent: request.headers.get('user-agent') || 'unknown',
           metadata: {
             email: authData.user.email,
             email_confirmed: authData.user.email_confirmed_at !== null,
@@ -159,8 +159,8 @@ export async function POST(request: NextRequest) {
       event_type: 'LOGIN',
       success: false,
       error: error.message,
-      ip_address: request.ip,
-      user_agent: request.headers.get('user-agent') || undefined
+      ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+      user_agent: request.headers.get('user-agent') || 'unknown'
     })
 
     return NextResponse.json(
@@ -169,3 +169,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+

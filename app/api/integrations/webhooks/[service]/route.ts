@@ -10,11 +10,11 @@ import { HealthServiceName } from '@/lib/integrations/types';
 
 // Service-specific webhook verification
 const WEBHOOK_SECRETS = {
-  'google-fit': process.env.GOOGLE_FIT_WEBHOOK_SECRET,
-  'fitbit': process.env.FITBIT_WEBHOOK_SECRET,
-  'apple-health': process.env.APPLE_HEALTH_WEBHOOK_SECRET,
-  'samsung-health': process.env.SAMSUNG_HEALTH_WEBHOOK_SECRET,
-  'garmin-connect': process.env.GARMIN_CONNECT_WEBHOOK_SECRET,
+  'google-fit': process.env['GOOGLE_FIT_WEBHOOK_SECRET'],
+  'fitbit': process.env['FITBIT_WEBHOOK_SECRET'],
+  'apple-health': process.env['APPLE_HEALTH_WEBHOOK_SECRET'],
+  'samsung-health': process.env['SAMSUNG_HEALTH_WEBHOOK_SECRET'],
+  'garmin-connect': process.env['GARMIN_CONNECT_WEBHOOK_SECRET'],
 } as const;
 
 export async function POST(

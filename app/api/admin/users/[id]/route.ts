@@ -10,8 +10,8 @@ export async function GET(
 ) {
   try {
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+      process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
       {
         cookies: {
           get(name: string) {
@@ -38,6 +38,12 @@ export async function GET(
         metadata: { endpoint: `/api/admin/users/${params.id}` }
       })
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+
+    // Check if admin client is available
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client not available')
+      return NextResponse.json({ error: 'Admin operations not configured' }, { status: 503 })
     }
 
     // Get user details including subscription info
@@ -99,8 +105,8 @@ export async function PUT(
 ) {
   try {
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+      process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
       {
         cookies: {
           get(name: string) {
@@ -119,6 +125,12 @@ export async function PUT(
     const isAdmin = await checkAdminAccess(user.id)
     if (!isAdmin) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+
+    // Check if admin client is available
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client not available')
+      return NextResponse.json({ error: 'Admin operations not configured' }, { status: 503 })
     }
 
     const body = await request.json()
@@ -192,8 +204,8 @@ export async function DELETE(
 ) {
   try {
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+      process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'] || process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
       {
         cookies: {
           get(name: string) {
@@ -215,7 +227,7 @@ export async function DELETE(
     }
 
     // Check if user is super admin for deletions
-    const superAdmins = process.env.SUPER_ADMIN_USER_IDS?.split(',') || []
+    const superAdmins = process.env['SUPER_ADMIN_USER_IDS']?.split(',') || []
     if (!superAdmins.includes(user.id)) {
       return NextResponse.json({ 
         error: 'Super admin privileges required for user deletion' 
@@ -227,6 +239,12 @@ export async function DELETE(
       return NextResponse.json({ 
         error: 'Cannot delete your own account' 
       }, { status: 400 })
+    }
+
+    // Check if admin client is available
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client not available')
+      return NextResponse.json({ error: 'Admin operations not configured' }, { status: 503 })
     }
 
     // Get user data before deletion for logging

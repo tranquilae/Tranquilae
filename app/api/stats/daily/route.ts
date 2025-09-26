@@ -23,9 +23,9 @@ export async function GET(request: NextRequest) {
     const dayEnd = new Date(dayStart)
     dayEnd.setUTCDate(dayStart.getUTCDate() + 1)
 
-    if (!process.env.DATABASE_URL) return NextResponse.json({ stats: {} })
+    if (!process.env['DATABASE_URL']) return NextResponse.json({ stats: {} })
     const { neon } = await import('@neondatabase/serverless')
-    const sql = neon(process.env.DATABASE_URL)
+    const sql = neon(process.env['DATABASE_URL'])
 
     const s = await sql`
       SELECT 
@@ -40,15 +40,15 @@ export async function GET(request: NextRequest) {
 
     const stats = {
       dailyCalorieGoal: 0, // goals are fetched separately by hook
-      consumedCalories: Number(s?.[0]?.calories || 0),
-      burnedCalories: Number(s?.[0]?.burned || 0),
-      steps: Number(s?.[0]?.steps || 0),
+      consumedCalories: Number(s?.[0]?.['calories'] || 0),
+      burnedCalories: Number(s?.[0]?.['burned'] || 0),
+      steps: Number(s?.[0]?.['steps'] || 0),
       stepsGoal: 0,
-      waterGlasses: Number(s?.[0]?.water || 0),
+      waterGlasses: Number(s?.[0]?.['water'] || 0),
       waterGoal: 0,
-      sleepHours: Number(s?.[0]?.sleep || 0),
+      sleepHours: Number(s?.[0]?.['sleep'] || 0),
       sleepGoal: 0,
-      activeMinutes: Number(s?.[0]?.active_minutes || 0),
+      activeMinutes: Number(s?.[0]?.['active_minutes'] || 0),
       activeGoal: 0,
       macros: {
         carbs: { consumed: 0, goal: 0 },
@@ -63,4 +63,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ stats: {} })
   }
 }
+
 

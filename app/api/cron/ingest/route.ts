@@ -4,11 +4,11 @@ export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    const site = process.env.NEXT_PUBLIC_SITE_URL
-    const token = process.env.ADMIN_IMPORT_TOKEN
+    const site = process.env['NEXT_PUBLIC_SITE_URL']
+    const token = process.env['ADMIN_IMPORT_TOKEN']
     if (!site || !token) return NextResponse.json({ error: 'Missing env' }, { status: 500 })
 
-    const seedsEnv = process.env.ADMIN_INGEST_SEEDS || ''
+    const seedsEnv = process.env['ADMIN_INGEST_SEEDS'] || ''
     const seeds = seedsEnv
       ? seedsEnv.split(',').map(s => s.trim()).filter(Boolean)
       : [
@@ -16,9 +16,9 @@ export async function GET() {
           'https://www.fitnessblender.com/videos?focus[]=1&focus[]=2&focus[]=3&focus[]=4'
         ]
 
-    const depth = Number(process.env.ADMIN_INGEST_DEPTH || 2)
-    const delayMs = Number(process.env.ADMIN_INGEST_DELAY_MS || 300)
-    const maxPages = Number(process.env.ADMIN_INGEST_MAXPAGES || 500)
+    const depth = Number(process.env['ADMIN_INGEST_DEPTH'] || 2)
+    const delayMs = Number(process.env['ADMIN_INGEST_DELAY_MS'] || 300)
+    const maxPages = Number(process.env['ADMIN_INGEST_MAXPAGES'] || 500)
 
     const res = await fetch(`${site}/api/admin/exercises/media/ingest`, {
       method: 'POST',
@@ -36,4 +36,5 @@ export async function GET() {
     return NextResponse.json({ error: e?.message || 'Internal error' }, { status: 500 })
   }
 }
+
 

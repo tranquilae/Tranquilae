@@ -5,17 +5,17 @@ let sql: any = null;
 let isDatabaseAvailable = false;
 
 try {
-  if (!process.env.DATABASE_URL) {
+  if (!process.env['DATABASE_URL']) {
     console.warn('❌ DATABASE_URL is not set!')
     console.warn('📝 Please configure it in .env.local or Vercel environment variables')
     console.warn('🔗 Get your connection string from: https://console.neon.tech/app/projects')
     console.warn('⚠️ Running in offline mode - some features may use fallback data')
-  } else if (process.env.DATABASE_URL.includes('your_password_here')) {
+  } else if (process.env['DATABASE_URL'].includes('your_password_here')) {
     console.warn('❌ DATABASE_URL contains placeholder values!')
     console.warn('📝 Please set your real Neon database connection string')
     console.warn('⚠️ Running in offline mode - some features may use fallback data')
   } else {
-    sql = neon(process.env.DATABASE_URL);
+    sql = neon(process.env['DATABASE_URL']);
     isDatabaseAvailable = true;
     console.log('✅ Database connection configured successfully');
   }
@@ -421,6 +421,54 @@ export const migrations = {
     await sql`CREATE INDEX IF NOT EXISTS oauth_states_user_id_idx ON oauth_states(user_id)`;
     await sql`CREATE INDEX IF NOT EXISTS oauth_states_state_idx ON oauth_states(state)`;
     await sql`CREATE INDEX IF NOT EXISTS oauth_states_expires_idx ON oauth_states(expires_at)`;
+  },
+
+  // Workouts tables (workout logs and exercise media)
+  async createWorkoutsTables() {
+    // Workout logs table
+    await sql`
+      CREATE TABLE IF NOT EXISTS workout_logs (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        date DATE NOT NULL,
+        duration_min INTEGER,
+        calories INTEGER,
+        type TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS workout_logs_user_id_idx ON workout_logs(user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS workout_logs_date_idx ON workout_logs(date)`;
+
+    // Exercise media table
+    await sql`
+      CREATE TABLE IF NOT EXISTS exercise_media (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT UNIQUE NOT NULL,
+        video_url TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS exercise_media_name_idx ON exercise_media(name)`;
+  },
+
+  // Meals table
+  async createMealsTable() {
+    await sql`
+      CREATE TABLE IF NOT EXISTS meals (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+        date DATE NOT NULL,
+        name TEXT NOT NULL,
+        time TEXT,
+        type VARCHAR(20) NOT NULL CHECK (type IN ('breakfast','lunch','dinner','snack')),
+        calories INTEGER NOT NULL DEFAULT 0,
+        foods JSONB NOT NULL DEFAULT '[]',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS meals_user_date_idx ON meals(user_id, date)`;
   },
 
   // Run all migrations
@@ -881,41 +929,6 @@ export const db = {
       VALUES (${conversation_id}, ${'user'}, ${content}) RETURNING id
     `;
     return { conversation_id, message_id: msg[0].id as string };
-  },
-
-  // Workouts schema
-  async createWorkoutsTables() {
-    await sql`
-      CREATE TABLE IF NOT EXISTS workouts (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID NOT NULL REFERENCES profiles(user_id) ON DELETE CASCADE,
-        name TEXT NOT NULL,
-        type TEXT,
-        scheduled_at TIMESTAMPTZ,
-        duration_min INTEGER,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )`;
-    await sql`
-      CREATE TABLE IF NOT EXISTS workout_exercises (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        workout_id UUID NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,
-        name TEXT NOT NULL,
-        sets INTEGER NOT NULL DEFAULT 3,
-        reps INTEGER NOT NULL DEFAULT 10,
-        rest INTEGER NOT NULL DEFAULT 60
-      )`;
-    await sql`
-      CREATE TABLE IF NOT EXISTS workout_logs (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID NOT NULL REFERENCES profiles(user_id) ON DELETE CASCADE,
-        name TEXT NOT NULL,
-        date DATE NOT NULL,
-        duration_min INTEGER,
-        calories INTEGER,
-        type TEXT
-      )`;
-    await sql`CREATE INDEX IF NOT EXISTS workouts_user_idx ON workouts(user_id)`;
-    await sql`CREATE INDEX IF NOT EXISTS workout_logs_user_date_idx ON workout_logs(user_id, date)`;
   },
 
   // Check-in ops

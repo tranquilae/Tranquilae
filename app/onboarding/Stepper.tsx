@@ -48,31 +48,6 @@ export default function OnboardingStepper() {
   const [step, setStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!authLoading && !user) {
-      console.log('Onboarding - No user, redirecting to login');
-      router.push('/auth/login?redirectTo=/onboarding');
-    }
-  }, [user, authLoading, router]);
-
-  // Show loading while auth is being checked
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f5f5f0] via-green-50 to-blue-50">
-        <div className="animate-pulse">
-          <div className="h-8 w-64 bg-gray-200 rounded mb-4"></div>
-          <div className="h-4 w-48 bg-gray-200 rounded"></div>
-        </div>
-      </div>
-    );
-  }
-
-  // Don't render if no user (will redirect)
-  if (!user) {
-    return null;
-  }
   
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     goals: [],
@@ -82,6 +57,14 @@ export default function OnboardingStepper() {
     selectedPlan: null,
     paymentStatus: null,
   });
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      console.log('Onboarding - No user, redirecting to login');
+      router.push('/auth/login?redirectTo=/onboarding');
+    }
+  }, [user, authLoading, router]);
 
   // Load progress from localStorage on mount
   useEffect(() => {
@@ -95,7 +78,7 @@ export default function OnboardingStepper() {
         console.error('Error parsing saved onboarding progress:', e);
       }
     }
-  }, []);
+  }, [onboardingData]);
 
   // Save progress to localStorage and server
   const saveProgress = useCallback(async (newStep: number, newData: Partial<OnboardingData>) => {
@@ -115,6 +98,23 @@ export default function OnboardingStepper() {
       // Don't block the UI for save errors - they're not critical
     }
   }, [onboardingData, router]);
+
+  // Show loading while auth is being checked
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f5f5f0] via-green-50 to-blue-50">
+        <div className="animate-pulse">
+          <div className="h-8 w-64 bg-gray-200 rounded mb-4"></div>
+          <div className="h-4 w-48 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if no user (will redirect)
+  if (!user) {
+    return null;
+  }
 
   const nextStep = async (data?: any) => {
     setError(null);
@@ -215,6 +215,11 @@ export default function OnboardingStepper() {
   }
 
   const currentStep = steps[step];
+  
+  if (!currentStep) {
+    return null; // or redirect to error page
+  }
+  
   const StepComponent = currentStep.component;
   const progressPercentage = ((step) / (steps.length - 1)) * 100;
   
@@ -237,7 +242,7 @@ export default function OnboardingStepper() {
               Step {step + 1} of {steps.length}
             </div>
             <div className="text-sm text-gray-600">
-              {currentStep.title}
+              {currentStep?.title}
             </div>
           </div>
           <Progress value={progressPercentage} className="h-2" />

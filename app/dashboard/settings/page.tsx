@@ -1,4 +1,6 @@
 'use client';
+// Prevent prerendering of dashboard pages
+export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
@@ -115,10 +117,13 @@ export default function SettingsPage() {
 
   const updatePreferences = (section: keyof UserPreferences, updates: any) => {
     if (preferences) {
+      const currentSection = preferences[section];
+      const sectionData = (typeof currentSection === 'object' && currentSection !== null) ? currentSection : {};
+      
       setPreferences({
         ...preferences,
         [section]: {
-          ...preferences[section],
+          ...sectionData,
           ...updates
         }
       });

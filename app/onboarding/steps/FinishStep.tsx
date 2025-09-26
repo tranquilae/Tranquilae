@@ -2,8 +2,21 @@
 
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Player } from '@lottiefiles/react-lottie-player';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
+
+// Dynamic import to prevent SSR issues
+const Player = dynamic(
+  () => import('@lottiefiles/react-lottie-player').then(module => module.Player),
+  { 
+    ssr: false, 
+    loading: () => (
+      <div className="w-50 h-50 flex items-center justify-center bg-gradient-to-br from-green-100 to-emerald-100 rounded-full">
+        <div className="text-6xl">🎉</div>
+      </div>
+    )
+  }
+);
 import { CheckCircle, AlertTriangle, Sparkles } from 'lucide-react';
 
 interface FinishStepProps {

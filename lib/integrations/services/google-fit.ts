@@ -216,9 +216,9 @@ export class GoogleFitService implements HealthIntegrationService {
           timestamp,
           metadata: {
             source: 'google-fit',
-            dataSourceId: data.dataSourceId,
             confidence: 1.0,
             additionalData: {
+              dataSourceId: data.dataSourceId,
               startTimeNanos: point.startTimeNanos,
               endTimeNanos: point.endTimeNanos,
               dataTypeName: point.dataTypeName

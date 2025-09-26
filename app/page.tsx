@@ -8,12 +8,16 @@ import { FAQSection } from "@/components/homepage/faq-section"
 import { TestimonialsSection } from "@/components/homepage/testimonials-section"
 import { Footer } from "@/components/homepage/footer"
 import { Diagnostics } from "@/components/diagnostics"
+import AccessibilityControls from "@/components/ui/accessibility-controls"
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/10">
+    <div className="min-h-screen bg-cream relative">
+      {/* Liquid Glass Background - Subtle nature gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-nature-50/30 via-transparent to-softblue-50/20 pointer-events-none" />
+      
       <Header />
-      <div>
+      <main className="relative">
         <HeroSection />
         <FeaturesSection />
         <AdditionalFeaturesSection />
@@ -21,9 +25,10 @@ export default function HomePage() {
         <TestimonialHeroSection />
         <FAQSection />
         <TestimonialsSection />
-      </div>
+      </main>
       <Footer />
       <Diagnostics />
+      <AccessibilityControls />
     </div>
   )
 }

@@ -13,8 +13,8 @@ export async function GET() {
 
     const { db } = await import('@/lib/database')
     const messages = await db.listAIMessages(user.id)
-    const grokConfigured = !!(process.env.GROK_API_KEY || process.env.XAI_API_KEY)
-    const openaiConfigured = !!process.env.OPENAI_API_KEY
+    const grokConfigured = !!(process.env['GROK_API_KEY'] || process.env['XAI_API_KEY'])
+    const openaiConfigured = !!process.env['OPENAI_API_KEY']
     return NextResponse.json({ userId: user.id, messages, provider_status: { grokConfigured, openaiConfigured } })
   } catch (error: any) {
     console.error('AI Coach API error:', error)
@@ -32,8 +32,8 @@ export async function POST(request: Request) {
 
     const body = await request.json()
 
-    const grokConfigured = !!(process.env.GROK_API_KEY || process.env.XAI_API_KEY)
-    const openaiConfigured = !!process.env.OPENAI_API_KEY
+    const grokConfigured = !!(process.env['GROK_API_KEY'] || process.env['XAI_API_KEY'])
+    const openaiConfigured = !!process.env['OPENAI_API_KEY']
     if (!grokConfigured && !openaiConfigured) {
       return NextResponse.json({ error: 'No AI provider configured' }, { status: 501 })
     }
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     // Try Grok first (primary)
     let savedAssistant = false
     try {
-      const grokKey = process.env.GROK_API_KEY || process.env.XAI_API_KEY
+      const grokKey = process.env['GROK_API_KEY'] || process.env['XAI_API_KEY']
       if (grokKey) {
         const grokRes = await fetch('https://api.x.ai/v1/chat/completions', {
           method: 'POST',
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
             const { db } = await import('@/lib/database')
             // Save assistant directly
             const { neon } = await import('@neondatabase/serverless')
-            const sql = neon(process.env.DATABASE_URL!)
+            const sql = neon(process.env['DATABASE_URL']!)
             await sql`INSERT INTO ai_messages (conversation_id, role, content) VALUES (${result.conversation_id}, ${'assistant'}, ${assistant})`
             savedAssistant = true
           }
@@ -84,15 +84,15 @@ export async function POST(request: Request) {
     // Fallback to OpenAI if Grok not saved and we have budget
     if (!savedAssistant) {
       try {
-        const openaiKey = process.env.OPENAI_API_KEY
+        const openaiKey = process.env['OPENAI_API_KEY']
         if (openaiKey) {
           // Check plan and budget
           const { db } = await import('@/lib/database')
           const userData = await db.getUserById(user.id)
           const plan = userData?.plan || 'explorer'
           const isExplorer = plan === 'explorer'
-          const maxTokens = Number(process.env.OPENAI_MAX_TOKENS || 0)
-          const monthlyBudget = Number(process.env.OPENAI_MONTHLY_BUDGET || 0)
+          const maxTokens = Number(process.env['OPENAI_MAX_TOKENS'] || 0)
+          const monthlyBudget = Number(process.env['OPENAI_MONTHLY_BUDGET'] || 0)
 
           let withinBudget = true
           if (isExplorer && (maxTokens > 0 || monthlyBudget > 0)) {
@@ -110,7 +110,7 @@ export async function POST(request: Request) {
                 'Authorization': `Bearer ${openaiKey}`
               },
               body: JSON.stringify({
-                model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+                model: process.env['OPENAI_MODEL'] || 'gpt-4o-mini',
                 messages: [
                   { role: 'system', content: 'You are a helpful health coach.' },
                   { role: 'user', content }
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
                 const tokens = Number(data?.usage?.total_tokens || Math.ceil((content.length + assistant.length) / 4))
                 await db.addAIUsage(user.id, 'openai', tokens)
                 const { neon } = await import('@neondatabase/serverless')
-                const sql = neon(process.env.DATABASE_URL!)
+                const sql = neon(process.env['DATABASE_URL']!)
                 await sql`INSERT INTO ai_messages (conversation_id, role, content) VALUES (${result.conversation_id}, ${'assistant'}, ${assistant})`
                 savedAssistant = true
               }
@@ -142,4 +142,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error?.message || 'Unknown error' }, { status: 500 })
   }
 }
+
 

@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Logo } from "@/components/logo"
@@ -142,7 +143,7 @@ export function AuthForm({ className, type, title, subtitle, ...props }: AuthFor
           const { error: resetError } = await supabase.auth.resetPasswordForEmail(
             resetEmail,
             {
-              redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/auth/callback?redirect_to=/auth/reset-password`,
+              redirectTo: `${process.env['NEXT_PUBLIC_SITE_URL'] || window.location.origin}/auth/callback?redirect_to=/auth/reset-password`,
             }
           )
           
@@ -380,10 +381,11 @@ export function AuthForm({ className, type, title, subtitle, ...props }: AuthFor
           {/* Hero Image Section */}
           <div className="relative hidden bg-gradient-to-br from-primary/5 to-secondary/10 md:block overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/20" />
-            <img
+            <Image
               src="/chris-lee-70l1tDAI6rM.jpg"
               alt="Tranquilae Wellness"
-              className="absolute inset-0 h-full w-full object-cover opacity-80"
+              fill
+              className="object-cover opacity-80"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
             

@@ -16,18 +16,23 @@ export async function POST(request: Request) {
     }
 
     const { neon } = await import('@neondatabase/serverless')
-    if (!process.env.DATABASE_URL) return NextResponse.json({ error: 'DB not configured' }, { status: 500 })
-    const sql = neon(process.env.DATABASE_URL)
+    if (!process.env['DATABASE_URL']) return NextResponse.json({ error: 'DB not configured' }, { status: 500 })
+    const sql = neon(process.env['DATABASE_URL'])
 
     // Verify conversation belongs to user
     const conv = await sql`SELECT id FROM ai_conversations WHERE id = ${conversation_id} AND user_id = ${user.id}`
-    if (!conv[0]) return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
+    if (!conv || !conv[0]) return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
 
     const inserted = await sql`INSERT INTO ai_messages (conversation_id, role, content) VALUES (${conversation_id}, ${'assistant'}, ${content}) RETURNING id`
-    return NextResponse.json({ success: true, message_id: inserted[0].id })
+    const insertedRow = inserted[0];
+    if (!insertedRow) {
+      return NextResponse.json({ error: 'Failed to insert message' }, { status: 500 });
+    }
+    return NextResponse.json({ success: true, message_id: insertedRow['id'] })
   } catch (e: any) {
     console.error('Save assistant message error:', e)
     return NextResponse.json({ error: e?.message || 'Internal error' }, { status: 500 })
   }
 }
+
 

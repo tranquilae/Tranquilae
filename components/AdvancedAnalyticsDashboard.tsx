@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import {
   LineChart,
@@ -40,7 +40,6 @@ import {
   LineChart as LineChartIcon,
   Download,
   Filter,
-  DateRange,
   Share2,
 } from 'lucide-react';
 
@@ -115,13 +114,7 @@ export function AdvancedAnalyticsDashboard() {
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['workouts', 'duration', 'calories']);
   const [comparisonMode, setComparisonMode] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      loadAnalyticsData();
-    }
-  }, [user, timeRange]);
-
-  const loadAnalyticsData = async () => {
+  const loadAnalyticsData = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`/api/analytics/dashboard?timeRange=${timeRange}`);
@@ -134,7 +127,13 @@ export function AdvancedAnalyticsDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeRange]);
+
+  useEffect(() => {
+    if (user) {
+      loadAnalyticsData();
+    }
+  }, [user, timeRange, loadAnalyticsData]);
 
   const chartData = useMemo(() => {
     if (!data?.progressData) return [];

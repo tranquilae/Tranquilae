@@ -1,5 +1,10 @@
+'use client';
+
 import React from 'react'
 import { Button } from "@/components/ui/button"
+
+// Prevent prerendering of dynamic pages
+export const dynamic = 'force-dynamic';
 import { Card, CardContent } from "@/components/ui/card"
 import { Activity, Clock, Trophy, Users, CheckCircle, Play } from "lucide-react"
 import { Header } from "@/components/homepage/header"

@@ -7,7 +7,7 @@ import { logPaymentEvent, logSecurityEvent } from '@/lib/supabase-logger';
 import { createClient } from '@/utils/supabase/server';
 import * as Sentry from '@sentry/nextjs';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripe = new Stripe(process.env['STRIPE_SECRET_KEY']!);
 
 /**
  * Create Stripe Checkout Session for Pathfinder subscription with £0 verification
@@ -149,8 +149,8 @@ export async function POST(request: NextRequest) {
 
     // Get price ID from environment
     const priceId = plan === 'monthly' 
-      ? process.env.STRIPE_PRICE_ID_PATHFINDER_MONTHLY
-      : process.env.STRIPE_PRICE_ID_PATHFINDER_YEARLY;
+      ? process.env['STRIPE_PRICE_ID_PATHFINDER_MONTHLY']
+      : process.env['STRIPE_PRICE_ID_PATHFINDER_YEARLY'];
 
     if (!priceId) {
       console.error(`Missing price ID for plan: ${plan}`);
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email,
-        name: user.name || undefined,
+        name: user.name || '',
         metadata: {
           user_id: userId,
         },
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
       // Update existing customer if needed
       await stripe.customers.update(customerId, {
         email: user.email,
-        name: user.name || undefined,
+        name: user.name || '',
       });
     }
 
@@ -236,8 +236,8 @@ export async function POST(request: NextRequest) {
       
       allow_promotion_codes: true,
       
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/checkout/cancel`,
+      success_url: `${process.env['NEXT_PUBLIC_APP_URL']}/api/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env['NEXT_PUBLIC_APP_URL']}/api/checkout/cancel`,
       
       metadata: {
         user_id: userId,
@@ -306,7 +306,7 @@ export async function POST(request: NextRequest) {
         operation: 'create-session',
         error_type: error.type || 'unknown'
       },
-      user: { id: userId },
+      user: { id: userId || 'unknown' },
       extra: {
         stripe_error_type: error.type,
         stripe_error_code: error.code,
@@ -327,3 +327,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+

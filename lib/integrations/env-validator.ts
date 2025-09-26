@@ -121,7 +121,7 @@ export function getDisabledHealthServices(): HealthServiceName[] {
  * Checks if integration token encryption key is configured
  */
 export function isIntegrationEncryptionConfigured(): boolean {
-  return isValidEnvVar(process.env.INTEGRATION_TOKEN_ENCRYPTION_KEY);
+  return isValidEnvVar(process.env['INTEGRATION_TOKEN_ENCRYPTION_KEY']);
 }
 
 /**

@@ -11,12 +11,12 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!process.env.DATABASE_URL) {
+    if (!process.env['DATABASE_URL']) {
       return NextResponse.json({ error: 'Server database not configured' }, { status: 500 })
     }
 
     const { neon } = await import('@neondatabase/serverless')
-    const sql = neon(process.env.DATABASE_URL)
+    const sql = neon(process.env['DATABASE_URL'])
 
     // Use health_data_points with data_type = 'exercise'
     const weekSummary = await sql`
@@ -40,14 +40,14 @@ export async function GET() {
     return NextResponse.json({
       userId: user.id,
       summary: {
-        totalWorkoutsThisWeek: Number(weekSummary?.[0]?.entries ?? 0),
-        totalMinutesThisWeek: Number(weekSummary?.[0]?.total_minutes ?? 0)
+        totalWorkoutsThisWeek: Number(weekSummary?.[0]?.['entries'] ?? 0),
+        totalMinutesThisWeek: Number(weekSummary?.[0]?.['total_minutes'] ?? 0)
       },
       workouts: recent.map((r: any) => ({
-        timestamp: r.timestamp,
-        minutes: Number(r.value),
-        unit: r.unit,
-        metadata: r.metadata || null
+        timestamp: r['timestamp'],
+        minutes: Number(r['value']),
+        unit: r['unit'],
+        metadata: r['metadata'] || null
       }))
     })
   } catch (error: any) {
@@ -55,4 +55,5 @@ export async function GET() {
     return NextResponse.json({ error: error?.message || 'Unknown error' }, { status: 500 })
   }
 }
+
 

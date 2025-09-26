@@ -125,15 +125,19 @@ export const NOTIFICATION_TEMPLATES: Record<string, NotificationTemplate> = {
 // Notification service class
 export class NotificationService {
   private supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+    process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
   );
 
-  private vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
-  private vapidPrivateKey = process.env.VAPID_PRIVATE_KEY!;
+  private vapidPublicKey = process.env['NEXT_PUBLIC_VAPID_PUBLIC_KEY']!;
+  private vapidPrivateKey = process.env['VAPID_PRIVATE_KEY']!;
 
   // Check if notifications are supported and get permission status
   async getPermissionStatus(): Promise<NotificationPermission> {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      return 'denied'; // Server-side or non-browser environment
+    }
+    
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
       return 'denied';
     }
@@ -143,6 +147,11 @@ export class NotificationService {
 
   // Request notification permission from user
   async requestPermission(): Promise<boolean> {
+    if (typeof window === 'undefined') {
+      console.warn('🚫 Server-side environment, notifications not available');
+      return false;
+    }
+    
     if (!('Notification' in window)) {
       console.warn('🚫 Notifications not supported in this browser');
       return false;
@@ -178,6 +187,11 @@ export class NotificationService {
   // Subscribe to push notifications
   async subscribeToNotifications(userId?: string): Promise<PushSubscription | null> {
     try {
+      if (typeof navigator === 'undefined' || typeof window === 'undefined') {
+        console.warn('🚫 Server-side environment, push notifications not available');
+        return null;
+      }
+      
       // Get service worker registration
       const registration = await navigator.serviceWorker.getRegistration();
       if (!registration) {
@@ -188,7 +202,7 @@ export class NotificationService {
       // Subscribe to push notifications
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: this.urlBase64ToUint8Array(this.vapidPublicKey)
+        applicationServerKey: this.urlBase64ToUint8Array(this.vapidPublicKey) as BufferSource
       });
 
       const pushSubscription: PushSubscription = {
@@ -214,6 +228,11 @@ export class NotificationService {
   // Unsubscribe from push notifications
   async unsubscribeFromNotifications(userId?: string): Promise<boolean> {
     try {
+      if (typeof navigator === 'undefined') {
+        console.warn('🚫 Server-side environment, unsubscribe not available');
+        return false;
+      }
+      
       const registration = await navigator.serviceWorker.getRegistration();
       if (!registration) return false;
 
@@ -236,6 +255,11 @@ export class NotificationService {
 
   // Show local notification (immediate)
   async showLocalNotification(config: NotificationConfig): Promise<boolean> {
+    if (typeof window === 'undefined') {
+      console.warn('🚫 Server-side environment, local notifications not available');
+      return false;
+    }
+    
     const permission = await this.getPermissionStatus();
     if (permission !== 'granted') {
       console.warn('🚫 Cannot show notification - permission not granted');
@@ -243,22 +267,29 @@ export class NotificationService {
     }
 
     try {
-      const notification = new Notification(config.title, {
+      const notificationOptions: NotificationOptions = {
         body: config.body,
         icon: config.icon || '/icons/icon-192x192.png',
         badge: config.badge || '/icons/badge-72x72.png',
-        image: config.image,
-        tag: config.tag,
-        requireInteraction: config.requireInteraction,
-        silent: config.silent,
-        vibrate: config.vibrate,
         data: {
           url: config.url,
           action: config.action,
           workoutId: config.workoutId,
           ...config.customData
         }
-      });
+      };
+      
+      if (config.tag !== undefined) {
+        notificationOptions.tag = config.tag;
+      }
+      if (config.requireInteraction !== undefined) {
+        notificationOptions.requireInteraction = config.requireInteraction;
+      }
+      if (config.silent !== undefined) {
+        notificationOptions.silent = config.silent;
+      }
+      
+      const notification = new Notification(config.title, notificationOptions);
 
       // Handle notification click
       notification.onclick = (event) => {
@@ -460,18 +491,23 @@ export class NotificationService {
     achievementDescription: string,
     achievementIcon?: string
   ): Promise<boolean> {
+    const notificationConfig: any = {
+      body: `🏆 ${achievementTitle}: ${achievementDescription}`,
+      url: '/achievements',
+      customData: {
+        achievementTitle,
+        achievementDescription
+      }
+    };
+    
+    if (achievementIcon !== undefined) {
+      notificationConfig.icon = achievementIcon;
+    }
+    
     return this.sendPushNotification(
       userId,
       'achievement_unlocked',
-      {
-        body: `🏆 ${achievementTitle}: ${achievementDescription}`,
-        icon: achievementIcon,
-        url: '/achievements',
-        customData: {
-          achievementTitle,
-          achievementDescription
-        }
-      }
+      notificationConfig
     );
   }
 
@@ -497,6 +533,11 @@ export class NotificationService {
 
   // Utility functions
   private urlBase64ToUint8Array(base64String: string): Uint8Array {
+    if (typeof window === 'undefined') {
+      // Server-side fallback - create empty array
+      return new Uint8Array(0);
+    }
+    
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
     const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
     const rawData = window.atob(base64);
@@ -559,7 +600,7 @@ export class NotificationService {
   }
 
   private trackNotificationEvent(trackingId?: string, action: string = 'unknown'): void {
-    if (!trackingId) return;
+    if (!trackingId || typeof fetch === 'undefined') return;
 
     fetch('/api/notifications/track', {
       method: 'POST',
@@ -588,7 +629,7 @@ export function useNotifications() {
     notificationService.getPermissionStatus().then(setPermission);
     
     // Check if already subscribed
-    if ('serviceWorker' in navigator) {
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistration().then(registration => {
         if (registration) {
           registration.pushManager.getSubscription().then(subscription => {
@@ -641,13 +682,18 @@ export function useServiceWorker() {
   const [needsUpdate, setNeedsUpdate] = useState(false);
 
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
       registerServiceWorker();
     }
   }, []);
 
   const registerServiceWorker = async () => {
     try {
+      if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) {
+        console.warn('🚫 Service worker not available');
+        return;
+      }
+      
       const registration = await navigator.serviceWorker.register('/sw.js');
       setIsRegistered(true);
       
@@ -672,7 +718,7 @@ export function useServiceWorker() {
   };
 
   const updateServiceWorker = () => {
-    if (navigator.serviceWorker.controller) {
+    if (typeof navigator !== 'undefined' && typeof window !== 'undefined' && navigator.serviceWorker.controller) {
       navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
       window.location.reload();
     }

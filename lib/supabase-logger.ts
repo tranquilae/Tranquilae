@@ -2,8 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/nextjs';
 
 // Initialize Supabase client for logging
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseUrl = process.env['NEXT_PUBLIC_SUPABASE_URL']!;
+const supabaseServiceKey = process.env['SUPABASE_SECRET_KEY'] || process.env['SUPABASE_SERVICE_ROLE_KEY']!;
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -134,21 +134,29 @@ class SupabaseLogger {
 
       // Also send critical security events to Sentry
       if (!event.success || event.event_type === 'SUSPICIOUS_ACTIVITY') {
-        Sentry.captureMessage(`Security Event: ${event.event_type}`, {
+        const sentryOptions: any = {
           level: event.success ? 'warning' : 'error',
           tags: {
             component: 'security',
             event_type: event.event_type
           },
-          user: {
-            id: event.user_id,
-            ip_address: event.ip_address
-          },
           extra: {
             user_agent: event.user_agent,
             metadata: event.metadata
           }
-        });
+        };
+        
+        if (event.user_id !== undefined || event.ip_address !== undefined) {
+          sentryOptions.user = {};
+          if (event.user_id !== undefined) {
+            sentryOptions.user.id = event.user_id;
+          }
+          if (event.ip_address !== undefined) {
+            sentryOptions.user.ip_address = event.ip_address;
+          }
+        }
+        
+        Sentry.captureMessage(`Security Event: ${event.event_type}`, sentryOptions);
       }
     } catch (error) {
       console.error('Security logging error:', error);
@@ -167,11 +175,11 @@ class SupabaseLogger {
         event_type: event.event_type,
         user_id: event.user_id || null,
         event_data: {
-          stripe_session_id: event.stripe_session_id,
+          stripe_customer_id: event.stripe_customer_id,
+          stripe_payment_intent_id: event.stripe_payment_intent_id,
           stripe_subscription_id: event.stripe_subscription_id,
           amount: event.amount,
           currency: event.currency,
-          plan: event.plan,
           error: event.error,
           metadata: event.metadata
         },
@@ -193,23 +201,28 @@ class SupabaseLogger {
       }
 
       // Send payment failures to Sentry for immediate attention
-      if (event.event_type === 'PAYMENT_FAILED' || event.error) {
-        Sentry.captureMessage(`Payment Event: ${event.event_type}`, {
+      if (event.event_type === 'PAYMENT_FAILURE' || event.error) {
+        const sentryOptions: any = {
           level: 'error',
           tags: {
             component: 'payments',
             event_type: event.event_type
           },
-          user: {
-            id: event.user_id
-          },
           extra: {
-            stripe_session_id: event.stripe_session_id,
+            stripe_customer_id: event.stripe_customer_id,
+            stripe_payment_intent_id: event.stripe_payment_intent_id,
+            stripe_subscription_id: event.stripe_subscription_id,
             amount: event.amount,
             currency: event.currency,
             error: event.error
           }
-        });
+        };
+        
+        if (event.user_id !== undefined) {
+          sentryOptions.user = { id: event.user_id };
+        }
+        
+        Sentry.captureMessage(`Payment Event: ${event.event_type}`, sentryOptions);
       }
     } catch (error) {
       console.error('Payment logging error:', error);

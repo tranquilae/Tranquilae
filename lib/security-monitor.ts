@@ -3,7 +3,7 @@
  * Comprehensive security event detection and monitoring for admin panel
  */
 
-import { createServiceClient } from './admin-middleware';
+import { createAdminSupabaseClient } from './admin-middleware';
 import { sendEmail, sendWebhookAlert, sendSMSAlert } from './notification-service';
 
 // Security Event Types
@@ -80,7 +80,11 @@ export interface SecurityMetrics {
 }
 
 export class SecurityMonitor {
-  private supabase = createServiceClient();
+  private supabasePromise = createAdminSupabaseClient();
+  
+  private async getSupabase() {
+    return await this.supabasePromise;
+  }
 
   /**
    * Log a security event and trigger alerts if necessary
@@ -88,7 +92,8 @@ export class SecurityMonitor {
   async logSecurityEvent(event: Omit<SecurityEvent, 'id' | 'createdAt'>): Promise<string> {
     try {
       // Call the database function to log the event
-      const { data, error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { data, error } = await supabase
         .rpc('log_security_event', {
           p_event_type: event.eventType,
           p_severity: event.severity,
@@ -127,7 +132,8 @@ export class SecurityMonitor {
   ): Promise<void> {
     try {
       // Call the database function to handle failed login
-      const { error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { error } = await supabase
         .rpc('handle_failed_login', {
           p_ip_address: ipAddress,
           p_user_id: userId || null,
@@ -158,15 +164,20 @@ export class SecurityMonitor {
   ): Promise<void> {
     try {
       // Log successful login
-      await this.logSecurityEvent({
+      const eventData: Omit<SecurityEvent, 'id' | 'createdAt'> = {
         eventType: SecurityEventType.SUCCESSFUL_LOGIN,
         severity: SecuritySeverity.LOW,
         userId,
         ipAddress,
-        userAgent,
         eventData: additionalData || {},
         description: `Successful admin login from IP ${ipAddress}`
-      });
+      };
+      
+      if (userAgent !== undefined) {
+        eventData.userAgent = userAgent;
+      }
+      
+      await this.logSecurityEvent(eventData);
 
       // Check for location-based anomalies
       await this.checkLocationAnomaly(userId, ipAddress);
@@ -192,17 +203,22 @@ export class SecurityMonitor {
     ipAddress?: string
   ): Promise<void> {
     if (attemptedRole !== currentRole && this.isHigherPrivilege(attemptedRole, currentRole)) {
-      await this.logSecurityEvent({
+      const eventData: Omit<SecurityEvent, 'id' | 'createdAt'> = {
         eventType: SecurityEventType.PRIVILEGE_ESCALATION,
         severity: SecuritySeverity.CRITICAL,
         userId,
-        ipAddress,
         eventData: {
           attempted_role: attemptedRole,
           current_role: currentRole
         },
         description: `Privilege escalation attempt: ${currentRole} → ${attemptedRole}`
-      });
+      };
+      
+      if (ipAddress !== undefined) {
+        eventData.ipAddress = ipAddress;
+      }
+      
+      await this.logSecurityEvent(eventData);
     }
   }
 
@@ -284,7 +300,8 @@ export class SecurityMonitor {
    */
   async isIPBlocked(ipAddress: string): Promise<boolean> {
     try {
-      const { data, error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { data, error } = await supabase
         .rpc('is_ip_blocked', { p_ip_address: ipAddress });
 
       if (error) {
@@ -310,7 +327,8 @@ export class SecurityMonitor {
     createdBy?: string
   ): Promise<string> {
     try {
-      const { data, error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { data, error } = await supabase
         .rpc('block_ip_address', {
           p_ip_address: ipAddress,
           p_block_type: blockType,
@@ -336,7 +354,8 @@ export class SecurityMonitor {
    */
   async getSecurityDashboardStats(days: number = 7): Promise<SecurityMetrics> {
     try {
-      const { data, error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { data, error } = await supabase
         .rpc('get_security_dashboard_stats', { p_days: days });
 
       if (error) {
@@ -361,7 +380,8 @@ export class SecurityMonitor {
     resolved?: boolean
   ): Promise<SecurityEvent[]> {
     try {
-      let query = this.supabase
+      const supabase = await this.getSupabase();
+      let query = supabase
         .from('security_events')
         .select('*')
         .order('created_at', { ascending: false })
@@ -396,7 +416,8 @@ export class SecurityMonitor {
    */
   async resolveSecurityEvent(eventId: string, resolvedBy: string): Promise<void> {
     try {
-      const { error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { error } = await supabase
         .from('security_events')
         .update({
           resolved: true,
@@ -420,7 +441,8 @@ export class SecurityMonitor {
    */
   async getAlertConfigurations(): Promise<AlertConfiguration[]> {
     try {
-      const { data, error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { data, error } = await supabase
         .from('alert_configurations')
         .select('*')
         .order('created_at', { ascending: false });
@@ -442,7 +464,8 @@ export class SecurityMonitor {
    */
   async updateAlertConfiguration(config: AlertConfiguration): Promise<void> {
     try {
-      const { error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { error } = await supabase
         .from('alert_configurations')
         .upsert({
           ...config,
@@ -488,7 +511,8 @@ export class SecurityMonitor {
   }
 
   private async getActiveAlertConfigurations(eventType: SecurityEventType): Promise<AlertConfiguration[]> {
-    const { data, error } = await this.supabase
+    const supabase = await this.getSupabase();
+    const { data, error } = await supabase
       .from('alert_configurations')
       .select('*')
       .eq('event_type', eventType)
@@ -504,7 +528,8 @@ export class SecurityMonitor {
 
   private async shouldTriggerAlert(config: AlertConfiguration, event: Omit<SecurityEvent, 'id' | 'createdAt'>): Promise<boolean> {
     // Count recent events of this type
-    const { data, error } = await this.supabase
+    const supabase = await this.getSupabase();
+    const { data, error } = await supabase
       .from('security_events')
       .select('id')
       .eq('event_type', event.eventType)
@@ -586,35 +611,49 @@ export class SecurityMonitor {
   ): Promise<void> {
     // Detect user agent anomalies
     if (userAgent && this.isSuspiciousUserAgent(userAgent)) {
-      await this.logSecurityEvent({
+      const eventData: Omit<SecurityEvent, 'id' | 'createdAt'> = {
         eventType: SecurityEventType.SUSPICIOUS_ACTIVITY,
         severity: SecuritySeverity.MEDIUM,
-        userId,
         ipAddress,
         userAgent,
         eventData: { suspicious_user_agent: userAgent },
         description: 'Suspicious user agent detected'
-      });
+      };
+      
+      if (userId !== undefined) {
+        eventData.userId = userId;
+      }
+      
+      await this.logSecurityEvent(eventData);
     }
 
     // Detect timing-based attacks
-    if (additionalData?.timing && this.isSuspiciousTiming(additionalData.timing)) {
-      await this.logSecurityEvent({
+    if (additionalData?.['timing'] && this.isSuspiciousTiming(additionalData['timing'])) {
+      const eventData: Omit<SecurityEvent, 'id' | 'createdAt'> = {
         eventType: SecurityEventType.BRUTE_FORCE_ATTEMPT,
         severity: SecuritySeverity.HIGH,
-        userId,
         ipAddress,
-        userAgent,
-        eventData: { timing_data: additionalData.timing },
+        eventData: { timing_data: additionalData['timing'] },
         description: 'Timing-based brute force attack detected'
-      });
+      };
+      
+      if (userId !== undefined) {
+        eventData.userId = userId;
+      }
+      
+      if (userAgent !== undefined) {
+        eventData.userAgent = userAgent;
+      }
+      
+      await this.logSecurityEvent(eventData);
     }
   }
 
   private async checkLocationAnomaly(userId: string, ipAddress: string): Promise<void> {
     // This would integrate with a geo-IP service
     // For now, we'll implement a basic check
-    const { data: recentLogins } = await this.supabase
+    const supabase = await this.getSupabase();
+    const { data: recentLogins } = await supabase
       .from('security_events')
       .select('ip_address, created_at')
       .eq('user_id', userId)
@@ -640,7 +679,8 @@ export class SecurityMonitor {
 
   private async checkSessionHijackingIndicators(userId: string, ipAddress: string, userAgent?: string): Promise<void> {
     // Check for rapid IP changes
-    const { data: recentSessions } = await this.supabase
+    const supabase = await this.getSupabase();
+    const { data: recentSessions } = await supabase
       .from('security_events')
       .select('ip_address, user_agent, created_at')
       .eq('user_id', userId)
@@ -652,21 +692,26 @@ export class SecurityMonitor {
     if (recentSessions && recentSessions.length > 2) {
       const uniqueIPs = new Set(recentSessions.map(s => s.ip_address));
       if (uniqueIPs.size > 2) {
-        await this.logSecurityEvent({
+        const eventData: Omit<SecurityEvent, 'id' | 'createdAt'> = {
           eventType: SecurityEventType.SESSION_HIJACK_ATTEMPT,
           severity: SecuritySeverity.HIGH,
           userId,
           ipAddress,
-          userAgent,
           eventData: { recent_ips: Array.from(uniqueIPs) },
           description: 'Potential session hijacking detected - multiple IP addresses in short time'
-        });
+        };
+        
+        if (userAgent !== undefined) {
+          eventData.userAgent = userAgent;
+        }
+        
+        await this.logSecurityEvent(eventData);
       }
     }
   }
 
   private isHigherPrivilege(attemptedRole: string, currentRole: string): boolean {
-    const roleHierarchy = { 'user': 0, 'admin': 1, 'super_admin': 2 };
+    const roleHierarchy: Record<string, number> = { 'user': 0, 'admin': 1, 'super_admin': 2 };
     return (roleHierarchy[attemptedRole] || 0) > (roleHierarchy[currentRole] || 0);
   }
 
@@ -696,13 +741,14 @@ export class SecurityMonitor {
 
   private isSuspiciousTiming(timing: any): boolean {
     // Check for too-fast requests (< 100ms between attempts)
-    return timing.interval && timing.interval < 100;
+    return timing['interval'] && timing['interval'] < 100;
   }
 
   private async updateLoginMetrics(type: 'successful' | 'failed'): Promise<void> {
     const column = type === 'successful' ? 'successful_logins' : 'failed_logins';
+    const supabase = await this.getSupabase();
     
-    const { error } = await this.supabase
+    const { error } = await supabase
       .from('security_metrics')
       .upsert({
         metric_date: new Date().toISOString().split('T')[0],

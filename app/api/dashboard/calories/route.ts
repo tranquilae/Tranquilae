@@ -11,12 +11,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!process.env.DATABASE_URL) {
+    if (!process.env['DATABASE_URL']) {
       return NextResponse.json({ error: 'Server database not configured' }, { status: 500 })
     }
 
     const { neon } = await import('@neondatabase/serverless')
-    const sql = neon(process.env.DATABASE_URL)
+    const sql = neon(process.env['DATABASE_URL'])
 
     const totals = await sql`
       SELECT 
@@ -38,15 +38,16 @@ export async function GET(request: Request) {
     return NextResponse.json({
       userId: user.id,
       totals: {
-        today: Number(totals?.[0]?.today ?? 0),
-        week: Number(totals?.[0]?.week ?? 0),
-        month: Number(totals?.[0]?.month ?? 0)
+        today: Number(totals?.[0]?.['today'] ?? 0),
+        week: Number(totals?.[0]?.['week'] ?? 0),
+        month: Number(totals?.[0]?.['month'] ?? 0)
       },
-      breakdown: breakdownRows.map((r: any) => ({ day: r.day, total: Number(r.total) }))
+      breakdown: breakdownRows.map((r: any) => ({ day: r['day'], total: Number(r['total']) }))
     })
   } catch (error: any) {
     console.error('Calories API error:', error)
     return NextResponse.json({ error: error?.message || 'Unknown error' }, { status: 500 })
   }
 }
+
 

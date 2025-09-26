@@ -29,7 +29,7 @@ export async function GET(
     
     if (!serviceConfig) {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?integration_error=invalid_service`
+        `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard?integration_error=invalid_service`
       );
     }
 
@@ -38,14 +38,14 @@ export async function GET(
       console.error(`OAuth error from ${serviceName}:`, error, errorDescription);
       
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?integration_error=oauth_error&details=${encodeURIComponent(error)}`
+        `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard?integration_error=oauth_error&details=${encodeURIComponent(error)}`
       );
     }
 
     // Validate required parameters
     if (!code || !state) {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?integration_error=missing_params`
+        `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard?integration_error=missing_params`
       );
     }
 
@@ -54,7 +54,7 @@ export async function GET(
     
     if (!oauthState) {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?integration_error=invalid_state`
+        `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard?integration_error=invalid_state`
       );
     }
 
@@ -62,7 +62,7 @@ export async function GET(
     if (oauthState.serviceName !== serviceName) {
       await cleanupOAuthState(state);
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?integration_error=service_mismatch`
+        `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard?integration_error=service_mismatch`
       );
     }
 
@@ -95,7 +95,7 @@ export async function GET(
 
     // Redirect to dashboard with success message
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?integration_success=${serviceName}&service_name=${encodeURIComponent(serviceConfig.displayName)}`
+      `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard?integration_success=${serviceName}&service_name=${encodeURIComponent(serviceConfig.displayName)}`
     );
 
   } catch (error: any) {
@@ -118,7 +118,7 @@ export async function GET(
     }
 
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?integration_error=${errorCode}&details=${encodeURIComponent(error.message)}`
+      `${process.env['NEXT_PUBLIC_APP_URL']}/dashboard?integration_error=${errorCode}&details=${encodeURIComponent(error.message)}`
     );
   }
 }

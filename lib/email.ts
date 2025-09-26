@@ -9,18 +9,18 @@ interface EmailData {
 }
 
 // Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env['RESEND_API_KEY']);
 
 // Email configuration
-const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@tranquilae.com';
-const FROM_NAME = process.env.FROM_NAME || 'Tranquilae';
+const FROM_EMAIL = process.env['FROM_EMAIL'] || 'noreply@tranquilae.com';
+const FROM_NAME = process.env['FROM_NAME'] || 'Tranquilae';
 
 /**
  * Send transactional email using Resend
  */
 export async function sendEmail(emailData: EmailData): Promise<void> {
   try {
-    if (!process.env.RESEND_API_KEY) {
+    if (!process.env['RESEND_API_KEY']) {
       throw new Error('RESEND_API_KEY is not configured');
     }
     
@@ -58,7 +58,7 @@ export async function sendEmail(emailData: EmailData): Promise<void> {
     }
     
     // Log success in development
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env['NODE_ENV'] === 'development') {
       console.log('📧 Email sent successfully:');
       console.log('- To:', emailData.to);
       console.log('- Subject:', emailData.subject);
@@ -70,7 +70,7 @@ export async function sendEmail(emailData: EmailData): Promise<void> {
     console.error('❌ Failed to send email:', error);
     
     // In production, you might want to queue failed emails for retry
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env['NODE_ENV'] === 'production') {
       // TODO: Add to retry queue or log to monitoring service
       console.error('📧 Email sending failed in production:', {
         to: emailData.to,
@@ -108,7 +108,7 @@ export async function sendBatchEmails(emails: EmailData[]): Promise<void> {
  */
 export async function verifyEmailConfig(): Promise<boolean> {
   try {
-    if (!process.env.RESEND_API_KEY) {
+    if (!process.env['RESEND_API_KEY']) {
       console.error('❌ RESEND_API_KEY is not configured');
       return false;
     }
