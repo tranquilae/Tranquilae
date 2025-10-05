@@ -121,6 +121,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading) return;
 
+    // Skip all redirects for homepage
+    if (pathname === '/') return;
+
     // Redirect logic based on auth state and route
     if (!user) {
       // User not authenticated
@@ -166,7 +169,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Show loading spinner while determining auth state (with timeout protection)
-  if (loading && !initFailed) {
+  // BUT: Allow homepage and public routes to render immediately
+  if (loading && !initFailed && !isPublicRoute) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
         <div className="glass-card p-8">
