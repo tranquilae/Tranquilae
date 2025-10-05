@@ -26,11 +26,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
-        <AuthProvider>
-          <ErrorBoundary>
-            <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
-          </ErrorBoundary>
-        </AuthProvider>
+        {/* AuthProvider temporarily disabled - showing landing page directly */}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
         <Analytics />
       </body>
     </html>
