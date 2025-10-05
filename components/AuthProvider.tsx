@@ -28,6 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [neonUser, setNeonUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initFailed, setInitFailed] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -47,26 +48,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    // Get initial session
+    console.log('🔐 AuthProvider: Starting auth check...');
+    console.time('Auth initialization');
+    
+    // Get initial session with timeout
     const getInitialSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        // Create a promise that times out after 5 seconds
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Auth check timeout after 5s')), 5000)
+        );
+        
+        const { data: { session } } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]) as any;
+        
         if (session?.user) {
+          console.log('✅ AuthProvider: User authenticated', session.user.id);
           setUser(session.user);
           await loadNeonUser(session.user.id);
+        } else {
+          console.log('ℹ️ AuthProvider: No active session');
         }
       } catch (error) {
-        console.error('Error getting initial session:', error);
+        console.error('❌ AuthProvider: Error getting initial session:', error);
+        setInitFailed(true);
       } finally {
+        console.timeEnd('Auth initialization');
         setLoading(false);
       }
     };
 
     getInitialSession();
 
-    // Listen for auth changes
+    // Listen for auth changes (only if init didn't fail)
+    if (initFailed) return;
+    
     const { data: { subscription } } = onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.id);
+      console.log('🔄 Auth state changed:', event, session?.user?.id);
       
       if (session?.user) {
         setUser(session.user);
@@ -144,8 +165,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut: handleSignOut,
   };
 
-  // Show loading spinner while determining auth state
-  if (loading) {
+  // Show loading spinner while determining auth state (with timeout protection)
+  if (loading && !initFailed) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
         <div className="glass-card p-8">
@@ -156,6 +177,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     );
+  }
+  
+  // If auth initialization failed, show error banner but still render children (allow public pages)
+  if (initFailed && isPublicRoute) {
+    console.warn('⚠️ AuthProvider: Init failed, but allowing public route access');
   }
 
   return (
