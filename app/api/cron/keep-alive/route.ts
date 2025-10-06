@@ -6,10 +6,10 @@ export async function GET(request: NextRequest) {
   try {
     // Verify this is a cron request (security)
     const authHeader = request.headers.get('authorization')
-    const cronSecret = process.env.CRON_SECRET
+    const cronSecret = process.env['CRON_SECRET']
     
     // In production, verify the cron secret
-    if (process.env.NODE_ENV === 'production' && cronSecret) {
+    if (process.env['NODE_ENV'] === 'production' && cronSecret) {
       if (authHeader !== `Bearer ${cronSecret}`) {
         return NextResponse.json(
           { error: 'Unauthorized' },
@@ -19,9 +19,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Get Supabase credentials
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || 
-                        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const supabaseUrl = process.env['NEXT_PUBLIC_SUPABASE_URL']
+    const supabaseKey = process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY'] || 
+                        process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']
 
     if (!supabaseUrl || !supabaseKey) {
       return NextResponse.json(
