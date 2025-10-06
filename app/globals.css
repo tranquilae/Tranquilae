@@ -264,4 +264,206 @@
     white-space: nowrap;
     border: 0;
   }
+  
+  /* Advanced Liquid Glass Effects */
+  
+  /* Frosted Glass with Liquid Animation */
+  .glass-frosted {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  }
+  
+  /* Liquid Shimmer Effect */
+  .liquid-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .liquid-shimmer::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      45deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.3) 50%,
+      transparent 70%
+    );
+    animation: liquid-shimmer 3s ease-in-out infinite;
+  }
+  
+  @keyframes liquid-shimmer {
+    0% {
+      transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    }
+    100% {
+      transform: translateX(100%) translateY(100%) rotate(45deg);
+    }
+  }
+  
+  /* Breathing Glow Effect */
+  .glow-breathe {
+    animation: glow-breathe 4s ease-in-out infinite;
+  }
+  
+  @keyframes glow-breathe {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(109, 160, 110, 0.3),
+                  0 0 40px rgba(127, 182, 227, 0.2);
+    }
+    50% {
+      box-shadow: 0 0 30px rgba(109, 160, 110, 0.5),
+                  0 0 60px rgba(127, 182, 227, 0.3);
+    }
+  }
+  
+  /* Liquid Gradient Background */
+  .liquid-gradient {
+    background: linear-gradient(
+      135deg,
+      rgba(109, 160, 110, 0.1) 0%,
+      rgba(127, 182, 227, 0.1) 50%,
+      rgba(109, 160, 110, 0.1) 100%
+    );
+    background-size: 200% 200%;
+    animation: liquid-gradient 8s ease infinite;
+  }
+  
+  @keyframes liquid-gradient {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+  
+  /* Floating Animation */
+  .float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
+  }
+  
+  /* Pulsing Scale Effect */
+  .pulse-scale {
+    animation: pulse-scale 3s ease-in-out infinite;
+  }
+  
+  @keyframes pulse-scale {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+  }
+  
+  /* Smooth Hover Lift */
+  .hover-lift {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+  }
+  
+  /* Liquid Button */
+  .liquid-button {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--nature-green), var(--soft-blue));
+    background-size: 200% 200%;
+    transition: all 0.3s ease;
+  }
+  
+  .liquid-button:hover {
+    background-position: 100% 0;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(109, 160, 110, 0.3);
+  }
+  
+  .liquid-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent
+    );
+    transition: left 0.5s ease;
+  }
+  
+  .liquid-button:hover::before {
+    left: 100%;
+  }
+  
+  /* Text Gradient */
+  .text-gradient {
+    background: linear-gradient(135deg, var(--nature-green), var(--soft-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  /* Glass Morphism Container */
+  .glass-morphism {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(30px) saturate(200%);
+    -webkit-backdrop-filter: blur(30px) saturate(200%);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Smooth Scroll */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgba(109, 160, 110, 0.5);
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(109, 160, 110, 0.8);
+    background-clip: content-box;
+  }
+  
+  .dark ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+  }
 }

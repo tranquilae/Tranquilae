@@ -8,6 +8,17 @@ const supabase = createClient(
   process.env['SUPABASE_SECRET_KEY'] || process.env['SUPABASE_SERVICE_ROLE_KEY']!
 )
 
+// Handle OPTIONS requests for CORS
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Allow': 'POST, OPTIONS',
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json()
