@@ -2,6 +2,7 @@
 
 import React from 'react'
 export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
 import { MeditationPlayer } from "@/components/meditation-player"
 import { JournalEntry } from "@/components/journal-entry"
 import { DailyReflection } from "@/components/daily-reflection"

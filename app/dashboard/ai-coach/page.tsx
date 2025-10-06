@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 
 // Prevent static generation and SSR issues
 export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
 
 function LoadingSkeleton() {
   return (
