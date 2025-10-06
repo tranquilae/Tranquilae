@@ -6,6 +6,7 @@ import { getNeonClient } from '@/lib/neonClient';
 
 // Prevent prerendering of admin pages
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 interface MediaOverride {
   id: number;

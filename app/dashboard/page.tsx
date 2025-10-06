@@ -6,6 +6,7 @@ import { useAuth } from '@/components/AuthProvider';
 
 // Prevent prerendering of dashboard pages
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 interface DashboardStats {
   user: {

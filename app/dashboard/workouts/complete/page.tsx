@@ -1,6 +1,7 @@
 'use client';
 // Prevent prerendering of dashboard pages
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
