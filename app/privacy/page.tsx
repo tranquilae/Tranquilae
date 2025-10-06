@@ -1,32 +1,53 @@
-import { Card, CardContent } from "@/components/ui/card"
+"use client"
+
 import { Header } from "@/components/homepage/header"
 import { Footer } from "@/components/homepage/footer"
+import Link from "next/link"
+import { ArrowLeft, Lock, Eye, Shield } from "lucide-react"
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/10">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 gradient-mesh opacity-30" />
+      <div className="glass-orb w-96 h-96 -top-48 -left-48 opacity-20" />
+      <div className="glass-orb w-64 h-64 bottom-20 -right-32 opacity-25" />
+
       <Header />
+      
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6">
-            Privacy Policy
-          </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-            Your privacy is important to us. This policy explains how we collect, 
-            use, and protect your personal information.
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Last updated: December 2024
-          </p>
+      <section className="pt-32 pb-12 px-4 relative z-10">
+        <div className="max-w-4xl mx-auto">
+          <Link href="/" className="inline-flex items-center gap-2 text-foreground/70 hover:text-foreground mb-8 transition-colors">
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Home</span>
+          </Link>
+          
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full liquid-glass mb-6">
+              <Lock className="w-5 h-5 text-[var(--soft-blue)]" />
+              <span className="text-sm font-semibold tracking-wider">YOUR PRIVACY MATTERS</span>
+            </div>
+            
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 text-foreground">
+              Privacy <span className="animated-gradient-text">Policy</span>
+            </h1>
+            <p className="text-xl text-foreground/70 mb-4 max-w-3xl mx-auto">
+              Your privacy is important to us. This policy explains how we collect, 
+              use, and protect your personal information.
+            </p>
+            <p className="text-sm text-foreground/50">
+              Last updated: December 2024
+            </p>
+          </div>
         </div>
       </section>
 
       {/* Privacy Content */}
-      <section className="py-20 px-4">
+      <section className="py-12 px-4 relative z-10">
         <div className="max-w-4xl mx-auto">
-          <Card className="glass-card border-0 p-8">
-            <CardContent className="p-0 prose prose-lg max-w-none">
+          <div className="liquid-glass p-8 md:p-12">
+            <div className="prose prose-lg max-w-none prose-headings:text-foreground prose-p:text-foreground/80 prose-li:text-foreground/80 prose-strong:text-foreground">
               <h2>Information We Collect</h2>
               <p>
                 We collect information you provide directly to us, such as when you create an account, 
@@ -152,8 +173,8 @@ export default function PrivacyPage() {
                 Email: <a href="mailto:privacy@tranquilae.com" className="text-primary hover:text-primary/80">privacy@tranquilae.com</a><br />
                 Address: London, United Kingdom
               </p>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </section>
       <Footer />
