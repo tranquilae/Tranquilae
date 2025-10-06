@@ -1,174 +1,97 @@
-import { Card, CardContent } from "@/components/ui/card"
-import Image from "next/image"
-import { Activity, BarChart3, Target, Apple } from "lucide-react"
+"use client"
+
+import { Activity, Brain, Heart, Sparkles } from "lucide-react"
+import Link from "next/link"
 
 export function FeaturesSection() {
+  const features = [
+    {
+      number: "01",
+      title: "Fitness & Movement",
+      description: "Track workouts, monitor progress, and achieve your fitness goals with AI-powered recommendations tailored to your body and lifestyle.",
+      icon: Activity,
+      gradient: "from-[var(--nature-green)] to-[var(--soft-blue)]"
+    },
+    {
+      number: "02",
+      title: "Nutrition Intelligence",
+      description: "Smart meal planning and calorie tracking powered by AI. Get personalized nutrition insights that adapt to your changing needs.",
+      icon: Heart,
+      gradient: "from-[var(--soft-blue)] to-[var(--nature-green)]"
+    },
+    {
+      number: "03",
+      title: "Mindfulness & Mental Wellness",
+      description: "Guided meditation, stress management, and mood tracking. Build sustainable habits for lasting mental clarity and peace.",
+      icon: Brain,
+      gradient: "from-[var(--nature-green)] via-[var(--soft-blue)] to-[var(--nature-green)]"
+    }
+  ]
+
   return (
-    <section id="features" className="py-20 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-balance mb-6">Elevate Your Wellness Experience</h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Discover how Tranquilae transforms more than just your health metrics.
+    <section id="features" className="py-32 px-4 relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0 gradient-mesh opacity-50" />
+      <div className="glass-orb w-96 h-96 -top-48 -right-48 opacity-20" />
+      <div className="glass-orb w-64 h-64 bottom-20 -left-32 opacity-25" />
+
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Section Header */}
+        <div className="text-center mb-20">
+          <div className="section-number mb-4">01 — OUR SERVICES</div>
+          <h2 className="text-5xl md:text-6xl font-bold mb-6">
+            Holistic Wellness
+            <br />
+            <span className="animated-gradient-text">Platform</span>
+          </h2>
+          <p className="text-xl text-foreground/70 max-w-3xl mx-auto">
+            As a comprehensive wellness platform, we create memorable and transformative health experiences through data-driven insights and personalized coaching.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          <Card className="glass-card border-0 p-8 relative overflow-hidden">
-            <div className="absolute top-4 right-4 w-16 h-16 rounded-full overflow-hidden opacity-20">
-              <Image src="/person-running-on-scenic-trail.jpg" alt="" width={64} height={64} className="w-full h-full object-cover" />
-            </div>
-            <CardContent className="p-0 relative z-10">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Activity className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold">Track Your Steps, Calories & Nutrition</h3>
-                </div>
-              </div>
-              <p className="text-muted-foreground mb-6">
-                Monitor daily activity and stay aware of your wellness progress at all times.
-              </p>
-              <div className="flex items-center justify-center">
-                <div className="relative w-32 h-32">
-                  <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
-                    <circle
-                      cx="60"
-                      cy="60"
-                      r="50"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="8"
-                      className="text-muted/20"
-                    />
-                    <circle
-                      cx="60"
-                      cy="60"
-                      r="50"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="8"
-                      className="text-primary"
-                      strokeDasharray="314"
-                      strokeDashoffset="125"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-sm text-muted-foreground">Goals</span>
-                    <span className="text-2xl font-bold">73%</span>
+        {/* Feature Cards */}
+        <div className="space-y-8">
+          {features.map((feature, index) => {
+            const Icon = feature.icon
+            return (
+              <div 
+                key={feature.number}
+                className="liquid-glass p-8 md:p-12 hover-lift"
+                style={{ animationDelay: `${index * 0.2}s` }}
+              >
+                <div className="grid md:grid-cols-2 gap-8 items-center">
+                  {/* Left side - Number and Title */}
+                  <div>
+                    <div className="section-number mb-6">{feature.number}</div>
+                    <h3 className="text-3xl md:text-4xl font-bold mb-6">
+                      {feature.title}
+                    </h3>
+                    <p className="text-lg text-foreground/70 mb-8">
+                      {feature.description}
+                    </p>
+                    <Link href="/auth/signup">
+                      <button className="crystal-ball-button text-sm">
+                        Learn More
+                      </button>
+                    </Link>
+                  </div>
+
+                  {/* Right side - Icon with gradient */}
+                  <div className="flex justify-center md:justify-end">
+                    <div className="relative">
+                      {/* Gradient glow background */}
+                      <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-20 blur-3xl rounded-full`} />
+                      
+                      {/* Icon container */}
+                      <div className="relative liquid-glass p-12 glow-breathe">
+                        <Icon className="w-24 h-24 text-foreground/80" strokeWidth={1.5} />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-card border-0 p-8 relative overflow-hidden">
-            <div className="absolute top-4 right-4 w-16 h-16 rounded-full overflow-hidden opacity-20">
-              <Image src="/group-doing-outdoor-yoga-class.jpg" alt="" width={64} height={64} className="w-full h-full object-cover" />
-            </div>
-            <CardContent className="p-0 relative z-10">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <BarChart3 className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold">See Your Progress with Simple Graphs</h3>
-                </div>
-              </div>
-              <p className="text-muted-foreground mb-6">
-                Visualize your wellness journey with easy-to-read trends and insights.
-              </p>
-              <div className="flex items-end justify-center gap-2 h-24">
-                {[40, 60, 45, 70, 55, 80, 65].map((height, i) => (
-                  <div
-                    key={i}
-                    className={`w-6 rounded-t ${i === 5 ? "bg-primary" : "bg-primary/30"}`}
-                    style={{ height: `${height}%` }}
-                  />
-                ))}
-              </div>
-              <div className="text-right mt-2">
-                <span className="text-sm text-muted-foreground">2406 cal</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-card border-0 p-8 relative overflow-hidden">
-            <div className="absolute top-4 right-4 w-16 h-16 rounded-full overflow-hidden opacity-20">
-              <Image src="/healthy-meal-planning-and-prep.jpg" alt="" width={64} height={64} className="w-full h-full object-cover" />
-            </div>
-            <CardContent className="p-0 relative z-10">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Target className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold">Set Daily & Weekly Goals That Motivate</h3>
-                </div>
-              </div>
-              <p className="text-muted-foreground mb-6">
-                Create wellness and nutrition goals to achieve a healthier lifestyle.
-              </p>
-              <div className="space-y-3">
-                <div className="text-center">
-                  <span className="text-sm text-muted-foreground">This week</span>
-                  <div className="text-3xl font-bold">2.1kg</div>
-                </div>
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>0km</span>
-                  <span>5km</span>
-                  <span>10km</span>
-                  <span>15km</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full w-3/5 bg-primary rounded-full" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-card border-0 p-8 relative overflow-hidden">
-            <div className="absolute top-4 right-4 w-16 h-16 rounded-full overflow-hidden opacity-20">
-              <Image src="/woman-preparing-healthy-smoothie-bowl.jpg" alt="" width={64} height={64} className="w-full h-full object-cover" />
-            </div>
-            <CardContent className="p-0 relative z-10">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Apple className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold">Log Calories & Macros with Ease</h3>
-                </div>
-              </div>
-              <p className="text-muted-foreground mb-6">
-                Track your meals and balance macros for healthier eating habits.
-              </p>
-              <div className="space-y-4">
-                <div className="text-center">
-                  <span className="text-sm text-muted-foreground">Daily Calories</span>
-                  <div className="text-3xl font-bold">1,836</div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-red-400" />
-                      Protein
-                    </span>
-                    <span className="text-sm font-medium">285 cal</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-primary" />
-                      Carbs
-                    </span>
-                    <span className="text-sm font-medium">485 cal</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            )
+          })}
         </div>
       </div>
     </section>
