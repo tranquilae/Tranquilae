@@ -349,14 +349,15 @@ export async function middleware(request: NextRequest) {
   }
 
   // Add CSRF protection headers for state-changing operations
-  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method)) {
+  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method) && !pathname.startsWith('/api/auth/')) {
     const origin = request.headers.get('origin');
     const host = request.headers.get('host');
     
-    // Check for CSRF (simple origin check)
+    // Check for CSRF (simple origin check) - skip for auth endpoints
     if (origin && host) {
       const originHost = new URL(origin).host;
       if (originHost !== host) {
+        console.log('CSRF blocked:', { originHost, host, path: pathname });
         return new NextResponse('Forbidden', { status: 403 });
       }
     }

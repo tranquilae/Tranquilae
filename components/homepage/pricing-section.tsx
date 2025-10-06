@@ -49,25 +49,26 @@ export function PricingSection() {
       
       <div className="max-w-6xl mx-auto relative">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-balance mb-6 text-text-900">
+          <div className="section-number mb-4">02 — PRICING</div>
+          <h2 className="text-4xl md:text-5xl font-bold text-balance mb-6 text-foreground">
             Choose Your 
-            <span className="bg-gradient-to-r from-nature-600 to-softblue-600 bg-clip-text text-transparent">
+            <span className="animated-gradient-text">
               Wellness Path
             </span>
           </h2>
-          <p className="text-lg text-text-600">Start your journey with a free 14-day trial • No credit card required</p>
+          <p className="text-lg text-foreground/70">Start your journey with a free 14-day trial • No credit card required</p>
         </div>
 
         {/* Toggle */}
         <div className="flex justify-center mb-12">
-          <GlassCard className="p-1 inline-flex items-center" variant="secondary">
-            <button className="px-6 py-2 rounded-full bg-nature-green text-white text-sm font-medium transition-all">
+          <div className="liquid-glass p-1 inline-flex items-center gap-1">
+            <button className="px-6 py-2 rounded-full crystal-ball-button text-sm">
               Monthly
             </button>
-            <button className="px-6 py-2 rounded-full text-sm font-medium text-text-600 hover:text-text-900 transition-colors">
+            <button className="px-6 py-2 rounded-full text-sm font-medium text-foreground/70 hover:text-foreground hover:bg-foreground/5 transition-all">
               Yearly (save 17%)
             </button>
-          </GlassCard>
+          </div>
         </div>
 
         {/* Pricing Cards */}
@@ -77,64 +78,59 @@ export function PricingSection() {
             const IconComponent = plan.icon;
             
             return (
-              <GlassCard 
+              <div 
                 key={index} 
-                className={`p-8 relative transition-all duration-300 hover:scale-105 ${
-                  isPopular ? 'ring-2 ring-nature-green/20' : ''
+                className={`liquid-glass p-8 relative transition-all duration-300 hover-lift ${
+                  isPopular ? 'ring-2 ring-[var(--nature-green)]/30' : ''
                 }`}
-                withTint={isPopular}
               >
                 {isPopular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <div className="bg-nature-green text-white px-4 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                    <div className="crystal-ball-button text-xs px-4 py-1 flex items-center gap-1">
                       <Star className="h-3 w-3" />
                       Most Popular
                     </div>
                   </div>
                 )}
                 
-                <GlassCardContent className="p-0">
+                <div className="relative z-10">
                   {/* Header */}
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-12 h-12 rounded-2xl glass-card-secondary flex items-center justify-center">
-                      <IconComponent className="h-6 w-6 text-nature-green" />
+                    <div className="w-12 h-12 rounded-2xl bg-foreground/5 flex items-center justify-center">
+                      <IconComponent className="h-6 w-6 text-[var(--nature-green)]" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-text-900">{plan.name}</h3>
-                      <p className="text-sm text-text-600">{plan.description}</p>
+                      <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
+                      <p className="text-sm text-foreground/70">{plan.description}</p>
                     </div>
                   </div>
 
                   {/* Price */}
                   <div className="mb-6">
-                    <div className="text-4xl font-bold text-text-900">
+                    <div className="text-4xl font-bold text-foreground">
                       {plan.price}
-                      <span className="text-lg font-normal text-text-600">{plan.period}</span>
+                      <span className="text-lg font-normal text-foreground/60">{plan.period}</span>
                     </div>
                   </div>
 
                   {/* CTA Button */}
-                  <Link href={plan.href} className="block mb-8">
-                    <GlassButton 
-                      variant={isPopular ? "primary" : "secondary"} 
-                      size="lg" 
-                      className="w-full text-base py-3 transform hover:scale-105 transition-all duration-200"
-                    >
+                  <Link href="/faq" className="block mb-8">
+                    <button className="crystal-ball-button w-full py-3 text-base">
                       {plan.cta}
-                    </GlassButton>
+                    </button>
                   </Link>
 
                   {/* Features */}
                   <ul className="space-y-3">
                     {plan.features.map((feature, featureIndex) => (
                       <li key={featureIndex} className="flex items-center gap-3">
-                        <Check className="h-5 w-5 text-nature-green flex-shrink-0" />
-                        <span className="text-sm text-text-700">{feature}</span>
+                        <Check className="h-5 w-5 text-[var(--nature-green)] flex-shrink-0" />
+                        <span className="text-sm text-foreground/80">{feature}</span>
                       </li>
                     ))}
                   </ul>
-                </GlassCardContent>
-              </GlassCard>
+                </div>
+              </div>
             )}
           )}
         </div>

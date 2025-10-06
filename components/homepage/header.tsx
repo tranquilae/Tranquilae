@@ -34,8 +34,10 @@ export function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 p-6">
-      <div className={`max-w-7xl mx-auto glass-nav px-6 py-4 transition-all duration-500 ${
-        isScrolled ? "scale-100 opacity-100" : "scale-100 opacity-90"
+      <div className={`max-w-7xl mx-auto px-6 py-4 transition-all duration-500 ${
+        isScrolled 
+          ? "glass-nav shadow-lg" 
+          : "bg-background/5 backdrop-blur-sm border border-foreground/5 rounded-[20px]"
       }`}>
         <div className="flex items-center justify-between">
           {/* Logo */}
@@ -46,26 +48,26 @@ export function Header() {
             <Link
               href="/#features"
               onClick={(e) => handleNavigation('features', e)}
-              className="glass-nav-item"
+              className="px-4 py-2 text-foreground/80 hover:text-foreground font-medium transition-all duration-300 hover:bg-foreground/5 rounded-xl"
             >
               Features
             </Link>
             <Link
               href="/#pricing"
               onClick={(e) => handleNavigation('pricing', e)}
-              className="glass-nav-item"
+              className="px-4 py-2 text-foreground/80 hover:text-foreground font-medium transition-all duration-300 hover:bg-foreground/5 rounded-xl"
             >
               Pricing
             </Link>
             <Link
               href="/about"
-              className="glass-nav-item"
+              className="px-4 py-2 text-foreground/80 hover:text-foreground font-medium transition-all duration-300 hover:bg-foreground/5 rounded-xl"
             >
               About
             </Link>
             <Link
               href="/contact"
-              className="glass-nav-item"
+              className="px-4 py-2 text-foreground/80 hover:text-foreground font-medium transition-all duration-300 hover:bg-foreground/5 rounded-xl"
             >
               Contact
             </Link>
@@ -74,7 +76,7 @@ export function Header() {
           {/* Action Buttons */}
           <div className="flex items-center gap-4">
             <Link href="/auth/login">
-              <button className="liquid-glass px-6 py-2 rounded-full text-sm font-semibold hover:scale-105 transition-transform">
+              <button className="px-6 py-2 rounded-full text-sm font-semibold text-foreground/80 hover:text-foreground bg-foreground/5 hover:bg-foreground/10 transition-all duration-300 hover:scale-105">
                 Log In
               </button>
             </Link>
