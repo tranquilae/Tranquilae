@@ -29,8 +29,8 @@ function getSupabaseConfig(): SupabaseConfig {
   
   if (!anonKey) {
     errors.push('NEXT_PUBLIC_SUPABASE_ANON_KEY or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY is required')
-  } else if (!anonKey.startsWith('eyJ') && !anonKey.startsWith('sb_publishable_') && !anonKey.startsWith('sb_')) {
-    errors.push('Publishable key should be a valid JWT token or new publishable key format (starts with sb_publishable_)')
+  } else if (anonKey === 'placeholder_key' || anonKey.includes('placeholder')) {
+    errors.push('Supabase anon key is still set to placeholder value')
   }
   
   // Get service role key (optional for client, required for admin)
